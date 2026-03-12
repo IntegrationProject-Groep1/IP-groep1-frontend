@@ -7,8 +7,8 @@ class SessionUpdateReceiverTest extends TestCase
 {
     public function test_throws_exception_when_xml_is_invalid(): void
     {
-        $mockClient = $this->createStub(RabbitMQClient::class);
-        $receiver = new SessionUpdateReceiver($mockClient);
+        $stubClient = $this->createStub(RabbitMQClient::class);
+        $receiver = new SessionUpdateReceiver($stubClient);
 
         $this->expectException(\InvalidArgumentException::class);
         $receiver->processMessageFromXml('invalid xml');
@@ -16,8 +16,8 @@ class SessionUpdateReceiverTest extends TestCase
 
     public function test_throws_exception_when_session_id_is_missing(): void
     {
-        $mockClient = $this->createMock(RabbitMQClient::class);
-        $receiver = new SessionUpdateReceiver($mockClient);
+        $stubClient = $this->createStub(RabbitMQClient::class);
+        $receiver = new SessionUpdateReceiver($stubClient);
 
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
         $xml .= '<message><payload>';
@@ -31,8 +31,8 @@ class SessionUpdateReceiverTest extends TestCase
 
     public function test_valid_xml_is_processed_correctly(): void
     {
-        $mockClient = $this->createMock(RabbitMQClient::class);
-        $receiver = new SessionUpdateReceiver($mockClient);
+        $stubClient = $this->createStub(RabbitMQClient::class);
+        $receiver = new SessionUpdateReceiver($stubClient);
 
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
         $xml .= '<message><payload>';
