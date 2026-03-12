@@ -38,8 +38,7 @@ class SessionUpdateReceiver
 
     public function processMessageFromXml(string $xmlString): bool
     {
-        $xml = simplexml_load_string($xmlString);
-
+        $xml = @simplexml_load_string($xmlString);
         if ($xml === false) {
             throw new \InvalidArgumentException('Invalid XML received');
         }
@@ -52,7 +51,7 @@ class SessionUpdateReceiver
 
         return true;
     }
-    
+
     private function processMessage(AMQPMessage $msg): void
     {
         try {

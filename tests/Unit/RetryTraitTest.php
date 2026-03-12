@@ -12,7 +12,7 @@ class RetryTraitTest extends TestCase
 
             public function run(callable $fn): void
             {
-                $this->sendWithRetry($fn);
+                $this->sendWithRetry($fn, 3, 0);
             }
         };
 
@@ -31,7 +31,7 @@ class RetryTraitTest extends TestCase
 
             public function run(callable $fn): void
             {
-                $this->sendWithRetry($fn, 3);
+                $this->sendWithRetry($fn, 3, 0);
             }
         };
 

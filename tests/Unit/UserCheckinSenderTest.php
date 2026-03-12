@@ -9,7 +9,7 @@ class UserCheckinSenderTest extends TestCase
 
     protected function setUp(): void
     {
-        $mockClient = $this->createMock(RabbitMQClient::class);
+        $mockClient = $this->createStub(RabbitMQClient::class);
         $this->sender = new UserCheckinSender($mockClient);
     }
 

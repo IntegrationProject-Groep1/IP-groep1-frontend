@@ -7,7 +7,7 @@ class SessionUpdateReceiverTest extends TestCase
 {
     public function test_throws_exception_when_xml_is_invalid(): void
     {
-        $mockClient = $this->createMock(RabbitMQClient::class);
+        $mockClient = $this->createStub(RabbitMQClient::class);
         $receiver = new SessionUpdateReceiver($mockClient);
 
         $this->expectException(\InvalidArgumentException::class);

@@ -3,8 +3,11 @@ declare(strict_types=1);
 
 trait RetryTrait
 {
-    private function sendWithRetry(callable $sendFunction, int $maxRetries = 3): void
-    {
+    private function sendWithRetry(
+        callable $sendFunction,
+        int $maxRetries = 3,
+        int $waitSeconds = 5
+    ): void {
         $attempt = 0;
 
         while ($attempt < $maxRetries) {
@@ -19,8 +22,8 @@ trait RetryTrait
                     throw $e;
                 }
 
-                echo "Attempt {$attempt} failed, retrying in 5 seconds...\n";
-                sleep(5);
+                echo "Attempt {$attempt} failed, retrying in {$waitSeconds} seconds...\n";
+                sleep($waitSeconds);
             }
         }
     }
