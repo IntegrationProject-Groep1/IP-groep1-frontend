@@ -36,6 +36,23 @@ class SessionUpdateReceiver
         }
     }
 
+    public function processMessageFromXml(string $xmlString): bool
+    {
+        $xml = simplexml_load_string($xmlString);
+
+        if ($xml === false) {
+            throw new \InvalidArgumentException('Invalid XML received');
+        }
+
+        $sessionId = (string) $xml->payload->session_id;
+
+        if (empty($sessionId)) {
+            throw new \InvalidArgumentException('session_id is required');
+        }
+
+        return true;
+    }
+    
     private function processMessage(AMQPMessage $msg): void
     {
         try {
