@@ -2,6 +2,8 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
+use Drupal\rabbitmq_sender\UserRegisteredSender;
+use Drupal\rabbitmq_sender\RabbitMQClient;
 
 class UserRegisteredSenderTest extends TestCase
 {

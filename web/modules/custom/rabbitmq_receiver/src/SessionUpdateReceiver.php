@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+namespace Drupal\rabbitmq_receiver;
+
+use Drupal\rabbitmq_sender\RabbitMQClient;
 use PhpAmqpLib\Message\AMQPMessage;
 
 class SessionUpdateReceiver

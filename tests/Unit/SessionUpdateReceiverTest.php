@@ -2,6 +2,8 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
+use Drupal\rabbitmq_receiver\SessionUpdateReceiver;
+use Drupal\rabbitmq_sender\RabbitMQClient;
 
 class SessionUpdateReceiverTest extends TestCase
 {

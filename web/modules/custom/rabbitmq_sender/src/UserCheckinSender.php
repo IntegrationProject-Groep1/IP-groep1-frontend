@@ -1,10 +1,14 @@
 <?php
 declare(strict_types=1);
 
+namespace Drupal\rabbitmq_sender;
+
 use PhpAmqpLib\Message\AMQPMessage;
 
 class UserCheckinSender
 {
+    use RetryTrait;
+
     private RabbitMQClient $client;
 
     public function __construct(RabbitMQClient $client)
@@ -22,8 +26,10 @@ class UserCheckinSender
         }
 
         $xml = $this->buildXml($data);
-        $msg = new AMQPMessage($xml, ['delivery_mode' => 2]);
-        $this->client->getChannel()->basic_publish($msg, '', 'user.checkin');
+        $this->sendWithRetry(function () use ($xml): void {
+            $msg = new AMQPMessage($xml, ['delivery_mode' => 2]);
+            $this->client->getChannel()->basic_publish($msg, '', 'user.checkin');
+        });
     }
 
     public function buildXml(array $data): string
@@ -48,8 +54,8 @@ class UserCheckinSender
         $xml .= '<version>1.0</version>';
         $xml .= '</header>';
         $xml .= '<payload>';
-        $xml .= "<user_id>{$data['user_id']}</user_id>";
-        $xml .= "<badge_id>{$data['badge_id']}</badge_id>";
+        $xml .= '<user_id>' . htmlspecialchars($data['user_id'], ENT_XML1, 'UTF-8') . '</user_id>';
+        $xml .= '<badge_id>' . htmlspecialchars($data['badge_id'], ENT_XML1, 'UTF-8') . '</badge_id>';
         $xml .= "<timestamp>{$timestamp}</timestamp>";
         $xml .= '</payload>';
         $xml .= '</message>';
