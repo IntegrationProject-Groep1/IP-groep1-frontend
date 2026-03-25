@@ -1,0 +1,19 @@
+{
+    "require": {
+        "php-amqplib/php-amqplib": "^3.7"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Drupal\\rabbitmq_sender\\": "web/modules/custom/rabbitmq_sender/src/",
+            "Drupal\\rabbitmq_receiver\\": "web/modules/custom/rabbitmq_receiver/src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    }
+}
