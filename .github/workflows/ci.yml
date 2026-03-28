@@ -16,6 +16,6 @@ jobs:
 
       - name: Run Tests (Placeholder)
         run: |
-          echo "Beste teams: Zet hier jullie eigen test-commando's!"
-          echo "Als deze falen, zal Infra de image NIET bouwen."
+          echo "Teams: Replace this with your own test commands!"
+          echo "If these fail, Infra will NOT build the image."
           exit 0
