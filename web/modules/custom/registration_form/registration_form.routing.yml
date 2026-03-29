@@ -1,0 +1,7 @@
+registration_form.register:
+  path: '/register'
+  defaults:
+    _form: '\Drupal\registration_form\Form\RegistrationForm'
+    _title: 'Register for a session'
+  requirements:
+    _access: 'TRUE'

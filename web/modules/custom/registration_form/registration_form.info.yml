@@ -1,0 +1,7 @@
+name: Registration Form
+type: module
+description: 'Provides the event registration form and RabbitMQ integration.'
+core_version_requirement: ^10
+package: Custom
+dependencies:
+  - drupal:system

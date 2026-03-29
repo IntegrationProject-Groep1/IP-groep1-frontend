@@ -45,7 +45,8 @@ services:
       RABBITMQ_PREFIX: ${RABBITMQ_PREFIX:-frontend.}
     volumes:
       - ./web/modules/custom:/var/www/html/modules/custom
-      - frontend_drupal_files:/var/www/html/sites/default/files
+      - ./web/themes/custom:/var/www/html/themes/custom
+      - ./web/sites/default:/var/www/html/sites/default
     depends_on:
       frontend_db:
         condition: service_healthy
@@ -54,7 +55,6 @@ services:
 
 volumes:
   frontend_db_data:
-  frontend_drupal_files:
 
 networks:
   shift_net:
