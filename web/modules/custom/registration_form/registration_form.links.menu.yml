@@ -1,0 +1,5 @@
+registration_form.register:
+  title: 'Register'
+  route_name: registration_form.register
+  menu_name: main
+  weight: 10

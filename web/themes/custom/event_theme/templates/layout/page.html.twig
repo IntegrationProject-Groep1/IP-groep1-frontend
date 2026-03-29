@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html{{ html_attributes }}>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ head_title }}</title>
+  {{ head }}
+  {{ styles }}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body{{ attributes.addClass('layout-no-sidebars') }}>
+  {{ page_top }}
+
+  <header class="site-header">
+    <div class="layout-container site-header__inner">
+      <a href="{{ path('<front>') }}" class="site-header__logo">
+        🎓 Desideriushogeschool
+      </a>
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="{{ path('<front>') }}"
+          {% if is_front %}class="is-active"{% endif %}>
+          Home
+        </a>
+        <a href="{{ path('registration_form.register') }}"
+          {% if current_path == '/register' %}class="is-active"{% endif %}>
+          Register
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main role="main">
+    <div class="layout-container">
+      {{ page.content }}
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="layout-container">
+      &copy; {{ "now"|date("Y") }} Desideriushogeschool Event Platform
+    </div>
+  </footer>
+
+  {{ page_bottom }}
+  {{ scripts }}
+</body>
+</html>
