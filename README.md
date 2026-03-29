@@ -126,10 +126,10 @@ This triggers the deploy pipeline which builds and publishes the Docker image.
 
 | Name             | Role                |
 |------------------|---------------------|
-| Dries Michiels   | Team Lead           |
-| Jarno            | Developer/Tester    |
+| Charles Wong     | Team Lead           |
+| Jarno Janssens   | Developer/Tester    |
 | Ilyas Fariss     | Developer/Tester    |
-| Sejeongi         | Developer/Tester    |
+| Dries Michiels   | Developer/Tester    |
 
 ## Related Repositories
 
