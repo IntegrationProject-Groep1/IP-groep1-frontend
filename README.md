@@ -59,21 +59,36 @@ The frontend team's repository for the Desideriushogeschool Event Platform — a
    cp .env.example .env
    ```
 
-3. Fill in the RabbitMQ credentials in `.env` (get these from the Infra team):
+3. Fill in your `.env` values (RabbitMQ credentials come from Infra):
    ```
+   FRONTEND_HTTP_PORT=30020
+
    RABBITMQ_HOST=<server-address>
-   RABBITMQ_PORT=<amqp-port>
+   RABBITMQ_PORT=30000
    RABBITMQ_USER=<username>
    RABBITMQ_PASS=<password>
-   ```
+   RABBITMQ_VHOST=/
+   RABBITMQ_PREFIX=frontend.
 
-4. Build and run the Docker container:
+   DRUPAL_DB_HOST=frontend_db
+   DRUPAL_DB_NAME=drupal
+   DRUPAL_DB_USER=drupal_user
+   DRUPAL_DB_PASS=<db-password>
+   DRUPAL_DB_ROOT_PASS=<db-root-password>
+   ```
+   Use plain AMQP on port `30000` (no SSL) to avoid RabbitMQ `bad_header` errors.
+
+4. Start the local stack:
    ```bash
-   docker build -t frontend-drupal .
-   docker run --env-file .env -p 8080:80 frontend-drupal
+   docker compose up -d --build
    ```
 
-5. Access Drupal at `http://localhost:8080`
+5. Access Drupal at `http://localhost:30020` and complete the Drupal installer.
+
+6. For stopping/cleanup:
+   ```bash
+   docker compose down
+   ```
 
 ## RabbitMQ Integration
 
@@ -81,14 +96,16 @@ The frontend team's repository for the Desideriushogeschool Event Platform — a
 
 | Sender                    | Queue               | Description                              |
 |---------------------------|----------------------|------------------------------------------|
-| `UserRegisteredSender`    | `user.registered`    | Sends user registration data to CRM      |
-| `UserCheckinSender`       | `user.checkin`       | Sends check-in events to Kassa/CRM       |
+| `UserRegisteredSender`    | `frontend.user.registered`    | Sends user registration data to CRM      |
+| `UserCheckinSender`       | `frontend.user.checkin`       | Sends check-in events to Kassa/CRM       |
 
 ### Receivers (incoming messages)
 
 | Receiver                  | Queue               | Description                              |
 |---------------------------|----------------------|------------------------------------------|
-| `SessionUpdateReceiver`   | `session.update`     | Receives session time/location updates from Planning |
+| `SessionUpdateReceiver`   | `frontend.session.update`     | Receives session time/location updates from Planning |
+
+Queue names are built with `RABBITMQ_PREFIX` (default: `frontend.`), so each team can keep its own namespace and avoid collisions in the shared `/` vhost.
 
 ### Heartbeat
 
@@ -111,7 +128,7 @@ Tests are also run automatically on every push and pull request via the CI pipel
 ## CI/CD
 
 - **CI (`ci.yml`)**: Runs PHPUnit tests on every push to `main`, `dev`, `prod` and on pull requests.
-- **CD (`deploy.yml`)**: After CI passes on a version tag (e.g. `v1.0.0`), builds the Docker image and pushes it to GitHub Container Registry (`ghcr.io`).
+- **CD (`deploy.yml`)**: Builds and pushes to GHCR only for `v*` tags/releases (for example `v1.0.0`), not for normal pushes.
 
 ### Creating a Release
 

@@ -2,17 +2,15 @@ name: Deploy Pipeline
 
 on:
   workflow_run:
-    workflows: ["CI Pipeline"] # Listens for the exact name of the CI workflow file
+    workflows: ["CI Pipeline"] # Must match the 'name' of your CI workflow exactly
     types:
       - completed
 
 jobs:
   build-and-push:
     name: Build and Push Docker Image
-    # Only runs if the CI pipeline succeeded and the branch is 'main', 'prod', or a version tag.
-    if: >
-      github.event.workflow_run.conclusion == 'success' &&
-      startsWith(github.event.workflow_run.head_branch, 'v')
+    # FILTER: Only run if CI succeeded AND it is a TAG/RELEASE (head_branch is null during tags)
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == null
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -22,9 +20,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          # Checks out the exact commit that was just approved by CI.
+          # Check out the exact commit SHA that passed the CI
           ref: ${{ github.event.workflow_run.head_sha }}
 
+      # STEP: Force repository name to lowercase for Docker compatibility
       - name: Lowercase repo name
         id: repo_name
         run: echo "value=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
@@ -41,6 +40,7 @@ jobs:
         with:
           context: .
           push: true
+          # Tags: ':latest' for Watchtower to pull, and ':SHA' for version tracking
           tags: |
             ghcr.io/${{ steps.repo_name.outputs.value }}:latest
-            ghcr.io/${{ steps.repo_name.outputs.value }}:${{ github.event.workflow_run.head_branch }}
+            ghcr.io/${{ steps.repo_name.outputs.value }}:${{ github.event.workflow_run.head_sha }}

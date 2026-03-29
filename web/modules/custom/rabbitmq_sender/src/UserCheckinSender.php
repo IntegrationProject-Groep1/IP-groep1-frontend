@@ -10,10 +10,13 @@ class UserCheckinSender
     use RetryTrait;
 
     private RabbitMQClient $client;
+    private string $queueName;
 
-    public function __construct(RabbitMQClient $client)
+    public function __construct(RabbitMQClient $client, ?string $queueName = null)
     {
         $this->client = $client;
+        $prefix = getenv('RABBITMQ_PREFIX') ?: 'frontend.';
+        $this->queueName = $queueName ?? ($prefix . 'user.checkin');
     }
 
     public function send(array $data): void
@@ -28,7 +31,7 @@ class UserCheckinSender
         $xml = $this->buildXml($data);
         $this->sendWithRetry(function () use ($xml): void {
             $msg = new AMQPMessage($xml, ['delivery_mode' => 2]);
-            $this->client->getChannel()->basic_publish($msg, '', 'user.checkin');
+            $this->client->getChannel()->basic_publish($msg, '', $this->queueName);
         });
     }
 

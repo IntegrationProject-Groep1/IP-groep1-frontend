@@ -1,43 +1,74 @@
-name: Deploy Pipeline
+services:
+  frontend_db:
+    image: mariadb:10.11
+    container_name: frontend_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DRUPAL_DB_ROOT_PASS}
+      MYSQL_DATABASE: ${DRUPAL_DB_NAME}
+      MYSQL_USER: ${DRUPAL_DB_USER}
+      MYSQL_PASSWORD: ${DRUPAL_DB_PASS}
+    volumes:
+      - frontend_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - shift_net
 
-on:
-  workflow_run:
-    workflows: ["CI Pipeline"]
-    types:
-      - completed
+  frontend_drupal:
+    build:
+      context: .
+    image: frontend-drupal:local
+    container_name: frontend_drupal
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_HTTP_PORT:-30020}:80"
+    environment:
+      DRUPAL_DB_HOST: ${DRUPAL_DB_HOST:-frontend_db}
+      DRUPAL_DB_NAME: ${DRUPAL_DB_NAME:-drupal}
+      DRUPAL_DB_USER: ${DRUPAL_DB_USER:-drupal_user}
+      DRUPAL_DB_PASSWORD: ${DRUPAL_DB_PASS}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-30000}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASS: ${RABBITMQ_PASS}
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST:-/}
+      RABBITMQ_PREFIX: ${RABBITMQ_PREFIX:-frontend.}
+    volumes:
+      - ./web/modules/custom:/var/www/html/modules/custom
+      - frontend_drupal_files:/var/www/html/sites/default/files
+    depends_on:
+      frontend_db:
+        condition: service_healthy
+    networks:
+      - shift_net
 
-jobs:
-  build-and-push:
-    name: Build and Push Docker Image
-    # FILTER: Alleen bij succesvolle CI en alleen bij TAGS (branch is dan null)
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == null
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+  sidecar:
+    image: ghcr.io/integrationproject-groep1/heartbeat-sidecar:latest
+    profiles: ["monitoring"]
+    environment:
+      SYSTEM_NAME: ${SYSTEM_NAME:-frontend-drupal}
+      TARGETS: frontend_drupal:80
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-30000}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASS: ${RABBITMQ_PASS}
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST:-/}
+    depends_on:
+      frontend_drupal:
+        condition: service_started
+    networks:
+      - shift_net
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+volumes:
+  frontend_db_data:
+  frontend_drupal_files:
 
-      - name: Lowercase repo name
-        id: repo_name
-        run: echo "value=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/${{ steps.repo_name.outputs.value }}:latest
-            ghcr.io/${{ steps.repo_name.outputs.value }}:${{ github.event.workflow_run.head_sha }}
+networks:
+  shift_net:
+    name: shift_net
+    driver: bridge

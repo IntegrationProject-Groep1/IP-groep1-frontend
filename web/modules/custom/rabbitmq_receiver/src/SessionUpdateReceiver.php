@@ -9,19 +9,22 @@ use PhpAmqpLib\Message\AMQPMessage;
 class SessionUpdateReceiver
 {
     private RabbitMQClient $client;
+    private string $queueName;
 
-    public function __construct(RabbitMQClient $client)
+    public function __construct(RabbitMQClient $client, ?string $queueName = null)
     {
         $this->client = $client;
+        $prefix = getenv('RABBITMQ_PREFIX') ?: 'frontend.';
+        $this->queueName = $queueName ?? ($prefix . 'session.update');
     }
 
     public function listen(): void
     {
         $channel = $this->client->getChannel();
-        $channel->queue_declare('session.update', false, true, false, false);
+        $channel->queue_declare($this->queueName, false, true, false, false);
 
         $channel->basic_consume(
-            'session.update',
+            $this->queueName,
             '',
             false,
             false,
