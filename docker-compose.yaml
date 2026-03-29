@@ -2,24 +2,42 @@ version: '3.8'
 
 services:
   drupal:
-    build: .
+    build:
+      context: .
+      dockerfile: docker/drupal/Dockerfile
     container_name: drupal_app
     ports:
       - "8080:80"
+    volumes:
+      - .:/var/www/html
+    env_file:
+      - .env
     depends_on:
-      - db
+      - database
 
-  db:
+  database:
     image: mariadb:10.6
     container_name: drupal_db
     restart: always
     environment:
-      MYSQL_DATABASE: drupal
-      MYSQL_USER: drupal
-      MYSQL_PASSWORD: drupal
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - db_data:/var/lib/mysql
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/worker/Dockerfile
+    container_name: drupal_worker
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - database
 
 volumes:
   db_data:
