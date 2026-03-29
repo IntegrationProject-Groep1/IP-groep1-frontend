@@ -1,10 +1,14 @@
 <?php
 declare(strict_types=1);
 
+namespace Drupal\rabbitmq_sender;
+
 use PhpAmqpLib\Message\AMQPMessage;
 
 class UserRegisteredSender
 {
+    use RetryTrait;
+
     private RabbitMQClient $client;
 
     public function __construct(RabbitMQClient $client)
@@ -25,8 +29,10 @@ class UserRegisteredSender
         }
 
         $xml = $this->buildXml($data);
-        $msg = new AMQPMessage($xml, ['delivery_mode' => 2]);
-        $this->client->getChannel()->basic_publish($msg, '', 'user.registered');
+        $this->sendWithRetry(function () use ($xml): void {
+            $msg = new AMQPMessage($xml, ['delivery_mode' => 2]);
+            $this->client->getChannel()->basic_publish($msg, '', 'user.registered');
+        });
     }
 
     public function buildXml(array $data): string
@@ -52,22 +58,22 @@ class UserRegisteredSender
         $xml .= '</header>';
         $xml .= '<payload>';
         $xml .= '<user>';
-        $xml .= "<first_name>{$data['first_name']}</first_name>";
-        $xml .= "<last_name>{$data['last_name']}</last_name>";
-        $xml .= "<email>{$data['email']}</email>";
+        $xml .= '<first_name>' . htmlspecialchars($data['first_name'], ENT_XML1, 'UTF-8') . '</first_name>';
+        $xml .= '<last_name>' . htmlspecialchars($data['last_name'], ENT_XML1, 'UTF-8') . '</last_name>';
+        $xml .= '<email>' . htmlspecialchars($data['email'], ENT_XML1, 'UTF-8') . '</email>';
         $xml .= '<is_company>' . ($data['is_company'] ? 'true' : 'false') . '</is_company>';
 
         if (!empty($data['is_company'])) {
             $xml .= '<company>';
-            $xml .= "<name>{$data['company_name']}</name>";
-            $xml .= "<vat_number>{$data['vat_number']}</vat_number>";
+            $xml .= '<name>' . htmlspecialchars($data['company_name'], ENT_XML1, 'UTF-8') . '</name>';
+            $xml .= '<vat_number>' . htmlspecialchars($data['vat_number'], ENT_XML1, 'UTF-8') . '</vat_number>';
             $xml .= '</company>';
         }
 
         $xml .= '</user>';
         $xml .= '<session>';
-        $xml .= "<id>{$data['session_id']}</id>";
-        $xml .= "<name>{$data['session_name']}</name>";
+        $xml .= '<id>' . htmlspecialchars($data['session_id'], ENT_XML1, 'UTF-8') . '</id>';
+        $xml .= '<name>' . htmlspecialchars($data['session_name'], ENT_XML1, 'UTF-8') . '</name>';
         $xml .= '</session>';
         $xml .= '<payment_status>pending</payment_status>';
         $xml .= '</payload>';

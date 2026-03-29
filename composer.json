@@ -7,19 +7,13 @@
     },
     "autoload": {
         "psr-4": {
-            "": "web/modules/custom/"
-        },
-        "files": [
-            "web/modules/custom/rabbitmq_sender/src/RabbitMQClient.php",
-            "web/modules/custom/rabbitmq_sender/src/RetryTrait.php",
-            "web/modules/custom/rabbitmq_sender/src/UserRegisteredSender.php",
-            "web/modules/custom/rabbitmq_sender/src/UserCheckinSender.php",
-            "web/modules/custom/rabbitmq_receiver/src/SessionUpdateReceiver.php"
-        ]
+            "Drupal\\rabbitmq_sender\\": "web/modules/custom/rabbitmq_sender/src/",
+            "Drupal\\rabbitmq_receiver\\": "web/modules/custom/rabbitmq_receiver/src/"
+        }
     },
     "autoload-dev": {
         "psr-4": {
-            "": "tests/"
+            "Tests\\": "tests/"
         }
     }
 }

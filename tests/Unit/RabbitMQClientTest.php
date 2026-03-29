@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
+use Drupal\rabbitmq_sender\RabbitMQClient;
 
 class RabbitMQClientTest extends TestCase
 {

@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Drupal\rabbitmq_sender;
+
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Channel\AMQPChannel;
 
