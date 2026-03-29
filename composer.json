@@ -16,5 +16,8 @@
         "psr-4": {
             "Tests\\": "tests/"
         }
+    },
+    "scripts": {
+        "rabbitmq:smoke": "php scripts/rabbitmq_smoke_test.php"
     }
 }
