@@ -123,6 +123,16 @@ composer install
 vendor/bin/phpunit tests/
 ```
 
+RabbitMQ smoke test (declares queue `test`, publishes 2 messages, then closes the connection):
+```bash
+composer rabbitmq:smoke
+```
+
+Optional custom queue name:
+```bash
+php scripts/rabbitmq_smoke_test.php test
+```
+
 Tests are also run automatically on every push and pull request via the CI pipeline.
 
 ## CI/CD
