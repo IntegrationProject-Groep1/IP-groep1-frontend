@@ -1,0 +1,18 @@
+# Dependencies — installed inside the image via composer require
+vendor/
+
+# Git
+.git
+.github
+
+# Local environment
+.env
+*.local
+
+# Drupal uploaded files — served from a volume on the server
+web/sites/default/files/
+
+# Dev tooling
+.vscode/
+*.md
+tests/
