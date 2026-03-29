@@ -31,8 +31,6 @@ The frontend team's repository for the Desideriushogeschool Event Platform — a
 │       ├── RetryTrait.php              # Retry logic for failed messages
 │       ├── UserCheckinSender.php       # Sends check-in events to other systems
 │       └── UserRegisteredSender.php    # Sends registration events to CRM
-├── worker/
-│   └── heartbeat.php                   # Sends heartbeat signal every second
 ├── .env.example
 ├── Dockerfile
 ├── composer.json
