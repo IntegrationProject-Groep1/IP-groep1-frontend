@@ -8,7 +8,8 @@
     "autoload": {
         "psr-4": {
             "Drupal\\rabbitmq_sender\\": "web/modules/custom/rabbitmq_sender/src/",
-            "Drupal\\rabbitmq_receiver\\": "web/modules/custom/rabbitmq_receiver/src/"
+            "Drupal\\rabbitmq_receiver\\": "web/modules/custom/rabbitmq_receiver/src/",
+            "Drupal\\registration_form\\": "web/modules/custom/registration_form/src/"
         }
     },
     "autoload-dev": {
