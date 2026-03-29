@@ -39,3 +39,22 @@ $settings['trusted_host_patterns'] = [
 ];
 
 $settings['config_sync_directory'] = '../config/sync';
+/**
+ * Reverse Proxy & Azure Port Fix
+ */
+if (getenv('DRUPAL_REVERSE_PROXY') === 'true') {
+  $settings['reverse_proxy'] = TRUE;
+  $settings['reverse_proxy_addresses'] = [$_SERVER['REMOTE_ADDR']];
+  $settings['reverse_proxy_proto_header'] = 'X-Forwarded-Proto';
+  $settings['reverse_proxy_host_header'] = 'X-Forwarded-Host';
+  $settings['reverse_proxy_port_header'] = 'X-Forwarded-Port';
+
+  // Gebruik de base URL uit de docker-compose environment
+  if ($base_url_env = getenv('DRUPAL_BASE_URL')) {
+    $base_url = $base_url_env;
+  }
+}
+
+// Voeg je Azure domein toe aan de Trusted Hosts
+$settings['trusted_host_patterns'][] = '^integrationproject-2526s2-dag01\.westeurope\.cloudapp\.azure\.com$';
+$settings['trusted_host_patterns'][] = '^integrationproject-2526s2-dag01\.westeurope\.cloudapp\.azure\.com:30020$';
