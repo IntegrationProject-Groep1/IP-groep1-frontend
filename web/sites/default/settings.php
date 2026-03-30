@@ -38,7 +38,7 @@ $settings['trusted_host_patterns'] = [
   '^\d+\.\d+\.\d+\.\d+(:\d+)?$',
 ];
 
-$settings['config_sync_directory'] = '../config/sync';
+$settings['config_sync_directory'] = 'sites/default/files/config_sync';
 /**
  * Reverse Proxy & Azure Port Fix
  */
