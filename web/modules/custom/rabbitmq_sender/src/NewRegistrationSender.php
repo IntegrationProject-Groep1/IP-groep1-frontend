@@ -12,7 +12,7 @@ class NewRegistrationSender
     private RabbitMQClient $client;
 
     private const QUEUES = [
-        'crm.salesforce',
+        'crm.incoming',
         'planning.outlook',
         'mailing.sendgrid',
     ];
@@ -61,31 +61,41 @@ class NewRegistrationSender
         $xml .= "<message_id>{$messageId}</message_id>";
         $xml .= "<timestamp>{$timestamp}</timestamp>";
         $xml .= '<source>frontend.drupal</source>';
-        $xml .= '<receiver>crm.salesforce planning.outlook mailing.sendgrid</receiver>';
-        $xml .= '<type>new.registration</type>';
-        $xml .= '<version>1.0</version>';
+        $xml .= '<receiver>crm.incoming planning.outlook mailing.sendgrid</receiver>';
+        $xml .= '<type>new_registration</type>';
+        $xml .= '<version>2.0</version>';
         $xml .= '</header>';
-        $xml .= '<payload>';
-        $xml .= '<user>';
+        $xml .= '<body>';
+        $xml .= '<customer>';
+        $xml .= '<user_id>' . htmlspecialchars($messageId, ENT_XML1, 'UTF-8') . '</user_id>';
+        $xml .= '<email>' . htmlspecialchars($data['email'], ENT_XML1, 'UTF-8') . '</email>';
+        $xml .= '<type>' . (!empty($data['is_company']) ? 'company' : 'private') . '</type>';
+        $xml .= '<contact>';
         $xml .= '<first_name>' . htmlspecialchars($data['first_name'] ?? '', ENT_XML1, 'UTF-8') . '</first_name>';
         $xml .= '<last_name>' . htmlspecialchars($data['last_name'] ?? '', ENT_XML1, 'UTF-8') . '</last_name>';
-        $xml .= '<email>' . htmlspecialchars($data['email'], ENT_XML1, 'UTF-8') . '</email>';
-        $xml .= '<is_company>' . (!empty($data['is_company']) ? 'true' : 'false') . '</is_company>';
+        $xml .= '</contact>';
+
+        if (!empty($data['date_of_birth'])) {
+            $xml .= '<date_of_birth>' . htmlspecialchars($data['date_of_birth'], ENT_XML1, 'UTF-8') . '</date_of_birth>';
+        }
 
         if (!empty($data['is_company'])) {
+            $xml .= '<is_company_linked>true</is_company_linked>';
             $xml .= '<company>';
             $xml .= '<name>' . htmlspecialchars($data['company_name'] ?? '', ENT_XML1, 'UTF-8') . '</name>';
             $xml .= '<vat_number>' . htmlspecialchars($data['vat_number'] ?? '', ENT_XML1, 'UTF-8') . '</vat_number>';
             $xml .= '</company>';
+        } else {
+            $xml .= '<is_company_linked>false</is_company_linked>';
         }
 
-        $xml .= '</user>';
+        $xml .= '</customer>';
         $xml .= '<session>';
         $xml .= '<id>' . htmlspecialchars($data['session_id'], ENT_XML1, 'UTF-8') . '</id>';
         $xml .= '<name>' . htmlspecialchars($data['session_name'] ?? '', ENT_XML1, 'UTF-8') . '</name>';
         $xml .= '</session>';
         $xml .= '<payment_status>pending</payment_status>';
-        $xml .= '</payload>';
+        $xml .= '</body>';
         $xml .= '</message>';
 
         return $xml;

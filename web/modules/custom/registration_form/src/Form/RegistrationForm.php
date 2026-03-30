@@ -6,6 +6,7 @@ namespace Drupal\registration_form\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 use Drupal\registration_form\Service\RegistrationService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -44,6 +45,12 @@ class RegistrationForm extends FormBase
         $form['email'] = [
             '#type'     => 'email',
             '#title'    => $this->t('Email address'),
+            '#required' => true,
+        ];
+
+        $form['date_of_birth'] = [
+            '#type'     => 'date',
+            '#title'    => $this->t('Date of birth'),
             '#required' => true,
         ];
 
@@ -118,21 +125,29 @@ class RegistrationForm extends FormBase
         $sessionId = $form_state->getValue('session_id');
 
         $data = [
-            'first_name'   => $form_state->getValue('first_name'),
-            'last_name'    => $form_state->getValue('last_name'),
-            'email'        => $form_state->getValue('email'),
-            'session_id'   => $sessionId,
-            'session_name' => $this->getSessionOptions()[$sessionId] ?? $sessionId,
-            'is_company'   => (bool) $form_state->getValue('is_company'),
-            'company_name' => $form_state->getValue('company_name') ?? '',
-            'vat_number'   => $form_state->getValue('vat_number') ?? '',
+            'first_name'    => $form_state->getValue('first_name'),
+            'last_name'     => $form_state->getValue('last_name'),
+            'email'         => $form_state->getValue('email'),
+            'date_of_birth' => $form_state->getValue('date_of_birth') ?? '',
+            'session_id'    => $sessionId,
+            'session_name'  => $this->getSessionOptions()[$sessionId] ?? $sessionId,
+            'is_company'    => (bool) $form_state->getValue('is_company'),
+            'company_name'  => $form_state->getValue('company_name') ?? '',
+            'vat_number'    => $form_state->getValue('vat_number') ?? '',
         ];
 
         try {
             $this->registrationService->register($data);
-            $this->messenger()->addStatus($this->t('You have been successfully registered!'));
+            $form_state->setRedirectUrl(Url::fromRoute('registration_form.confirmation', [], [
+                'query' => [
+                    'name'    => trim($data['first_name'] . ' ' . $data['last_name']),
+                    'session' => $data['session_name'],
+                ],
+            ]));
         } catch (\InvalidArgumentException $e) {
             $this->messenger()->addError($this->t('Registration failed: @error', ['@error' => $e->getMessage()]));
+        } catch (\RuntimeException $e) {
+            $this->messenger()->addError($this->t('Could not send your registration at this time. Please try again later.'));
         }
     }
 
@@ -143,9 +158,12 @@ class RegistrationForm extends FormBase
     private function getSessionOptions(): array
     {
         return [
-            '550e8400-e29b-41d4-a716-446655440000' => 'Workshop AI — 10 April 2026',
-            '550e8400-e29b-41d4-a716-446655440001' => 'Workshop Cloud — 17 April 2026',
-            '550e8400-e29b-41d4-a716-446655440002' => 'Workshop Security — 24 April 2026',
+            '550e8400-e29b-41d4-a716-446655440001' => 'Keynote: Toekomst van Tech — 23 april 2026 (14:00)',
+            '550e8400-e29b-41d4-a716-446655440002' => 'Workshop AI & Machine Learning — 23 april 2026 (15:00)',
+            '550e8400-e29b-41d4-a716-446655440003' => 'Workshop Cloud & DevOps — 23 april 2026 (15:00)',
+            '550e8400-e29b-41d4-a716-446655440004' => 'Workshop Cybersecurity — 23 april 2026 (15:00)',
+            '550e8400-e29b-41d4-a716-446655440005' => 'Prijsuitreiking Beste Eindwerken — 23 april 2026 (16:30)',
+            '550e8400-e29b-41d4-a716-446655440006' => 'Netwerkreceptie & Drinks — 23 april 2026 (18:00)',
         ];
     }
 }

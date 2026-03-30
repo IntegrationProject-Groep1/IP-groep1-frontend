@@ -58,8 +58,15 @@ class NewRegistrationSenderTest extends TestCase
             'is_company' => false,
         ]);
 
-        $this->assertStringContainsString('<type>new.registration</type>', $xml);
+        $this->assertStringContainsString('<type>new_registration</type>', $xml);
+        $this->assertStringContainsString('<version>2.0</version>', $xml);
+        $this->assertStringContainsString('<body>', $xml);
+        $this->assertStringContainsString('<customer>', $xml);
         $this->assertStringContainsString('<email>jan@test.be</email>', $xml);
+        $this->assertStringContainsString('<type>private</type>', $xml);
+        $this->assertStringContainsString('<contact>', $xml);
+        $this->assertStringContainsString('<first_name>Jan</first_name>', $xml);
+        $this->assertStringContainsString('<is_company_linked>false</is_company_linked>', $xml);
         $this->assertStringContainsString('<session>', $xml);
         $this->assertStringContainsString('<payment_status>pending</payment_status>', $xml);
     }

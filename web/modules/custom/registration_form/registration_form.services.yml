@@ -3,10 +3,3 @@ services:
     class: Drupal\registration_form\Service\RegistrationService
     arguments:
       - '@logger.factory'
-    # RabbitMQ sender is injected separately — set rabbitmq_enabled: false to
-    # skip sending until the RabbitMQ integration is ready.
-    calls:
-      - [setRabbitMQEnabled, ['%registration_form.rabbitmq_enabled%']]
-
-parameters:
-  registration_form.rabbitmq_enabled: false

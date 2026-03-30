@@ -5,3 +5,11 @@ registration_form.register:
     _title: 'Register for a session'
   requirements:
     _access: 'TRUE'
+
+registration_form.confirmation:
+  path: '/register/confirmation'
+  defaults:
+    _controller: '\Drupal\registration_form\Controller\ConfirmationController::page'
+    _title: 'Registration confirmed'
+  requirements:
+    _access: 'TRUE'

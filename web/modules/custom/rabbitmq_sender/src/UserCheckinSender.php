@@ -50,7 +50,7 @@ class UserCheckinSender
         $xml .= "<timestamp>{$timestamp}</timestamp>";
         $xml .= '<source>frontend.drupal</source>';
         $xml .= '<receiver>monitoring.elastic</receiver>';
-        $xml .= '<type>user.checkin</type>';
+        $xml .= '<event_type>user.checkin</event_type>';
         $xml .= '<version>1.0</version>';
         $xml .= '</header>';
         $xml .= '<payload>';
