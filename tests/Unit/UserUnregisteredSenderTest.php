@@ -2,28 +2,28 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
-use Drupal\rabbitmq_sender\UserCheckinSender;
+use Drupal\rabbitmq_sender\UserUnregisteredSender;
 use Drupal\rabbitmq_sender\RabbitMQClient;
 
-class UserCheckinSenderTest extends TestCase
+class UserUnregisteredSenderTest extends TestCase
 {
-    private UserCheckinSender $sender;
+    private UserUnregisteredSender $sender;
 
     protected function setUp(): void
     {
         $mockClient = $this->createStub(RabbitMQClient::class);
-        $this->sender = new UserCheckinSender($mockClient);
+        $this->sender = new UserUnregisteredSender($mockClient);
     }
 
     public function test_throws_exception_when_user_id_is_missing(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->sender->send([
-            'badge_id' => 'nfc-badge-abc123',
+            'session_id' => 'session-uuid-001',
         ]);
     }
 
-    public function test_throws_exception_when_badge_id_is_missing(): void
+    public function test_throws_exception_when_session_id_is_missing(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->sender->send([
@@ -35,11 +35,11 @@ class UserCheckinSenderTest extends TestCase
     {
         $xml = $this->sender->buildXml([
             'user_id' => 'uuid-v4-hier',
-            'badge_id' => 'nfc-badge-abc123',
+            'session_id' => 'session-uuid-001',
         ]);
 
-        $this->assertStringContainsString('<type>user.checkin</type>', $xml);
+        $this->assertStringContainsString('<type>user.unregistered</type>', $xml);
         $this->assertStringContainsString('<user_id>uuid-v4-hier</user_id>', $xml);
-        $this->assertStringContainsString('<badge_id>nfc-badge-abc123</badge_id>', $xml);
+        $this->assertStringContainsString('<session_id>session-uuid-001</session_id>', $xml);
     }
 }

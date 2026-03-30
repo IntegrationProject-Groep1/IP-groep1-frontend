@@ -5,11 +5,17 @@ namespace Drupal\rabbitmq_sender;
 
 use PhpAmqpLib\Message\AMQPMessage;
 
-class UserRegisteredSender
+class NewRegistrationSender
 {
     use RetryTrait;
 
     private RabbitMQClient $client;
+
+    private const QUEUES = [
+        'crm.salesforce',
+        'planning.outlook',
+        'mailing.sendgrid',
+    ];
 
     public function __construct(RabbitMQClient $client)
     {
@@ -29,10 +35,13 @@ class UserRegisteredSender
         }
 
         $xml = $this->buildXml($data);
-        $this->sendWithRetry(function () use ($xml): void {
-            $msg = new AMQPMessage($xml, ['delivery_mode' => 2]);
-            $this->client->getChannel()->basic_publish($msg, '', 'user.registered');
-        });
+
+        foreach (self::QUEUES as $queue) {
+            $this->sendWithRetry(function () use ($xml, $queue): void {
+                $msg = new AMQPMessage($xml, ['delivery_mode' => 2]);
+                $this->client->getChannel()->basic_publish($msg, '', $queue);
+            });
+        }
     }
 
     public function buildXml(array $data): string
@@ -51,29 +60,29 @@ class UserRegisteredSender
         $xml .= '<header>';
         $xml .= "<message_id>{$messageId}</message_id>";
         $xml .= "<timestamp>{$timestamp}</timestamp>";
-        $xml .= '<sender>frontend.drupal</sender>';
-        $xml .= '<receiver>crm.salesforce</receiver>';
-        $xml .= '<event_type>user.registered</event_type>';
+        $xml .= '<source>frontend.drupal</source>';
+        $xml .= '<receiver>crm.salesforce planning.outlook mailing.sendgrid</receiver>';
+        $xml .= '<type>new.registration</type>';
         $xml .= '<version>1.0</version>';
         $xml .= '</header>';
         $xml .= '<payload>';
         $xml .= '<user>';
-        $xml .= '<first_name>' . htmlspecialchars($data['first_name'], ENT_XML1, 'UTF-8') . '</first_name>';
-        $xml .= '<last_name>' . htmlspecialchars($data['last_name'], ENT_XML1, 'UTF-8') . '</last_name>';
+        $xml .= '<first_name>' . htmlspecialchars($data['first_name'] ?? '', ENT_XML1, 'UTF-8') . '</first_name>';
+        $xml .= '<last_name>' . htmlspecialchars($data['last_name'] ?? '', ENT_XML1, 'UTF-8') . '</last_name>';
         $xml .= '<email>' . htmlspecialchars($data['email'], ENT_XML1, 'UTF-8') . '</email>';
-        $xml .= '<is_company>' . ($data['is_company'] ? 'true' : 'false') . '</is_company>';
+        $xml .= '<is_company>' . (!empty($data['is_company']) ? 'true' : 'false') . '</is_company>';
 
         if (!empty($data['is_company'])) {
             $xml .= '<company>';
-            $xml .= '<name>' . htmlspecialchars($data['company_name'], ENT_XML1, 'UTF-8') . '</name>';
-            $xml .= '<vat_number>' . htmlspecialchars($data['vat_number'], ENT_XML1, 'UTF-8') . '</vat_number>';
+            $xml .= '<name>' . htmlspecialchars($data['company_name'] ?? '', ENT_XML1, 'UTF-8') . '</name>';
+            $xml .= '<vat_number>' . htmlspecialchars($data['vat_number'] ?? '', ENT_XML1, 'UTF-8') . '</vat_number>';
             $xml .= '</company>';
         }
 
         $xml .= '</user>';
         $xml .= '<session>';
         $xml .= '<id>' . htmlspecialchars($data['session_id'], ENT_XML1, 'UTF-8') . '</id>';
-        $xml .= '<name>' . htmlspecialchars($data['session_name'], ENT_XML1, 'UTF-8') . '</name>';
+        $xml .= '<name>' . htmlspecialchars($data['session_name'] ?? '', ENT_XML1, 'UTF-8') . '</name>';
         $xml .= '</session>';
         $xml .= '<payment_status>pending</payment_status>';
         $xml .= '</payload>';

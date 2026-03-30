@@ -2,25 +2,23 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
-use Drupal\rabbitmq_sender\UserRegisteredSender;
+use Drupal\rabbitmq_sender\NewRegistrationSender;
 use Drupal\rabbitmq_sender\RabbitMQClient;
 
-class UserRegisteredSenderTest extends TestCase
+class NewRegistrationSenderTest extends TestCase
 {
-    private UserRegisteredSender $sender;
+    private NewRegistrationSender $sender;
 
     protected function setUp(): void
     {
-        $mockClient = $this->createStub(RabbitMQClient::class);        
-        $this->sender = new UserRegisteredSender($mockClient);
+        $mockClient = $this->createStub(RabbitMQClient::class);
+        $this->sender = new NewRegistrationSender($mockClient);
     }
 
     public function test_throws_exception_when_email_is_missing(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->sender->send([
-            'first_name' => 'Jan',
-            'last_name' => 'Jansen',
             'session_id' => 'session-uuid-001',
             'session_name' => 'Workshop AI',
             'is_company' => false,
@@ -31,8 +29,6 @@ class UserRegisteredSenderTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->sender->send([
-            'first_name' => 'Jan',
-            'last_name' => 'Jansen',
             'email' => 'jan@test.be',
             'session_name' => 'Workshop AI',
             'is_company' => false,
@@ -43,14 +39,11 @@ class UserRegisteredSenderTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->sender->send([
-            'first_name' => 'Jan',
-            'last_name' => 'Jansen',
             'email' => 'jan@test.be',
             'session_id' => 'session-uuid-001',
             'session_name' => 'Workshop AI',
             'is_company' => true,
             'company_name' => 'Bedrijf NV',
-            // vat_number ontbreekt
         ]);
     }
 
@@ -65,8 +58,9 @@ class UserRegisteredSenderTest extends TestCase
             'is_company' => false,
         ]);
 
-        $this->assertStringContainsString('<event_type>user.registered</event_type>', $xml);
+        $this->assertStringContainsString('<type>new.registration</type>', $xml);
         $this->assertStringContainsString('<email>jan@test.be</email>', $xml);
+        $this->assertStringContainsString('<session>', $xml);
         $this->assertStringContainsString('<payment_status>pending</payment_status>', $xml);
     }
 }

@@ -1,0 +1,55 @@
+<?php
+declare(strict_types=1);
+
+use PHPUnit\Framework\TestCase;
+use Drupal\rabbitmq_receiver\VatValidationErrorReceiver;
+use Drupal\rabbitmq_sender\RabbitMQClient;
+
+class VatValidationErrorReceiverTest extends TestCase
+{
+    private VatValidationErrorReceiver $receiver;
+
+    protected function setUp(): void
+    {
+        $stubClient = $this->createStub(RabbitMQClient::class);
+        $this->receiver = new VatValidationErrorReceiver($stubClient);
+    }
+
+    public function test_throws_exception_when_xml_is_invalid(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->receiver->processMessageFromXml('invalid xml');
+    }
+
+    public function test_throws_exception_when_user_id_is_missing(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
+        $xml .= '<message><payload>';
+        $xml .= '<vat_number>BE0123456789</vat_number>';
+        $xml .= '</payload></message>';
+        $this->receiver->processMessageFromXml($xml);
+    }
+
+    public function test_throws_exception_when_vat_number_is_missing(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
+        $xml .= '<message><payload>';
+        $xml .= '<user_id>uuid-v4-hier</user_id>';
+        $xml .= '</payload></message>';
+        $this->receiver->processMessageFromXml($xml);
+    }
+
+    public function test_valid_xml_is_processed_correctly(): void
+    {
+        $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
+        $xml .= '<message><payload>';
+        $xml .= '<user_id>uuid-v4-hier</user_id>';
+        $xml .= '<vat_number>BE0123456789</vat_number>';
+        $xml .= '<error_message>Invalid VAT number</error_message>';
+        $xml .= '</payload></message>';
+        $result = $this->receiver->processMessageFromXml($xml);
+        $this->assertTrue($result);
+    }
+}
