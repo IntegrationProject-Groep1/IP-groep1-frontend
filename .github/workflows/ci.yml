@@ -2,20 +2,33 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ "main", "dev", "prod" ]
-    tags: [ "v*" ]
+    branches:
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'chore/**'
+      - 'hotfix/**'
   pull_request:
-    branches: [ "main", "dev", "prod" ]
+    branches:
+      - dev
+      - main
+      - prod
 
 jobs:
   test:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run Tests (Placeholder)
-        run: |
-          echo "Teams: Replace this with your own test commands!"
-          echo "If these fail, Infra will NOT build the image."
-          exit 0
+      - name: Setup PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, simplexml
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Run PHPUnit tests
+        run: php vendor/bin/phpunit tests/Unit/

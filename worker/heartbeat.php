@@ -36,9 +36,9 @@ while (true) {
     $xml .= '<header>';
     $xml .= "<message_id>{$messageId}</message_id>";
     $xml .= "<timestamp>{$timestamp}</timestamp>";
-    $xml .= '<sender>frontend.drupal</sender>';
+    $xml .= '<source>frontend.drupal</source>';
     $xml .= '<receiver>monitoring.elastic</receiver>';
-    $xml .= '<event_type>heartbeat.frontend</event_type>';
+    $xml .= '<type>heartbeat.frontend</type>';
     $xml .= '<version>1.0</version>';
     $xml .= '</header>';
     $xml .= '<payload>';
