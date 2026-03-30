@@ -5,11 +5,17 @@ namespace Drupal\rabbitmq_sender;
 
 use PhpAmqpLib\Message\AMQPMessage;
 
-class UserCheckinSender
+class UserUnregisteredSender
 {
     use RetryTrait;
 
     private RabbitMQClient $client;
+
+    private const QUEUES = [
+        'crm.salesforce',
+        'planning.outlook',
+        'mailing.sendgrid',
+    ];
 
     public function __construct(RabbitMQClient $client)
     {
@@ -21,15 +27,18 @@ class UserCheckinSender
         if (empty($data['user_id'])) {
             throw new \InvalidArgumentException('user_id is required');
         }
-        if (empty($data['badge_id'])) {
-            throw new \InvalidArgumentException('badge_id is required');
+        if (empty($data['session_id'])) {
+            throw new \InvalidArgumentException('session_id is required');
         }
 
         $xml = $this->buildXml($data);
-        $this->sendWithRetry(function () use ($xml): void {
-            $msg = new AMQPMessage($xml, ['delivery_mode' => 2]);
-            $this->client->getChannel()->basic_publish($msg, '', 'user.checkin');
-        });
+
+        foreach (self::QUEUES as $queue) {
+            $this->sendWithRetry(function () use ($xml, $queue): void {
+                $msg = new AMQPMessage($xml, ['delivery_mode' => 2]);
+                $this->client->getChannel()->basic_publish($msg, '', $queue);
+            });
+        }
     }
 
     public function buildXml(array $data): string
@@ -49,13 +58,13 @@ class UserCheckinSender
         $xml .= "<message_id>{$messageId}</message_id>";
         $xml .= "<timestamp>{$timestamp}</timestamp>";
         $xml .= '<source>frontend.drupal</source>';
-        $xml .= '<receiver>monitoring.elastic</receiver>';
-        $xml .= '<type>user.checkin</type>';
+        $xml .= '<receiver>crm.salesforce planning.outlook mailing.sendgrid</receiver>';
+        $xml .= '<type>user.unregistered</type>';
         $xml .= '<version>1.0</version>';
         $xml .= '</header>';
         $xml .= '<payload>';
         $xml .= '<user_id>' . htmlspecialchars($data['user_id'], ENT_XML1, 'UTF-8') . '</user_id>';
-        $xml .= '<badge_id>' . htmlspecialchars($data['badge_id'], ENT_XML1, 'UTF-8') . '</badge_id>';
+        $xml .= '<session_id>' . htmlspecialchars($data['session_id'], ENT_XML1, 'UTF-8') . '</session_id>';
         $xml .= "<timestamp>{$timestamp}</timestamp>";
         $xml .= '</payload>';
         $xml .= '</message>';
