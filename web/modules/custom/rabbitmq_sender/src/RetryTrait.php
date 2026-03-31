@@ -31,8 +31,10 @@ trait RetryTrait
                     throw $e;
                 }
 
-                echo "Attempt {$attempt} failed, retrying in {$waitSeconds} seconds...\n";
-                sleep($waitSeconds);
+                if ($waitSeconds > 0) {
+                    // Keep retries bounded and quiet in web requests.
+                    sleep(min($waitSeconds, 5));
+                }
             }
         }
     }

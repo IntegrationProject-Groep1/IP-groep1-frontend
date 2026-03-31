@@ -77,6 +77,8 @@ class NewRegistrationSenderTest extends TestCase
             'email' => 'jan@test.be',
             'user_id' => '12345',
             'date_of_birth' => '1990-05-15',
+            'registration_date' => '2026-03-31',
+            'session_id' => '550e8400-e29b-41d4-a716-446655440001',
             'is_company' => false,
             'address' => [
                 'street' => 'Kerkstraat',
@@ -96,16 +98,18 @@ class NewRegistrationSenderTest extends TestCase
         $this->assertMatchesRegularExpression('/<timestamp>\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\+00:00<\/timestamp>/', $xml);
         $this->assertStringContainsString('<type>new_registration</type>', $xml);
         $this->assertStringContainsString('<version>2.0</version>', $xml);
-        $this->assertStringContainsString('<source>registratie</source>', $xml);
+        $this->assertStringContainsString('<source>frontend</source>', $xml);
         $this->assertStringContainsString('<body>', $xml);
         $this->assertStringContainsString('<customer>', $xml);
         $this->assertStringContainsString('<email>jan@test.be</email>', $xml);
         $this->assertStringContainsString('<user_id>12345</user_id>', $xml);
         $this->assertStringContainsString('<type>private</type>', $xml);
-        $this->assertStringContainsString('<contact>', $xml);
+        $this->assertStringNotContainsString('<contact>', $xml);
         $this->assertStringContainsString('<first_name>Jan</first_name>', $xml);
         $this->assertStringContainsString('<last_name>Jansen</last_name>', $xml);
         $this->assertStringContainsString('<date_of_birth>1990-05-15</date_of_birth>', $xml);
+        $this->assertStringContainsString('<registration_date>2026-03-31</registration_date>', $xml);
+        $this->assertStringContainsString('<session_id>550e8400-e29b-41d4-a716-446655440001</session_id>', $xml);
         $this->assertStringContainsString('<is_company_linked>false</is_company_linked>', $xml);
         $this->assertStringContainsString('<country>BE</country>', $xml);
     }

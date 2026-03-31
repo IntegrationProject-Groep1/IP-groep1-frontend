@@ -14,11 +14,18 @@ class RegistrationCrmPayloadBuilder
      */
     public function build(array $data, string $userId): array
     {
+        $registrationDate = (string) ($data['registration_date'] ?? '');
+        if ($registrationDate === '') {
+            $registrationDate = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d');
+        }
+
         return [
             'email' => (string) ($data['email'] ?? ''),
             'first_name' => (string) ($data['first_name'] ?? ''),
             'last_name' => (string) ($data['last_name'] ?? ''),
             'date_of_birth' => (string) ($data['date_of_birth'] ?? ''),
+            'registration_date' => $registrationDate,
+            'session_id' => (string) ($data['session_id'] ?? ''),
             'user_id' => $userId,
             'type' => !empty($data['is_company']) ? 'company' : 'private',
             'is_company_linked' => !empty($data['is_company']),

@@ -14,7 +14,7 @@ class NewRegistrationSender
 
     private ?RabbitMQClient $client;
     private const QUEUE_NAME = 'crm.incoming';
-    private const SOURCE = 'registratie';
+    private const DEFAULT_SOURCE = 'frontend';
     private const MESSAGE_TYPE = 'new_registration';
     private const MESSAGE_VERSION = '2.0';
 
@@ -85,7 +85,7 @@ class NewRegistrationSender
         $header->appendChild($xml->createElement('version', self::MESSAGE_VERSION));
         $header->appendChild($xml->createElement('type', self::MESSAGE_TYPE));
         $header->appendChild($xml->createElement('timestamp', $timestamp));
-        $header->appendChild($xml->createElement('source', self::SOURCE));
+        $header->appendChild($xml->createElement('source', $this->resolveSource()));
         $message->appendChild($header);
 
         $body = $xml->createElement('body');
@@ -106,13 +106,16 @@ class NewRegistrationSender
             $customer->appendChild($xml->createElement('is_company_linked', !empty($data['is_company']) ? 'true' : 'false'));
         }
 
-        $contact = $xml->createElement('contact');
-        $contact->appendChild($xml->createElement('first_name', (string) $data['first_name']));
-        $contact->appendChild($xml->createElement('last_name', (string) $data['last_name']));
-        $customer->appendChild($contact);
+        // CRM main branch expects first_name/last_name directly under customer.
+        $customer->appendChild($xml->createElement('first_name', (string) $data['first_name']));
+        $customer->appendChild($xml->createElement('last_name', (string) $data['last_name']));
 
         // date_of_birth is always required by downstream CRM -> Kassa forwarding.
         $customer->appendChild($xml->createElement('date_of_birth', (string) $data['date_of_birth']));
+
+        if (!empty($data['registration_date'])) {
+            $customer->appendChild($xml->createElement('registration_date', (string) $data['registration_date']));
+        }
 
         if (!empty($data['badge_id'])) {
             $customer->appendChild($xml->createElement('badge_id', (string) $data['badge_id']));
@@ -170,6 +173,11 @@ class NewRegistrationSender
         }
 
         $body->appendChild($customer);
+
+        if (!empty($data['session_id'])) {
+            $body->appendChild($xml->createElement('session_id', (string) $data['session_id']));
+        }
+
         $message->appendChild($body);
 
         return $xml->saveXML() ?: '';
@@ -211,5 +219,10 @@ class NewRegistrationSender
         }
 
         return trim((string) $value);
+    }
+
+    private function resolveSource(): string
+    {
+        return $this->getEnv('RABBITMQ_MESSAGE_SOURCE', self::DEFAULT_SOURCE);
     }
 }
