@@ -52,6 +52,10 @@ if ([string]::IsNullOrWhiteSpace($DbPassword)) {
     throw 'Unable to determine DRUPAL_DB_PASS. Pass -DbPassword or set it in .env.'
 }
 
+if ($RabbitApiBaseUrl -match '^https?://(localhost|127\.0\.0\.1)(:\d+)?/?$' -and -not $PSBoundParameters.ContainsKey('RabbitUser')) {
+    $RabbitUser = 'guest'
+}
+
 if ([string]::IsNullOrWhiteSpace($RabbitUser)) {
     $RabbitUser = $env:RABBITMQ_USER
 }
@@ -64,6 +68,9 @@ if ([string]::IsNullOrWhiteSpace($RabbitUser)) {
 
 if ([string]::IsNullOrWhiteSpace($RabbitPassword)) {
     $RabbitPassword = $env:RABBITMQ_PASS
+}
+if ($RabbitApiBaseUrl -match '^https?://(localhost|127\.0\.0\.1)(:\d+)?/?$' -and -not $PSBoundParameters.ContainsKey('RabbitPassword')) {
+    $RabbitPassword = 'guest'
 }
 if ([string]::IsNullOrWhiteSpace($RabbitPassword)) {
     $RabbitPassword = Get-DotEnvValue -FilePath (Join-Path $repoRoot '.env') -Key 'RABBITMQ_PASS'
@@ -169,6 +176,26 @@ function Ensure-QueueExists {
     Invoke-RabbitApiRequest -Uri $uri -Method 'Put' -Body $body | Out-Null
 }
 
+function Wait-QueueIncrement {
+    param(
+        [string]$Name,
+        [int]$Baseline,
+        [int]$TimeoutSeconds = 10
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    do {
+        $current = Get-QueueCount -Name $Name
+        if ($current -ge ($Baseline + 1)) {
+            return $current
+        }
+
+        Start-Sleep -Milliseconds 500
+    } while ((Get-Date) -lt $deadline)
+
+    return Get-QueueCount -Name $Name
+}
+
 function Invoke-DbSql {
     param([string]$Sql)
 
@@ -250,7 +277,7 @@ if ([string]::IsNullOrWhiteSpace($redirectLocation) -and $redirectStatus -eq 200
     throw "Expected redirect to /register/confirmation, got '$redirectLocation'."
 }
 
-$after = Get-QueueCount -Name $QueueName
+$after = Wait-QueueIncrement -Name $QueueName -Baseline $before -TimeoutSeconds 12
 Write-Host "Queue '$QueueName' after:  $after" -ForegroundColor Cyan
 
 if (($after - $before) -ne 1) {
