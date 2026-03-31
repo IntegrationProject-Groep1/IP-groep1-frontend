@@ -1,5 +1,11 @@
+# Service container definitions for registration orchestration and payload mapping.
 services:
+  registration_form.crm_payload_builder:
+    class: Drupal\registration_form\Service\RegistrationCrmPayloadBuilder
+
   registration_form.registration_service:
     class: Drupal\registration_form\Service\RegistrationService
     arguments:
       - '@logger.factory'
+      - '@entity_type.manager'
+      - '@registration_form.crm_payload_builder'

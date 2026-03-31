@@ -1,3 +1,4 @@
+# Public routes for registration submission and confirmation display.
 registration_form.register:
   path: '/register'
   defaults:

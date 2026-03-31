@@ -3,8 +3,14 @@ declare(strict_types=1);
 
 namespace Drupal\rabbitmq_sender;
 
+/**
+ * Shared retry strategy for transient RabbitMQ publish failures.
+ */
 trait RetryTrait
 {
+    /**
+     * Executes a send operation with retry semantics for transient failures.
+     */
     private function sendWithRetry(
         callable $sendFunction,
         int $maxRetries = 3,
@@ -12,6 +18,7 @@ trait RetryTrait
     ): void {
         $attempt = 0;
 
+        // Retry up to maxRetries and rethrow on final failure.
         while ($attempt < $maxRetries) {
             try {
                 $sendFunction();

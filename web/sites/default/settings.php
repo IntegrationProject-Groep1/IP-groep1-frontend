@@ -49,12 +49,12 @@ if (getenv('DRUPAL_REVERSE_PROXY') === 'true') {
   $settings['reverse_proxy_host_header'] = 'X-Forwarded-Host';
   $settings['reverse_proxy_port_header'] = 'X-Forwarded-Port';
 
-  // Gebruik de base URL uit de docker-compose environment
+  // Use the base URL from the docker-compose environment.
   if ($base_url_env = getenv('DRUPAL_BASE_URL')) {
     $base_url = $base_url_env;
   }
 }
 
-// Voeg je Azure domein toe aan de Trusted Hosts
+// Add your Azure domain to trusted hosts.
 $settings['trusted_host_patterns'][] = '^integrationproject-2526s2-dag01\.westeurope\.cloudapp\.azure\.com$';
 $settings['trusted_host_patterns'][] = '^integrationproject-2526s2-dag01\.westeurope\.cloudapp\.azure\.com:30020$';

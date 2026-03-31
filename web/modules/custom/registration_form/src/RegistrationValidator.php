@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Drupal\registration_form;
 
+/**
+ * Validates registration form data against business rules.
+ */
 class RegistrationValidator
 {
     // Regex for UUID v1–v5 format.

@@ -5,14 +5,30 @@ declare(strict_types=1);
 namespace Drupal\registration_form\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
-use Symfony\Component\HttpFoundation\Request;
+use Drupal\Core\TempStore\PrivateTempStoreFactory;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
+/**
+ * Renders the post-registration confirmation page.
+ */
 class ConfirmationController extends ControllerBase
 {
-    public function page(Request $request): array
+    public function __construct(
+        private readonly PrivateTempStoreFactory $tempStoreFactory,
+    ) {}
+
+    public static function create(ContainerInterface $container): static
     {
-        $session = $request->query->get('session', '');
-        $name    = $request->query->get('name', '');
+        return new static(
+            $container->get('tempstore.private'),
+        );
+    }
+
+    public function page(): array
+    {
+        $data = $this->tempStoreFactory->get('registration_form')->get('confirmation') ?? [];
+        $session = (string) ($data['session'] ?? '');
+        $name = (string) ($data['name'] ?? '');
 
         return [
             '#theme'   => 'registration_confirmation',

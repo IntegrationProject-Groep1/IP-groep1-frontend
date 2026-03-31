@@ -6,6 +6,9 @@ namespace Drupal\rabbitmq_receiver;
 use Drupal\rabbitmq_sender\RabbitMQClient;
 use PhpAmqpLib\Message\AMQPMessage;
 
+/**
+ * Consumes payment registration events from RabbitMQ.
+ */
 class PaymentRegisteredReceiver
 {
     private RabbitMQClient $client;
@@ -78,7 +81,7 @@ class PaymentRegisteredReceiver
                 throw new \InvalidArgumentException('status is required');
             }
 
-            // Update payment_status in Drupal database
+            // Update payment status in Drupal storage.
             echo "Payment registered: {$userId} - {$status}\n";
 
             $msg->ack();
