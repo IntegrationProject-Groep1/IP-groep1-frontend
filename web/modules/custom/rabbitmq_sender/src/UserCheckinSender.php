@@ -49,20 +49,21 @@ class UserCheckinSender
         $timestamp = (new \DateTime())->format('c');
 
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message>';
+        $xml .= '<message xmlns="urn:integration:planning:v1">';
         $xml .= '<header>';
         $xml .= "<message_id>{$messageId}</message_id>";
         $xml .= "<timestamp>{$timestamp}</timestamp>";
         $xml .= '<source>frontend.drupal</source>';
         $xml .= '<receiver>monitoring.elastic</receiver>';
-        $xml .= '<event_type>user.checkin</event_type>';
+        $xml .= '<type>user.checkin</type>';
         $xml .= '<version>1.0</version>';
+        $xml .= '<correlation_id></correlation_id>';
         $xml .= '</header>';
-        $xml .= '<payload>';
+        $xml .= '<body>';
         $xml .= '<user_id>' . htmlspecialchars($data['user_id'], ENT_XML1, 'UTF-8') . '</user_id>';
         $xml .= '<badge_id>' . htmlspecialchars($data['badge_id'], ENT_XML1, 'UTF-8') . '</badge_id>';
         $xml .= "<timestamp>{$timestamp}</timestamp>";
-        $xml .= '</payload>';
+        $xml .= '</body>';
         $xml .= '</message>';
 
         return $xml;

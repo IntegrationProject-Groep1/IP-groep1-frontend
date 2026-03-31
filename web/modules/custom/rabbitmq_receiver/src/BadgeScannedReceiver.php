@@ -51,8 +51,8 @@ class BadgeScannedReceiver
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
-        $userId = (string) $xml->payload->user_id;
-        $badgeId = (string) $xml->payload->badge_id;
+        $userId = (string) $xml->body->user_id;
+        $badgeId = (string) $xml->body->badge_id;
 
         if (empty($userId)) {
             throw new \InvalidArgumentException('user_id is required');
@@ -73,8 +73,8 @@ class BadgeScannedReceiver
                 throw new \InvalidArgumentException('Invalid XML received');
             }
 
-            $userId = (string) $xml->payload->user_id;
-            $badgeId = (string) $xml->payload->badge_id;
+            $userId = (string) $xml->body->user_id;
+            $badgeId = (string) $xml->body->badge_id;
 
             if (empty($userId)) {
                 throw new \InvalidArgumentException('user_id is required');
