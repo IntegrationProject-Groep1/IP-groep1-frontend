@@ -3,6 +3,10 @@ param(
     [string]$QueueName = 'crm.incoming',
     [string]$DbService = 'frontend_db',
     [string]$RabbitService = 'rabbitmq_local',
+    [string]$RabbitApiBaseUrl = 'http://localhost:15672',
+    [string]$RabbitUser,
+    [string]$RabbitPassword,
+    [string]$RabbitVhost = '/',
     [string]$DbName = 'drupal',
     [string]$DbUser = 'drupal_user',
     [string]$DbPassword,
@@ -48,6 +52,26 @@ if ([string]::IsNullOrWhiteSpace($DbPassword)) {
     throw 'Unable to determine DRUPAL_DB_PASS. Pass -DbPassword or set it in .env.'
 }
 
+if ([string]::IsNullOrWhiteSpace($RabbitUser)) {
+    $RabbitUser = $env:RABBITMQ_USER
+}
+if ([string]::IsNullOrWhiteSpace($RabbitUser)) {
+    $RabbitUser = Get-DotEnvValue -FilePath (Join-Path $repoRoot '.env') -Key 'RABBITMQ_USER'
+}
+if ([string]::IsNullOrWhiteSpace($RabbitUser)) {
+    $RabbitUser = 'guest'
+}
+
+if ([string]::IsNullOrWhiteSpace($RabbitPassword)) {
+    $RabbitPassword = $env:RABBITMQ_PASS
+}
+if ([string]::IsNullOrWhiteSpace($RabbitPassword)) {
+    $RabbitPassword = Get-DotEnvValue -FilePath (Join-Path $repoRoot '.env') -Key 'RABBITMQ_PASS'
+}
+if ([string]::IsNullOrWhiteSpace($RabbitPassword)) {
+    $RabbitPassword = 'guest'
+}
+
 $composeFiles = @('docker-compose.yml')
 $localOverride = Join-Path $repoRoot 'docker-compose.local.yml'
 if (Test-Path -Path $localOverride) {
@@ -68,17 +92,81 @@ function Invoke-Compose {
     & docker @args
 }
 
+function New-RabbitAuthHeader {
+    param(
+        [string]$User,
+        [string]$Password
+    )
+
+    $value = 'Basic ' + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("$User`:$Password"))
+    return @{ Authorization = $value }
+}
+
+function Invoke-RabbitApiRequest {
+    param(
+        [string]$Uri,
+        [string]$Method = 'Get',
+        [string]$Body = ''
+    )
+
+    $headers = New-RabbitAuthHeader -User $RabbitUser -Password $RabbitPassword
+    $params = @{
+        Uri = $Uri
+        Method = $Method
+        Headers = $headers
+        UseBasicParsing = $true
+        ErrorAction = 'Stop'
+    }
+
+    if ($Body -ne '') {
+        $params['Body'] = $Body
+        $params['ContentType'] = 'application/json'
+    }
+
+    try {
+        return Invoke-WebRequest @params
+    } catch {
+        $statusCode = if ($_.Exception.Response) { $_.Exception.Response.StatusCode.value__ } else { 0 }
+        $canFallback = ($RabbitUser -ne 'guest' -or $RabbitPassword -ne 'guest') -and ($statusCode -eq 401 -or $statusCode -eq 403)
+
+        if (-not $canFallback) {
+            throw
+        }
+
+        $fallbackHeaders = New-RabbitAuthHeader -User 'guest' -Password 'guest'
+        $params['Headers'] = $fallbackHeaders
+        return Invoke-WebRequest @params
+    }
+}
+
 function Get-QueueCount {
     param([string]$Name)
 
-    # Query queue metrics directly from RabbitMQ for a deterministic before/after check.
-    $raw = Invoke-Compose -Arguments @('exec', '-T', $RabbitService, 'rabbitmqctl', 'list_queues', 'name', 'messages')
-    $line = ($raw | Select-String "^$([regex]::Escape($Name))\s+") | Select-Object -First 1
-    if (-not $line) {
-        throw "Queue '$Name' not found."
-    }
+    $vhostEncoded = [System.Uri]::EscapeDataString($RabbitVhost)
+    $queueEncoded = [System.Uri]::EscapeDataString($Name)
+    $uri = "$RabbitApiBaseUrl/api/queues/$vhostEncoded/$queueEncoded"
 
-    return [int](($line.ToString().Trim() -split '\s+')[-1])
+    try {
+        $response = Invoke-RabbitApiRequest -Uri $uri -Method 'Get'
+        $data = $response.Content | ConvertFrom-Json
+        return [int]($data.messages ?? 0)
+    } catch {
+        if ($_.Exception.Response -and $_.Exception.Response.StatusCode.value__ -eq 404) {
+            return 0
+        }
+        throw
+    }
+}
+
+function Ensure-QueueExists {
+    param([string]$Name)
+
+    $vhostEncoded = [System.Uri]::EscapeDataString($RabbitVhost)
+    $queueEncoded = [System.Uri]::EscapeDataString($Name)
+    $uri = "$RabbitApiBaseUrl/api/queues/$vhostEncoded/$queueEncoded"
+    $body = '{"durable":true,"auto_delete":false,"arguments":{}}'
+
+    Invoke-RabbitApiRequest -Uri $uri -Method 'Put' -Body $body | Out-Null
 }
 
 function Invoke-DbSql {
@@ -101,6 +189,7 @@ $email = "smoke.$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())@example.test"
 $smokePassword = "Smk!$([Guid]::NewGuid().ToString('N').Substring(0, 12))"
 Write-Host "Smoke registration email: $email" -ForegroundColor Cyan
 
+Ensure-QueueExists -Name $QueueName
 $before = Get-QueueCount -Name $QueueName
 Write-Host "Queue '$QueueName' before: $before" -ForegroundColor Cyan
 

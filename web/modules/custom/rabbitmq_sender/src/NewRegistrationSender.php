@@ -49,6 +49,8 @@ class NewRegistrationSender
 
         try {
             $this->sendWithRetry(function () use ($xml): void {
+                // Ensure target queue exists before publishing to the default exchange.
+                $this->resolveClient()->declareQueue(self::QUEUE_NAME);
                 $msg = new AMQPMessage($xml, [
                     'delivery_mode' => 2,
                     'content_type' => 'application/xml',
