@@ -25,9 +25,9 @@ class BadgeScannedReceiverTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message><payload>';
+        $xml .= '<message><body>';
         $xml .= '<badge_id>nfc-badge-abc123</badge_id>';
-        $xml .= '</payload></message>';
+        $xml .= '</body></message>';
         $this->receiver->processMessageFromXml($xml);
     }
 
@@ -35,19 +35,19 @@ class BadgeScannedReceiverTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message><payload>';
+        $xml .= '<message><body>';
         $xml .= '<user_id>uuid-v4-hier</user_id>';
-        $xml .= '</payload></message>';
+        $xml .= '</body></message>';
         $this->receiver->processMessageFromXml($xml);
     }
 
     public function test_valid_xml_is_processed_correctly(): void
     {
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message><payload>';
+        $xml .= '<message><body>';
         $xml .= '<user_id>uuid-v4-hier</user_id>';
         $xml .= '<badge_id>nfc-badge-abc123</badge_id>';
-        $xml .= '</payload></message>';
+        $xml .= '</body></message>';
         $result = $this->receiver->processMessageFromXml($xml);
         $this->assertTrue($result);
     }

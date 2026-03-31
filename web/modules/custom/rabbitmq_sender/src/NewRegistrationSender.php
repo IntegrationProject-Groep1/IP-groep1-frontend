@@ -56,7 +56,7 @@ class NewRegistrationSender
         $timestamp = (new \DateTime())->format('c');
 
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message>';
+        $xml .= '<message xmlns="urn:integration:planning:v1">';
         $xml .= '<header>';
         $xml .= "<message_id>{$messageId}</message_id>";
         $xml .= "<timestamp>{$timestamp}</timestamp>";
@@ -64,8 +64,9 @@ class NewRegistrationSender
         $xml .= '<receiver>crm.salesforce planning.outlook mailing.sendgrid</receiver>';
         $xml .= '<type>new.registration</type>';
         $xml .= '<version>1.0</version>';
+        $xml .= '<correlation_id></correlation_id>';
         $xml .= '</header>';
-        $xml .= '<payload>';
+        $xml .= '<body>';
         $xml .= '<user>';
         $xml .= '<first_name>' . htmlspecialchars($data['first_name'] ?? '', ENT_XML1, 'UTF-8') . '</first_name>';
         $xml .= '<last_name>' . htmlspecialchars($data['last_name'] ?? '', ENT_XML1, 'UTF-8') . '</last_name>';
@@ -85,7 +86,7 @@ class NewRegistrationSender
         $xml .= '<name>' . htmlspecialchars($data['session_name'] ?? '', ENT_XML1, 'UTF-8') . '</name>';
         $xml .= '</session>';
         $xml .= '<payment_status>pending</payment_status>';
-        $xml .= '</payload>';
+        $xml .= '</body>';
         $xml .= '</message>';
 
         return $xml;

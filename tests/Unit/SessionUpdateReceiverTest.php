@@ -22,10 +22,10 @@ class SessionUpdateReceiverTest extends TestCase
         $receiver = new SessionUpdateReceiver($stubClient);
 
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message><payload>';
+        $xml .= '<message><body>';
         $xml .= '<new_time>14:00</new_time>';
         $xml .= '<location>Zaal A</location>';
-        $xml .= '</payload></message>';
+        $xml .= '</body></message>';
 
         $this->expectException(\InvalidArgumentException::class);
         $receiver->processMessageFromXml($xml);
@@ -37,11 +37,11 @@ class SessionUpdateReceiverTest extends TestCase
         $receiver = new SessionUpdateReceiver($stubClient);
 
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message><payload>';
+        $xml .= '<message><body>';
         $xml .= '<session_id>session-uuid-001</session_id>';
         $xml .= '<new_time>14:00</new_time>';
         $xml .= '<location>Zaal A</location>';
-        $xml .= '</payload></message>';
+        $xml .= '</body></message>';
 
         $result = $receiver->processMessageFromXml($xml);
         $this->assertTrue($result);

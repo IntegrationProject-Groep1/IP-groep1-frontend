@@ -53,7 +53,7 @@ class UserUnregisteredSender
         $timestamp = (new \DateTime())->format('c');
 
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message>';
+        $xml .= '<message xmlns="urn:integration:planning:v1">';
         $xml .= '<header>';
         $xml .= "<message_id>{$messageId}</message_id>";
         $xml .= "<timestamp>{$timestamp}</timestamp>";
@@ -61,12 +61,13 @@ class UserUnregisteredSender
         $xml .= '<receiver>crm.salesforce planning.outlook mailing.sendgrid</receiver>';
         $xml .= '<type>user.unregistered</type>';
         $xml .= '<version>1.0</version>';
+        $xml .= '<correlation_id></correlation_id>';
         $xml .= '</header>';
-        $xml .= '<payload>';
+        $xml .= '<body>';
         $xml .= '<user_id>' . htmlspecialchars($data['user_id'], ENT_XML1, 'UTF-8') . '</user_id>';
         $xml .= '<session_id>' . htmlspecialchars($data['session_id'], ENT_XML1, 'UTF-8') . '</session_id>';
         $xml .= "<timestamp>{$timestamp}</timestamp>";
-        $xml .= '</payload>';
+        $xml .= '</body>';
         $xml .= '</message>';
 
         return $xml;

@@ -49,7 +49,7 @@ class SessionUpdateReceiver
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
-        $sessionId = (string) $xml->payload->session_id;
+        $sessionId = (string) $xml->body->session_id;
 
         if (empty($sessionId)) {
             throw new \InvalidArgumentException('session_id is required');
@@ -67,9 +67,9 @@ class SessionUpdateReceiver
                 throw new \InvalidArgumentException('Invalid XML received');
             }
 
-            $sessionId = (string) $xml->payload->session_id;
-            $newTime = (string) $xml->payload->new_time;
-            $newLocation = (string) $xml->payload->location;
+            $sessionId = (string) $xml->body->session_id;
+            $newTime = (string) $xml->body->new_time;
+            $newLocation = (string) $xml->body->location;
 
             if (empty($sessionId)) {
                 throw new \InvalidArgumentException('session_id is required');

@@ -25,9 +25,9 @@ class VatValidationErrorReceiverTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message><payload>';
+        $xml .= '<message><body>';
         $xml .= '<vat_number>BE0123456789</vat_number>';
-        $xml .= '</payload></message>';
+        $xml .= '</body></message>';
         $this->receiver->processMessageFromXml($xml);
     }
 
@@ -35,20 +35,20 @@ class VatValidationErrorReceiverTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message><payload>';
+        $xml .= '<message><body>';
         $xml .= '<user_id>uuid-v4-hier</user_id>';
-        $xml .= '</payload></message>';
+        $xml .= '</body></message>';
         $this->receiver->processMessageFromXml($xml);
     }
 
     public function test_valid_xml_is_processed_correctly(): void
     {
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message><payload>';
+        $xml .= '<message><body>';
         $xml .= '<user_id>uuid-v4-hier</user_id>';
         $xml .= '<vat_number>BE0123456789</vat_number>';
         $xml .= '<error_message>Invalid VAT number</error_message>';
-        $xml .= '</payload></message>';
+        $xml .= '</body></message>';
         $result = $this->receiver->processMessageFromXml($xml);
         $this->assertTrue($result);
     }

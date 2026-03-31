@@ -46,8 +46,8 @@ class PaymentRegisteredReceiver
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
-        $userId = (string) $xml->payload->user_id;
-        $status = (string) $xml->payload->status;
+        $userId = (string) $xml->body->user_id;
+        $status = (string) $xml->body->status;
 
         if (empty($userId)) {
             throw new \InvalidArgumentException('user_id is required');
@@ -68,8 +68,8 @@ class PaymentRegisteredReceiver
                 throw new \InvalidArgumentException('Invalid XML received');
             }
 
-            $userId = (string) $xml->payload->user_id;
-            $status = (string) $xml->payload->status;
+            $userId = (string) $xml->body->user_id;
+            $status = (string) $xml->body->status;
 
             if (empty($userId)) {
                 throw new \InvalidArgumentException('user_id is required');

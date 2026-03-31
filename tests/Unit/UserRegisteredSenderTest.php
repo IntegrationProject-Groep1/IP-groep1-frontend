@@ -65,7 +65,7 @@ class UserRegisteredSenderTest extends TestCase
             'is_company' => false,
         ]);
 
-        $this->assertStringContainsString('<event_type>user.registered</event_type>', $xml);
+        $this->assertStringContainsString('<type>user.registered</type>', $xml);
         $this->assertStringContainsString('<email>jan@test.be</email>', $xml);
         $this->assertStringContainsString('<payment_status>pending</payment_status>', $xml);
     }
