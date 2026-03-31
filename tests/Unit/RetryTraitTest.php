@@ -4,6 +4,9 @@ declare(strict_types=1);
 use PHPUnit\Framework\TestCase;
 use Drupal\rabbitmq_sender\RetryTrait;
 
+/**
+ * Unit tests for retry behavior shared by RabbitMQ senders.
+ */
 class RetryTraitTest extends TestCase
 {
     public function test_succeeds_on_first_attempt(): void

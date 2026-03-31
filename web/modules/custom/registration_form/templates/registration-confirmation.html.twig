@@ -1,0 +1,31 @@
+{#
+  Template: registration-confirmation.html.twig
+  Variables:
+    - name: Full name of the registrant
+    - session: Name of the session they registered for
+#}
+<div class="registration-confirmation">
+  <div class="confirmation-card">
+    <div class="confirmation-icon">✓</div>
+    <h1>{{ 'You are registered!'|t }}</h1>
+
+    {% if name %}
+      <p class="confirmation-greeting">{{ 'Hello, @name!'|t({'@name': name}) }}</p>
+    {% endif %}
+
+    <div class="confirmation-details">
+      <h2>{{ 'Your registration details'|t }}</h2>
+      {% if session %}
+        <p><strong>{{ 'Session:'|t }}</strong> {{ session }}</p>
+      {% endif %}
+      <p><strong>{{ 'Payment status:'|t }}</strong> {{ 'Pending — pay at the event desk'|t }}</p>
+    </div>
+
+    <div class="confirmation-info">
+      <p>{{ 'A confirmation will be sent to your email shortly.'|t }}</p>
+      <p>{{ 'Please pay your registration fee at the event desk when you arrive.'|t }}</p>
+    </div>
+
+    <a href="/register" class="btn-register-another">{{ 'Register another person'|t }}</a>
+  </div>
+</div>

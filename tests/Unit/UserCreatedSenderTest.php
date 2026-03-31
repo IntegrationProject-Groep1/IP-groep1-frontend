@@ -5,6 +5,9 @@ use PHPUnit\Framework\TestCase;
 use Drupal\rabbitmq_sender\UserCreatedSender;
 use Drupal\rabbitmq_sender\RabbitMQClient;
 
+/**
+ * Unit tests for user created sender input validation and XML output.
+ */
 class UserCreatedSenderTest extends TestCase
 {
     private UserCreatedSender $sender;

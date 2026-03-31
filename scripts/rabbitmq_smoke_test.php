@@ -5,6 +5,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
 
+// Resolve broker connection settings from environment with safe local defaults.
 $host = getenv('RABBITMQ_HOST') ?: 'localhost';
 $port = (int) (getenv('RABBITMQ_PORT') ?: '5672');
 $user = getenv('RABBITMQ_USER') ?: 'guest';
@@ -18,6 +19,7 @@ try {
     $client = new RabbitMQClient($host, $port, $user, $pass, $vhost);
     $client->declareQueue($queue);
 
+    // Publish two timestamped messages to prove connectivity and publish capability.
     $payload1 = sprintf('smoke-test message 1 at %s', (new DateTimeImmutable())->format(DATE_ATOM));
     $payload2 = sprintf('smoke-test message 2 at %s', (new DateTimeImmutable())->format(DATE_ATOM));
 

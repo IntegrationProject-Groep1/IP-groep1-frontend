@@ -6,6 +6,9 @@ namespace Drupal\rabbitmq_receiver;
 use Drupal\rabbitmq_sender\RabbitMQClient;
 use PhpAmqpLib\Message\AMQPMessage;
 
+/**
+ * Consumes session update events from RabbitMQ.
+ */
 class SessionUpdateReceiver
 {
     private RabbitMQClient $client;
@@ -75,8 +78,8 @@ class SessionUpdateReceiver
                 throw new \InvalidArgumentException('session_id is required');
             }
 
-            // Update sessie in Drupal database
-            // Dit wordt later gekoppeld aan de Drupal API
+            // Update the session in Drupal storage.
+            // This placeholder will later be wired to the Drupal API/service layer.
             echo "Session updated: {$sessionId} - {$newTime} - {$newLocation}\n";
 
             $msg->ack();

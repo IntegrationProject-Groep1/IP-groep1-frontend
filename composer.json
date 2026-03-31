@@ -1,4 +1,7 @@
 {
+    "name": "integrationproject-groep1/ip-groep1-frontend",
+    "description": "Drupal frontend service for the Integration Project event platform.",
+    "license": "proprietary",
     "require": {
         "php-amqplib/php-amqplib": "^3.7"
     },

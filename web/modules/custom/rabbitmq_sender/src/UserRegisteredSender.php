@@ -5,6 +5,9 @@ namespace Drupal\rabbitmq_sender;
 
 use PhpAmqpLib\Message\AMQPMessage;
 
+/**
+ * Publishes user registration events for downstream consumers.
+ */
 class UserRegisteredSender
 {
     use RetryTrait;
@@ -21,6 +24,7 @@ class UserRegisteredSender
 
     public function send(array $data): void
     {
+        // Enforce minimum payload validity before constructing XML.
         if (empty($data['email'])) {
             throw new \InvalidArgumentException('email is required');
         }
@@ -40,6 +44,7 @@ class UserRegisteredSender
 
     public function buildXml(array $data): string
     {
+        // Generate a unique message identifier for traceability across systems.
         $messageId = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
             mt_rand(0, 0xffff), mt_rand(0, 0xffff),
             mt_rand(0, 0xffff),
