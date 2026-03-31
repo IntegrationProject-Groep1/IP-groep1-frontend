@@ -135,7 +135,7 @@ Tests are also run automatically on every push and pull request via the CI pipel
 
 ## CI/CD
 
-- **CI (`ci.yml`)**: Runs PHPUnit tests on every push to `main`, `dev`, `prod` and on pull requests.
+- **CI (`ci.yml`)**: Runs PHPUnit tests on every push to `main`, `dev`, `prod`, `feature/**`, on `v*` tags, and on pull requests.
 - **CD (`deploy.yml`)**: Builds and pushes to GHCR only for `v*` tags/releases (for example `v1.0.0`), not for normal pushes.
 
 ### Creating a Release
