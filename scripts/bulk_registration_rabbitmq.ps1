@@ -6,7 +6,9 @@ param(
     [string]$RabbitPassword,
     [string]$RabbitVhost = '/',
     [int]$Count = 5,
-    [switch]$ValidateXmlPeek
+    [switch]$ValidateXmlPeek,
+    [switch]$SkipQueueChecks,
+    [switch]$SkipTlsValidation
 )
 
 $ErrorActionPreference = 'Stop'
@@ -62,6 +64,10 @@ function Invoke-RabbitApiRequest {
         Headers = $headers
         UseBasicParsing = $true
         ErrorAction = 'Stop'
+    }
+
+    if ($SkipTlsValidation) {
+        $params['SkipCertificateCheck'] = $true
     }
 
     if ($Body -ne '') {
@@ -143,7 +149,16 @@ function Get-FormBuildId {
         [Microsoft.PowerShell.Commands.WebRequestSession]$WebSession
     )
 
-    $formPage = Invoke-WebRequest -Uri $RegisterUrl -WebSession $WebSession
+    $formParams = @{
+        Uri = $RegisterUrl
+        WebSession = $WebSession
+    }
+
+    if ($SkipTlsValidation) {
+        $formParams['SkipCertificateCheck'] = $true
+    }
+
+    $formPage = Invoke-WebRequest @formParams
     $match = [regex]::Match($formPage.Content, 'name="form_build_id" value="([^"]+)"')
 
     if (-not $match.Success -or [string]::IsNullOrWhiteSpace($match.Groups[1].Value)) {
@@ -185,7 +200,20 @@ function Invoke-DrupalRegistration {
     $redirectLocation = ''
 
     try {
-        $response = Invoke-WebRequest -Uri $RegisterUrl -Method Post -WebSession $session -Body $payload -MaximumRedirection 0 -ErrorAction Stop
+        $postParams = @{
+            Uri = $RegisterUrl
+            Method = 'Post'
+            WebSession = $session
+            Body = $payload
+            MaximumRedirection = 0
+            ErrorAction = 'Stop'
+        }
+
+        if ($SkipTlsValidation) {
+            $postParams['SkipCertificateCheck'] = $true
+        }
+
+        $response = Invoke-WebRequest @postParams
         $redirectStatus = [int]$response.StatusCode
         $redirectLocation = [string]($response.Headers['Location'] ?? $response.Headers.Location)
     } catch {
@@ -284,9 +312,11 @@ Write-Host "Start bulk-registratie run: $Count registraties" -ForegroundColor Cy
 Write-Host "BaseUrl: $BaseUrl" -ForegroundColor DarkCyan
 Write-Host "Queue: $QueueName" -ForegroundColor DarkCyan
 
-Ensure-QueueExists -Name $QueueName
-$before = Get-QueueCount -Name $QueueName
-Write-Host "Queue '$QueueName' before: $before" -ForegroundColor Cyan
+if (-not $SkipQueueChecks) {
+    Ensure-QueueExists -Name $QueueName
+    $before = Get-QueueCount -Name $QueueName
+    Write-Host "Queue '$QueueName' before: $before" -ForegroundColor Cyan
+}
 
 $index = 0
 foreach ($registration in $registrations) {
@@ -295,15 +325,17 @@ foreach ($registration in $registrations) {
     Invoke-DrupalRegistration -RegisterUrl $registerUrl -RegistrationData $registration
 }
 
-$after = Wait-QueueCountIncrease -Name $QueueName -Baseline $before -ExpectedIncrease $Count -TimeoutSeconds 35
-Write-Host "Queue '$QueueName' after:  $after" -ForegroundColor Cyan
+if (-not $SkipQueueChecks) {
+    $after = Wait-QueueCountIncrease -Name $QueueName -Baseline $before -ExpectedIncrease $Count -TimeoutSeconds 35
+    Write-Host "Queue '$QueueName' after:  $after" -ForegroundColor Cyan
 
-$delta = $after - $before
-if ($delta -lt $Count) {
-    throw "Verwachtte queue-toename van minstens +$Count, maar kreeg +$delta."
+    $delta = $after - $before
+    if ($delta -lt $Count) {
+        throw "Verwachtte queue-toename van minstens +$Count, maar kreeg +$delta."
+    }
 }
 
-if ($ValidateXmlPeek) {
+if ($ValidateXmlPeek -and -not $SkipQueueChecks) {
     $peekCount = [Math]::Min($Count, 20)
     $messages = Get-QueueMessages -Name $QueueName -MessageCount $peekCount
 
@@ -326,7 +358,11 @@ if ($ValidateXmlPeek) {
     Write-Host "XML validatie geslaagd: $xmlMatches gepeekte berichten bevatten new_registration XML." -ForegroundColor Green
 }
 
-Write-Host "BULK TEST GESLAAGD: $Count registraties ingestuurd en RabbitMQ queue steeg met +$delta." -ForegroundColor Green
+if ($SkipQueueChecks) {
+    Write-Host "BULK TEST GESLAAGD: $Count registraties ingestuurd (queue-check overgeslagen)." -ForegroundColor Green
+} else {
+    Write-Host "BULK TEST GESLAAGD: $Count registraties ingestuurd en RabbitMQ queue steeg met +$delta." -ForegroundColor Green
+}
 Write-Host 'Gebruikte e-mails:' -ForegroundColor Cyan
 foreach ($registration in $registrations) {
     Write-Host ("- " + $registration.email)
