@@ -192,11 +192,11 @@ class NewRegistrationSender
 
         // Fall back to environment configuration when no client is injected.
         $this->client = new RabbitMQClient(
-            $this->getEnv('RABBITMQ_HOST', 'rabbitmq_broker'),
-            (int) $this->getEnv('RABBITMQ_PORT', '5672'),
-            $this->getEnv('RABBITMQ_USER', 'guest'),
-            $this->getEnv('RABBITMQ_PASS', 'guest'),
-            $this->getEnv('RABBITMQ_VHOST', '/')
+            getenv('RABBITMQ_HOST') ?: 'rabbitmq_broker',
+            (int) (getenv('RABBITMQ_PORT') ?: '5672'),
+            getenv('RABBITMQ_USER') ?: 'guest',
+            getenv('RABBITMQ_PASS') ?: 'guest',
+            getenv('RABBITMQ_VHOST') ?: '/'
         );
         $timestamp = (new \DateTime())->format('c');
 
