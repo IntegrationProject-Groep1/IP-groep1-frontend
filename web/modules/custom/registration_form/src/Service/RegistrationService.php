@@ -57,7 +57,15 @@ class RegistrationService
                 '@host' => $this->resolveRabbitMqHost(),
                 '@message' => $e->getMessage(),
             ]);
-            // Keep local account so the user can still authenticate even if CRM is temporarily unavailable.
+
+            if ($this->mustRequireRabbitMqSync()) {
+                // In strict integration mode we avoid false-positive UI success by rolling back
+                // the local user when CRM publication fails.
+                $user->delete();
+                throw new \InvalidArgumentException('Registration could not be synchronized to CRM. Please try again in a few minutes.');
+            }
+
+            // Default behavior: keep local account so the user can still authenticate even if CRM is temporarily unavailable.
         }
 
         if ($rabbitSent) {
@@ -157,6 +165,17 @@ class RegistrationService
         }
 
         return trim((string) $value);
+    }
+
+    private function mustRequireRabbitMqSync(): bool
+    {
+        $value = getenv('REGISTRATION_REQUIRE_RABBITMQ_SYNC');
+
+        if ($value === false) {
+            return true;
+        }
+
+        return in_array(strtolower(trim((string) $value)), ['1', 'true', 'yes', 'on'], true);
     }
 
 }

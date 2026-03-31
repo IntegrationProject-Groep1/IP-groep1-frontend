@@ -43,6 +43,7 @@ services:
       RABBITMQ_PASS: ${RABBITMQ_PASS}
       RABBITMQ_VHOST: ${RABBITMQ_VHOST:-/}
       RABBITMQ_PREFIX: ${RABBITMQ_PREFIX:-frontend.}
+      REGISTRATION_REQUIRE_RABBITMQ_SYNC: ${REGISTRATION_REQUIRE_RABBITMQ_SYNC:-1}
     volumes:
       - ./web/modules/custom:/var/www/html/modules/custom
       - ./web/themes/custom:/var/www/html/themes/custom
