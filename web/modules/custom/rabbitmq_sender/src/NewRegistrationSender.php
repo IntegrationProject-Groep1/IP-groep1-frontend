@@ -198,42 +198,7 @@ class NewRegistrationSender
             getenv('RABBITMQ_PASS') ?: 'guest',
             getenv('RABBITMQ_VHOST') ?: '/'
         );
-        $timestamp = (new \DateTime())->format('c');
 
-        $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message xmlns="urn:integration:planning:v1">';
-        $xml .= '<header>';
-        $xml .= "<message_id>{$messageId}</message_id>";
-        $xml .= "<timestamp>{$timestamp}</timestamp>";
-        $xml .= '<source>frontend.drupal</source>';
-        $xml .= '<receiver>crm.salesforce planning.outlook mailing.sendgrid</receiver>';
-        $xml .= '<type>new.registration</type>';
-        $xml .= '<version>1.0</version>';
-        $xml .= '<correlation_id></correlation_id>';
-        $xml .= '</header>';
-        $xml .= '<body>';
-        $xml .= '<user>';
-        $xml .= '<first_name>' . htmlspecialchars($data['first_name'] ?? '', ENT_XML1, 'UTF-8') . '</first_name>';
-        $xml .= '<last_name>' . htmlspecialchars($data['last_name'] ?? '', ENT_XML1, 'UTF-8') . '</last_name>';
-        $xml .= '<email>' . htmlspecialchars($data['email'], ENT_XML1, 'UTF-8') . '</email>';
-        $xml .= '<is_company>' . (!empty($data['is_company']) ? 'true' : 'false') . '</is_company>';
-
-        if (!empty($data['is_company'])) {
-            $xml .= '<company>';
-            $xml .= '<name>' . htmlspecialchars($data['company_name'] ?? '', ENT_XML1, 'UTF-8') . '</name>';
-            $xml .= '<vat_number>' . htmlspecialchars($data['vat_number'] ?? '', ENT_XML1, 'UTF-8') . '</vat_number>';
-            $xml .= '</company>';
-        }
-
-        $xml .= '</user>';
-        $xml .= '<session>';
-        $xml .= '<id>' . htmlspecialchars($data['session_id'], ENT_XML1, 'UTF-8') . '</id>';
-        $xml .= '<name>' . htmlspecialchars($data['session_name'] ?? '', ENT_XML1, 'UTF-8') . '</name>';
-        $xml .= '</session>';
-        $xml .= '<payment_status>pending</payment_status>';
-        $xml .= '</body>';
-        $xml .= '</message>';
-
-        return $xml;
+        return $this->client;
     }
 }
