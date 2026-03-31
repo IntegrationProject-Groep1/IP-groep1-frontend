@@ -7,7 +7,6 @@ namespace Drupal\registration_form\Service;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\rabbitmq_sender\NewRegistrationSender;
-use Drupal\rabbitmq_sender\RabbitMQClient;
 use Drupal\user\Entity\User;
 
 /**
@@ -54,7 +53,8 @@ class RegistrationService
             $this->registrationSender->send($payload);
             $rabbitSent = true;
         } catch (\Throwable $e) {
-            $logger->error('RabbitMQ publish failed to host rabbitmq_broker: @message', [
+            $logger->error('RabbitMQ publish failed to host @host: @message', [
+                '@host' => $this->resolveRabbitMqHost(),
                 '@message' => $e->getMessage(),
             ]);
             // Keep local account so the user can still authenticate even if CRM is temporarily unavailable.
@@ -94,7 +94,12 @@ class RegistrationService
         $storage = $this->entityTypeManager->getStorage('user');
         $existingIds = $storage->getQuery()
             ->accessCheck(false)
-            ->condition('mail', $email)
+            ->condition(
+                $storage->getQuery()
+                    ->orConditionGroup()
+                    ->condition('mail', $email)
+                    ->condition('name', $email)
+            )
             ->range(0, 1)
             ->execute();
 
@@ -138,6 +143,17 @@ class RegistrationService
 
         if ($value === false || trim($value) === '') {
             return $default;
+        }
+
+        return trim((string) $value);
+    }
+
+    private function resolveRabbitMqHost(): string
+    {
+        $value = getenv('RABBITMQ_HOST');
+
+        if ($value === false || trim($value) === '') {
+            return 'rabbitmq_broker';
         }
 
         return trim((string) $value);
