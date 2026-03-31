@@ -7,6 +7,9 @@ use Drupal\registration_form\RegistrationValidator;
 use Drupal\registration_form\RegistrationRepositoryInterface;
 use Drupal\registration_form\SessionRepositoryInterface;
 
+/**
+ * Unit tests for registration validator business rules.
+ */
 class ValidationTest extends TestCase
 {
     private RegistrationRepositoryInterface $registrationRepository;

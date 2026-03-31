@@ -5,6 +5,9 @@ namespace Drupal\rabbitmq_sender;
 
 use PhpAmqpLib\Message\AMQPMessage;
 
+/**
+ * Publishes user unregistration events to downstream queues.
+ */
 class UserUnregisteredSender
 {
     use RetryTrait;
@@ -24,6 +27,7 @@ class UserUnregisteredSender
 
     public function send(array $data): void
     {
+        // Validate mandatory identifiers before broadcasting the unregistration event.
         if (empty($data['user_id'])) {
             throw new \InvalidArgumentException('user_id is required');
         }
@@ -33,6 +37,7 @@ class UserUnregisteredSender
 
         $xml = $this->buildXml($data);
 
+        // Fan out to all subscribed integration queues.
         foreach (self::QUEUES as $queue) {
             $this->sendWithRetry(function () use ($xml, $queue): void {
                 $msg = new AMQPMessage($xml, ['delivery_mode' => 2]);
@@ -43,6 +48,7 @@ class UserUnregisteredSender
 
     public function buildXml(array $data): string
     {
+        // Generate an event-scoped identifier for traceability in downstream systems.
         $messageId = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
             mt_rand(0, 0xffff), mt_rand(0, 0xffff),
             mt_rand(0, 0xffff),

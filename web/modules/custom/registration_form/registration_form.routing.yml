@@ -1,7 +1,16 @@
+# Public routes for registration submission and confirmation display.
 registration_form.register:
   path: '/register'
   defaults:
     _form: '\Drupal\registration_form\Form\RegistrationForm'
     _title: 'Register for a session'
+  requirements:
+    _access: 'TRUE'
+
+registration_form.confirmation:
+  path: '/register/confirmation'
+  defaults:
+    _controller: '\Drupal\registration_form\Controller\ConfirmationController::page'
+    _title: 'Registration confirmed'
   requirements:
     _access: 'TRUE'

@@ -5,6 +5,9 @@ use PHPUnit\Framework\TestCase;
 use Drupal\rabbitmq_receiver\SessionUpdateReceiver;
 use Drupal\rabbitmq_sender\RabbitMQClient;
 
+/**
+ * Unit tests for session update receiver XML validation.
+ */
 class SessionUpdateReceiverTest extends TestCase
 {
     public function test_throws_exception_when_xml_is_invalid(): void

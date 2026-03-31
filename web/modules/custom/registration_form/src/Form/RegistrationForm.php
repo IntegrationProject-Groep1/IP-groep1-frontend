@@ -6,19 +6,26 @@ namespace Drupal\registration_form\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\TempStore\PrivateTempStoreFactory;
+use Drupal\Core\Url;
 use Drupal\registration_form\Service\RegistrationService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
+/**
+ * Builds and validates the public registration form.
+ */
 class RegistrationForm extends FormBase
 {
     public function __construct(
         private readonly RegistrationService $registrationService,
+        private readonly PrivateTempStoreFactory $tempStoreFactory,
     ) {}
 
     public static function create(ContainerInterface $container): static
     {
         return new static(
             $container->get('registration_form.registration_service'),
+            $container->get('tempstore.private'),
         );
     }
 
@@ -44,6 +51,30 @@ class RegistrationForm extends FormBase
         $form['email'] = [
             '#type'     => 'email',
             '#title'    => $this->t('Email address'),
+            '#required' => true,
+        ];
+
+        $form['password'] = [
+            '#type'     => 'password',
+            '#title'    => $this->t('Password'),
+            '#required' => true,
+            '#attributes' => [
+                'autocomplete' => 'new-password',
+            ],
+        ];
+
+        $form['password_confirm'] = [
+            '#type'     => 'password',
+            '#title'    => $this->t('Confirm password'),
+            '#required' => true,
+            '#attributes' => [
+                'autocomplete' => 'new-password',
+            ],
+        ];
+
+        $form['date_of_birth'] = [
+            '#type'     => 'date',
+            '#title'    => $this->t('Date of birth'),
             '#required' => true,
         ];
 
@@ -103,6 +134,16 @@ class RegistrationForm extends FormBase
     public function validateForm(array &$form, FormStateInterface $form_state): void
     {
         $isCompany = (bool) $form_state->getValue('is_company');
+        $password = (string) $form_state->getValue('password');
+        $passwordConfirm = (string) $form_state->getValue('password_confirm');
+
+        if (strlen($password) < 8) {
+            $form_state->setErrorByName('password', $this->t('Password must be at least 8 characters long.'));
+        }
+
+        if ($password !== $passwordConfirm) {
+            $form_state->setErrorByName('password_confirm', $this->t('Password confirmation does not match.'));
+        }
 
         if ($isCompany && empty(trim((string) $form_state->getValue('company_name')))) {
             $form_state->setErrorByName('company_fields][company_name', $this->t('Company name is required for companies.'));
@@ -118,19 +159,30 @@ class RegistrationForm extends FormBase
         $sessionId = $form_state->getValue('session_id');
 
         $data = [
-            'first_name'   => $form_state->getValue('first_name'),
-            'last_name'    => $form_state->getValue('last_name'),
-            'email'        => $form_state->getValue('email'),
-            'session_id'   => $sessionId,
-            'session_name' => $this->getSessionOptions()[$sessionId] ?? $sessionId,
-            'is_company'   => (bool) $form_state->getValue('is_company'),
-            'company_name' => $form_state->getValue('company_name') ?? '',
-            'vat_number'   => $form_state->getValue('vat_number') ?? '',
+            'first_name'    => $form_state->getValue('first_name'),
+            'last_name'     => $form_state->getValue('last_name'),
+            'email'         => $form_state->getValue('email'),
+            'password'      => $form_state->getValue('password'),
+            'date_of_birth' => $form_state->getValue('date_of_birth') ?? '',
+            'session_id'    => $sessionId,
+            'session_name'  => $this->getSessionOptions()[$sessionId] ?? $sessionId,
+            'is_company'    => (bool) $form_state->getValue('is_company'),
+            'company_name'  => $form_state->getValue('company_name') ?? '',
+            'vat_number'    => $form_state->getValue('vat_number') ?? '',
         ];
 
         try {
             $this->registrationService->register($data);
-            $this->messenger()->addStatus($this->t('You have been successfully registered!'));
+
+            // Keep confirmation details out of the URL.
+            $this->tempStoreFactory
+                ->get('registration_form')
+                ->set('confirmation', [
+                    'name' => trim($data['first_name'] . ' ' . $data['last_name']),
+                    'session' => (string) $data['session_name'],
+                ]);
+
+            $form_state->setRedirectUrl(Url::fromRoute('registration_form.confirmation'));
         } catch (\InvalidArgumentException $e) {
             $this->messenger()->addError($this->t('Registration failed: @error', ['@error' => $e->getMessage()]));
         }
@@ -143,9 +195,12 @@ class RegistrationForm extends FormBase
     private function getSessionOptions(): array
     {
         return [
-            '550e8400-e29b-41d4-a716-446655440000' => 'Workshop AI — 10 April 2026',
-            '550e8400-e29b-41d4-a716-446655440001' => 'Workshop Cloud — 17 April 2026',
-            '550e8400-e29b-41d4-a716-446655440002' => 'Workshop Security — 24 April 2026',
+            '550e8400-e29b-41d4-a716-446655440001' => 'Keynote: Toekomst van Tech — 23 april 2026 (14:00)',
+            '550e8400-e29b-41d4-a716-446655440002' => 'Workshop AI & Machine Learning — 23 april 2026 (15:00)',
+            '550e8400-e29b-41d4-a716-446655440003' => 'Workshop Cloud & DevOps — 23 april 2026 (15:00)',
+            '550e8400-e29b-41d4-a716-446655440004' => 'Workshop Cybersecurity — 23 april 2026 (15:00)',
+            '550e8400-e29b-41d4-a716-446655440005' => 'Prijsuitreiking Beste Eindwerken — 23 april 2026 (16:30)',
+            '550e8400-e29b-41d4-a716-446655440006' => 'Netwerkreceptie & Drinks — 23 april 2026 (18:00)',
         ];
     }
 }

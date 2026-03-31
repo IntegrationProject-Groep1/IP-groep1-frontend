@@ -2,3 +2,4 @@ vendor/
 .env
 .docker-compose.yml
 web/sites/default/files/
+project.md
