@@ -1,3 +1,4 @@
+# Module metadata for the event registration feature set.
 name: Registration Form
 type: module
 description: 'Provides the event registration form and RabbitMQ integration.'

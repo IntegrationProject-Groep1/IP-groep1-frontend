@@ -5,6 +5,9 @@ use PHPUnit\Framework\TestCase;
 use Drupal\rabbitmq_receiver\VatValidationErrorReceiver;
 use Drupal\rabbitmq_sender\RabbitMQClient;
 
+/**
+ * Unit tests for VAT validation error receiver XML validation.
+ */
 class VatValidationErrorReceiverTest extends TestCase
 {
     private VatValidationErrorReceiver $receiver;

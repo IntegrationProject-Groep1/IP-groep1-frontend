@@ -5,6 +5,9 @@ namespace Drupal\rabbitmq_sender;
 
 use PhpAmqpLib\Message\AMQPMessage;
 
+/**
+ * Publishes user check-in events to RabbitMQ.
+ */
 class UserCheckinSender
 {
     use RetryTrait;
@@ -18,6 +21,7 @@ class UserCheckinSender
 
     public function send(array $data): void
     {
+        // Validate mandatory identifiers before publishing the check-in event.
         if (empty($data['user_id'])) {
             throw new \InvalidArgumentException('user_id is required');
         }
@@ -34,6 +38,7 @@ class UserCheckinSender
 
     public function buildXml(array $data): string
     {
+        // Generate an event-scoped identifier for traceability in downstream systems.
         $messageId = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
             mt_rand(0, 0xffff), mt_rand(0, 0xffff),
             mt_rand(0, 0xffff),
@@ -50,7 +55,7 @@ class UserCheckinSender
         $xml .= "<timestamp>{$timestamp}</timestamp>";
         $xml .= '<source>frontend.drupal</source>';
         $xml .= '<receiver>monitoring.elastic</receiver>';
-        $xml .= '<type>user.checkin</type>';
+        $xml .= '<event_type>user.checkin</event_type>';
         $xml .= '<version>1.0</version>';
         $xml .= '<correlation_id></correlation_id>';
         $xml .= '</header>';

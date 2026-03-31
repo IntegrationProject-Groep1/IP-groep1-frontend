@@ -5,6 +5,9 @@ namespace Drupal\rabbitmq_sender;
 
 use PhpAmqpLib\Message\AMQPMessage;
 
+/**
+ * Publishes user creation events to RabbitMQ.
+ */
 class UserCreatedSender
 {
     use RetryTrait;
@@ -18,6 +21,7 @@ class UserCreatedSender
 
     public function send(array $data): void
     {
+        // Email is the primary identity field expected by downstream systems.
         if (empty($data['email'])) {
             throw new \InvalidArgumentException('email is required');
         }
@@ -31,6 +35,7 @@ class UserCreatedSender
 
     public function buildXml(array $data): string
     {
+        // Generate a UUID-like identifier for event-level observability.
         $messageId = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
             mt_rand(0, 0xffff), mt_rand(0, 0xffff),
             mt_rand(0, 0xffff),

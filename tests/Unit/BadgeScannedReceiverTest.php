@@ -5,6 +5,9 @@ use PHPUnit\Framework\TestCase;
 use Drupal\rabbitmq_receiver\BadgeScannedReceiver;
 use Drupal\rabbitmq_sender\RabbitMQClient;
 
+/**
+ * Unit tests for badge scanned receiver XML validation.
+ */
 class BadgeScannedReceiverTest extends TestCase
 {
     private BadgeScannedReceiver $receiver;

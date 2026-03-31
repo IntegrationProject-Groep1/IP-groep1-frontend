@@ -6,6 +6,9 @@ namespace Drupal\rabbitmq_receiver;
 use Drupal\rabbitmq_sender\RabbitMQClient;
 use PhpAmqpLib\Message\AMQPMessage;
 
+/**
+ * Consumes VAT validation error events from RabbitMQ.
+ */
 class VatValidationErrorReceiver
 {
     private RabbitMQClient $client;
@@ -79,7 +82,7 @@ class VatValidationErrorReceiver
                 throw new \InvalidArgumentException('vat_number is required');
             }
 
-            // Toon foutmelding aan gebruiker in Drupal
+            // Show the VAT validation error to the user in Drupal.
             echo "VAT validation error: {$userId} - {$vatNumber} - {$errorMessage}\n";
 
             $msg->ack();

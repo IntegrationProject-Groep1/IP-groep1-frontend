@@ -9,10 +9,9 @@ RUN apt-get update && apt-get install -y \
 # Install ext-sockets required by php-amqplib
 RUN docker-php-ext-install sockets
 
-# Add php-amqplib to the existing Drupal vendor.
-# Using 'composer require' preserves all Drupal core dependencies.
-# Never overwrite the Drupal image's composer.json.
-WORKDIR /var/www/html
+# Add php-amqplib to Drupal's project root vendor.
+# Drupal's runtime autoload resolves through /opt/drupal/autoload.php.
+WORKDIR /opt/drupal
 RUN composer require php-amqplib/php-amqplib:^3.7 --no-interaction --optimize-autoloader
 
 # Copy custom modules and themes into the Drupal web root

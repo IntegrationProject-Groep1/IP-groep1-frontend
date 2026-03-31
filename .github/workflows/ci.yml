@@ -2,20 +2,34 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ "main", "dev", "prod" ]
-    tags: [ "v*" ]
+    branches: [ "main", "dev", "prod", "feature/**" ]
   pull_request:
     branches: [ "main", "dev", "prod" ]
 
 jobs:
-  test:
+  unit-tests:
+    name: Unit Tests (PHP 8.4)
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run Tests
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run Composer Security Audit
+        run: composer audit
+
+      - name: Run PHPUnit
         run: |
-          echo "Teams: Replace this with your own test commands!"
-          echo "If these fail, Infra will NOT build the image."
-          exit 0
+          vendor/bin/phpunit tests/ --colors=never

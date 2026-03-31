@@ -5,6 +5,9 @@ use PHPUnit\Framework\TestCase;
 use Drupal\rabbitmq_receiver\PaymentRegisteredReceiver;
 use Drupal\rabbitmq_sender\RabbitMQClient;
 
+/**
+ * Unit tests for payment registered receiver XML validation.
+ */
 class PaymentRegisteredReceiverTest extends TestCase
 {
     private PaymentRegisteredReceiver $receiver;
