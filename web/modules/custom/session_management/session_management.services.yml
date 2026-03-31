@@ -1,0 +1,10 @@
+services:
+  rabbitmq_sender.calendar_invite_sender:
+    class: Drupal\rabbitmq_sender\CalendarInviteSender
+
+  session_management.session_service:
+    class: Drupal\session_management\Service\SessionService
+    arguments:
+      - '@logger.factory'
+      - '@uuid'
+      - '@rabbitmq_sender.calendar_invite_sender'

@@ -1,0 +1,5 @@
+session_management.create:
+  title: 'Create session'
+  route_name: session_management.create
+  menu_name: main
+  weight: 10

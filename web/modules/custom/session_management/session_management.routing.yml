@@ -1,0 +1,15 @@
+session_management.create:
+  path: '/session/create'
+  defaults:
+    _form: '\Drupal\session_management\Form\SessionForm'
+    _title: 'Create a session'
+  requirements:
+    _permission: 'access content'
+
+session_management.confirmation:
+  path: '/session/confirmation'
+  defaults:
+    _controller: '\Drupal\session_management\Controller\SessionConfirmationController::page'
+    _title: 'Session created'
+  requirements:
+    _permission: 'access content'
