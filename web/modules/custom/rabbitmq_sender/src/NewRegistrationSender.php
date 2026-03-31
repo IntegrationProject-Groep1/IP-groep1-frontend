@@ -200,29 +200,18 @@ class NewRegistrationSender
 
         // Fall back to environment configuration when no client is injected.
         $this->client = new RabbitMQClient(
-            $this->getEnv('RABBITMQ_HOST', 'rabbitmq_broker'),
-            (int) $this->getEnv('RABBITMQ_PORT', '5672'),
-            $this->getEnv('RABBITMQ_USER', 'guest'),
-            $this->getEnv('RABBITMQ_PASS', 'guest'),
-            $this->getEnv('RABBITMQ_VHOST', '/')
+            getenv('RABBITMQ_HOST') ?: 'rabbitmq_broker',
+            (int) (getenv('RABBITMQ_PORT') ?: '5672'),
+            getenv('RABBITMQ_USER') ?: 'guest',
+            getenv('RABBITMQ_PASS') ?: 'guest',
+            getenv('RABBITMQ_VHOST') ?: '/'
         );
 
         return $this->client;
     }
 
-    private function getEnv(string $name, string $default): string
-    {
-        $value = getenv($name);
-
-        if ($value === false || trim((string) $value) === '') {
-            return $default;
-        }
-
-        return trim((string) $value);
-    }
-
     private function resolveSource(): string
     {
-        return $this->getEnv('RABBITMQ_MESSAGE_SOURCE', self::DEFAULT_SOURCE);
+        return getenv('RABBITMQ_SOURCE') ?: self::DEFAULT_SOURCE;
     }
 }

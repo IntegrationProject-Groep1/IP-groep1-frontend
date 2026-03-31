@@ -60,6 +60,22 @@ class RabbitMQClient
         $this->getChannel()->basic_publish($message, '', $queueName);
     }
 
+    public function declareExchange(string $exchangeName, string $type = 'topic', bool $durable = true): void
+    {
+        // Declare exchange idempotently so any service can run without pre-provisioning.
+        $this->getChannel()->exchange_declare($exchangeName, $type, false, $durable, false);
+    }
+
+    public function publishToExchange(string $exchangeName, string $routingKey, string $body, int $deliveryMode = 2): void
+    {
+        // Publish to a named exchange with a routing key instead of the default direct queue.
+        $message = new AMQPMessage($body, [
+            'delivery_mode' => $deliveryMode,
+            'content_type' => 'application/xml',
+        ]);
+        $this->getChannel()->basic_publish($message, $exchangeName, $routingKey);
+    }
+
     public function close(): void
     {
         // Close channel first, then connection, to release broker resources cleanly.

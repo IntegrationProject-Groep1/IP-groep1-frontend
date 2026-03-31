@@ -49,8 +49,8 @@ class VatValidationErrorReceiver
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
-        $userId = (string) $xml->payload->user_id;
-        $vatNumber = (string) $xml->payload->vat_number;
+        $userId = (string) $xml->body->user_id;
+        $vatNumber = (string) $xml->body->vat_number;
 
         if (empty($userId)) {
             throw new \InvalidArgumentException('user_id is required');
@@ -71,9 +71,9 @@ class VatValidationErrorReceiver
                 throw new \InvalidArgumentException('Invalid XML received');
             }
 
-            $userId = (string) $xml->payload->user_id;
-            $vatNumber = (string) $xml->payload->vat_number;
-            $errorMessage = (string) $xml->payload->error_message;
+            $userId = (string) $xml->body->user_id;
+            $vatNumber = (string) $xml->body->vat_number;
+            $errorMessage = (string) $xml->body->error_message;
 
             if (empty($userId)) {
                 throw new \InvalidArgumentException('user_id is required');

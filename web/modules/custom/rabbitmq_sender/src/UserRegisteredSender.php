@@ -55,16 +55,17 @@ class UserRegisteredSender
         $timestamp = (new \DateTime())->format('c');
 
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message>';
+        $xml .= '<message xmlns="urn:integration:planning:v1">';
         $xml .= '<header>';
         $xml .= "<message_id>{$messageId}</message_id>";
         $xml .= "<timestamp>{$timestamp}</timestamp>";
-        $xml .= '<sender>frontend.drupal</sender>';
+        $xml .= '<source>frontend.drupal</source>';
         $xml .= '<receiver>crm.salesforce</receiver>';
-        $xml .= '<event_type>user.registered</event_type>';
+        $xml .= '<type>user.registered</type>';
         $xml .= '<version>1.0</version>';
+        $xml .= '<correlation_id></correlation_id>';
         $xml .= '</header>';
-        $xml .= '<payload>';
+        $xml .= '<body>';
         $xml .= '<user>';
         $xml .= '<first_name>' . htmlspecialchars($data['first_name'], ENT_XML1, 'UTF-8') . '</first_name>';
         $xml .= '<last_name>' . htmlspecialchars($data['last_name'], ENT_XML1, 'UTF-8') . '</last_name>';
@@ -84,7 +85,7 @@ class UserRegisteredSender
         $xml .= '<name>' . htmlspecialchars($data['session_name'], ENT_XML1, 'UTF-8') . '</name>';
         $xml .= '</session>';
         $xml .= '<payment_status>pending</payment_status>';
-        $xml .= '</payload>';
+        $xml .= '</body>';
         $xml .= '</message>';
 
         return $xml;
