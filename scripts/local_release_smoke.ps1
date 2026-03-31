@@ -179,6 +179,8 @@ Write-Host 'Latest registration_form watchdog entries:' -ForegroundColor Cyan
 $watchdog | ForEach-Object { Write-Host $_ }
 
 if (-not $KeepTestUser) {
+    # Local smoke optimization: direct SQL cleanup is used for speed in disposable test data.
+    # This script is not a production data-management path.
     Invoke-DbSql -Sql "SET @uid := (SELECT uid FROM users_field_data WHERE mail='$email' LIMIT 1); DELETE FROM sessions WHERE uid=@uid; DELETE FROM users_data WHERE uid=@uid; DELETE FROM user__user_picture WHERE entity_id=@uid; DELETE FROM user__roles WHERE entity_id=@uid; DELETE FROM users_field_data WHERE uid=@uid; DELETE FROM users WHERE uid=@uid;"
     Write-Host 'Temporary smoke user removed.' -ForegroundColor DarkYellow
 }

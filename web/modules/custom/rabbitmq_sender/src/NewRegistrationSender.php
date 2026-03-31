@@ -56,7 +56,7 @@ class NewRegistrationSender
                 $this->resolveClient()->getChannel()->basic_publish($msg, '', self::QUEUE_NAME);
             });
         } catch (\Throwable $e) {
-            error_log('RabbitMQ connection/publish failed for host ' . $this->getEnv('RABBITMQ_HOST', 'rabbitmq_broker') . ': ' . $e->getMessage());
+            // Let callers decide logging strategy through Drupal's logger channels.
             throw $e;
         }
     }

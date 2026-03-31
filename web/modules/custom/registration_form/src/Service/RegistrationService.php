@@ -22,6 +22,7 @@ class RegistrationService
     public function __construct(
         private readonly LoggerChannelFactoryInterface $loggerFactory,
         private readonly EntityTypeManagerInterface $entityTypeManager,
+        private readonly NewRegistrationSender $registrationSender,
         private readonly ?RegistrationCrmPayloadBuilder $crmPayloadBuilder = null,
     ) {}
 
@@ -29,7 +30,6 @@ class RegistrationService
      * Registers a user and sends a new_registration event to CRM via RabbitMQ.
      *
      * @throws \InvalidArgumentException When validation fails.
-     * @throws \RuntimeException When RabbitMQ is unreachable after retries.
      */
     public function register(array $data): void
     {
@@ -48,26 +48,16 @@ class RegistrationService
         $payloadBuilder = $this->crmPayloadBuilder ?? new RegistrationCrmPayloadBuilder();
         $payload = $payloadBuilder->build($data, (string) $user->id());
 
-        $client = new RabbitMQClient(
-            (string) (getenv('RABBITMQ_HOST') ?: 'rabbitmq_broker'),
-            (int)    (getenv('RABBITMQ_PORT') ?: 5672),
-            (string) (getenv('RABBITMQ_USER') ?: 'guest'),
-            (string) (getenv('RABBITMQ_PASS') ?: 'guest'),
-            (string) (getenv('RABBITMQ_VHOST') ?: '/'),
-        );
         $rabbitSent = false;
 
         try {
-            $sender = new NewRegistrationSender($client);
-            $sender->send($payload);
+            $this->registrationSender->send($payload);
             $rabbitSent = true;
         } catch (\Throwable $e) {
             $logger->error('RabbitMQ publish failed to host rabbitmq_broker: @message', [
                 '@message' => $e->getMessage(),
             ]);
             // Keep local account so the user can still authenticate even if CRM is temporarily unavailable.
-        } finally {
-            $client->close();
         }
 
         if ($rabbitSent) {

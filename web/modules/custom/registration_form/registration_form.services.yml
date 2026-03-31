@@ -1,5 +1,8 @@
 # Service container definitions for registration orchestration and payload mapping.
 services:
+  rabbitmq_sender.new_registration_sender:
+    class: Drupal\rabbitmq_sender\NewRegistrationSender
+
   registration_form.crm_payload_builder:
     class: Drupal\registration_form\Service\RegistrationCrmPayloadBuilder
 
@@ -8,4 +11,5 @@ services:
     arguments:
       - '@logger.factory'
       - '@entity_type.manager'
+      - '@rabbitmq_sender.new_registration_sender'
       - '@registration_form.crm_payload_builder'

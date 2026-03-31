@@ -185,8 +185,6 @@ class RegistrationForm extends FormBase
             $form_state->setRedirectUrl(Url::fromRoute('registration_form.confirmation'));
         } catch (\InvalidArgumentException $e) {
             $this->messenger()->addError($this->t('Registration failed: @error', ['@error' => $e->getMessage()]));
-        } catch (\RuntimeException $e) {
-            $this->messenger()->addError($this->t('Could not send your registration at this time. Please try again later.'));
         }
     }
 
