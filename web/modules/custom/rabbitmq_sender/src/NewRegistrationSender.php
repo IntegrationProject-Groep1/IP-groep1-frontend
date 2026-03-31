@@ -209,4 +209,9 @@ class NewRegistrationSender
 
         return $this->client;
     }
+
+    private function resolveSource(): string
+    {
+        return getenv('RABBITMQ_SOURCE') ?: self::DEFAULT_SOURCE;
+    }
 }
