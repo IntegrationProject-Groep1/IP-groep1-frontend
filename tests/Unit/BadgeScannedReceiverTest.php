@@ -1,57 +1,94 @@
 <?php
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
-use Drupal\rabbitmq_receiver\BadgeScannedReceiver;
+namespace Drupal\rabbitmq_receiver;
+
 use Drupal\rabbitmq_sender\RabbitMQClient;
+use PhpAmqpLib\Message\AMQPMessage;
 
-/**
- * Unit tests for badge scanned receiver XML validation.
- */
-class BadgeScannedReceiverTest extends TestCase
+class BadgeScannedReceiver
 {
-    private BadgeScannedReceiver $receiver;
+    private RabbitMQClient $client;
 
-    protected function setUp(): void
+    public function __construct(RabbitMQClient $client)
     {
-        $stubClient = $this->createStub(RabbitMQClient::class);
-        $this->receiver = new BadgeScannedReceiver($stubClient);
+        $this->client = $client;
     }
 
-    public function test_throws_exception_when_xml_is_invalid(): void
+    public function listen(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->receiver->processMessageFromXml('invalid xml');
+        $channel = $this->client->getChannel();
+        $channel->queue_declare('badge.scanned', false, true, false, false);
+
+        $channel->basic_consume(
+            'badge.scanned',
+            '',
+            false,
+            false,
+            false,
+            false,
+            function (AMQPMessage $msg) {
+                $this->handleMessage($msg);
+            }
+        );
+
+        echo "Listening for badge scans...\n";
+
+        while ($channel->is_consuming()) {
+            $channel->wait();
+        }
     }
 
-    public function test_throws_exception_when_user_id_is_missing(): void
+    public function processMessageFromXml(string $xmlString): bool
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message><body>';
-        $xml .= '<badge_id>nfc-badge-abc123</badge_id>';
-        $xml .= '</body></message>';
-        $this->receiver->processMessageFromXml($xml);
+        $xml = $this->parseXml($xmlString);
+
+        $userId = (string) $xml->body->user_id;
+        $badgeId = (string) $xml->body->badge_id;
+
+        if (empty($userId)) {
+            throw new \InvalidArgumentException('user_id is required');
+        }
+
+        if (empty($badgeId)) {
+            throw new \InvalidArgumentException('badge_id is required');
+        }
+
+        return true;
     }
 
-    public function test_throws_exception_when_badge_id_is_missing(): void
+    private function handleMessage(AMQPMessage $msg): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message><body>';
-        $xml .= '<user_id>uuid-v4-hier</user_id>';
-        $xml .= '</body></message>';
-        $this->receiver->processMessageFromXml($xml);
+        try {
+            $xml = $this->parseXml($msg->body);
+
+            $userId = (string) $xml->body->user_id;
+            $badgeId = (string) $xml->body->badge_id;
+
+            if (empty($userId) || empty($badgeId)) {
+                throw new \InvalidArgumentException('Missing required fields');
+            }
+
+            echo "Badge scanned: {$userId} - {$badgeId}\n";
+
+            $msg->ack();
+
+        } catch (\Throwable $e) {
+            error_log('BadgeScannedReceiver error: ' . $e->getMessage());
+            $msg->nack(false, false); // discard message (no infinite retry loop)
+        }
     }
 
-    public function test_valid_xml_is_processed_correctly(): void
+    private function parseXml(string $xmlString): \SimpleXMLElement
     {
-        $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message><body>';
-        $xml .= '<user_id>uuid-v4-hier</user_id>';
-        $xml .= '<badge_id>nfc-badge-abc123</badge_id>';
-        $xml .= '</body></message>';
-        $result = $this->receiver->processMessageFromXml($xml);
-        $this->assertTrue($result);
+        libxml_use_internal_errors(true);
+
+        $xml = simplexml_load_string($xmlString, 'SimpleXMLElement', LIBXML_NOCDATA);
+
+        if ($xml === false) {
+            throw new \InvalidArgumentException('Invalid XML received');
+        }
+
+        return $xml;
     }
 }

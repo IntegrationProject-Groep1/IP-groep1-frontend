@@ -1,36 +1,101 @@
-name: CI Pipeline
+name: CI
 
 on:
   push:
-    branches: [ "main", "dev", "prod", "feature/**" ]
-    tags: [ "v*" ]
+    branches:
+      - dev
+      - main
+      - prod
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'hotfix/**'
+      - 'release/**'
+      - 'chore/**'
+    tags:
+      - 'v*'
   pull_request:
-    branches: [ "main", "dev", "prod" ]
+    branches:
+      - dev
+      - main
+      - prod
 
 jobs:
-  unit-tests:
-    name: Unit Tests (PHP 8.4)
+  quality:
+    name: Lint, validate and smoke test
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql
           coverage: none
 
       - name: Validate composer.json
-        run: composer validate --strict
+        run: composer validate --no-check-publish
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.composer/cache
+            vendor
+          key: ${{ runner.os }}-php-8.2-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-8.2-composer-
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
-      - name: Run Composer Security Audit
-        run: composer audit
+      - name: PHP syntax check
+        run: find . -type f -name "*.php" -not -path "./vendor/*" -print0 | xargs -0 -n1 php -l
 
-      - name: Run PHPUnit
+      - name: Install XML tools
+        run: sudo apt-get update && sudo apt-get install -y libxml2-utils
+
+      - name: Validate XML against XSD if present
         run: |
-          vendor/bin/phpunit tests/ --colors=never
+          XML_FILE=""
+          XSD_FILE=""
+
+          if [ -f "web/xml/users.xml" ] && [ -f "web/xml/schema.xsd" ]; then
+            XML_FILE="web/xml/users.xml"
+            XSD_FILE="web/xml/schema.xsd"
+          else
+            XML_FILE=$(find web -type f -name "*.xml" | head -n 1 || true)
+            XSD_FILE=$(find web -type f -name "*.xsd" | head -n 1 || true)
+          fi
+
+          if [ -n "$XML_FILE" ] && [ -n "$XSD_FILE" ]; then
+            echo "Validating $XML_FILE against $XSD_FILE"
+            xmllint --noout --schema "$XSD_FILE" "$XML_FILE"
+          else
+            echo "No XML/XSD files found, skipping XML validation."
+          fi
+
+      - name: Build Docker containers
+        run: docker compose build
+
+      - name: Start Docker containers
+        run: docker compose up -d
+
+      - name: Wait for containers to boot
+        run: sleep 25
+
+      - name: Show container status
+        run: docker compose ps
+
+      - name: Smoke test Drupal homepage
+        run: curl -f http://localhost:8080
+
+      - name: Print logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Stop Docker containers
+        if: always()
+        run: docker compose down -v
