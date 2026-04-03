@@ -19,15 +19,30 @@ class SessionUpdateReceiverTest extends TestCase
         $receiver->processMessageFromXml('invalid xml');
     }
 
-    public function test_throws_exception_when_session_id_is_missing(): void
+    public function test_throws_exception_when_session_name_is_missing(): void
     {
         $stubClient = $this->createStub(RabbitMQClient::class);
         $receiver = new SessionUpdateReceiver($stubClient);
 
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
         $xml .= '<message><body>';
-        $xml .= '<new_time>14:00</new_time>';
-        $xml .= '<location>Zaal A</location>';
+        $xml .= '<status>updated</status>';
+        $xml .= '<start_time>2026-05-01T09:00:00.000Z</start_time>';
+        $xml .= '<end_time>2026-05-01T11:00:00.000Z</end_time>';
+        $xml .= '</body></message>';
+
+        $this->expectException(\InvalidArgumentException::class);
+        $receiver->processMessageFromXml($xml);
+    }
+
+    public function test_throws_exception_when_status_is_missing(): void
+    {
+        $stubClient = $this->createStub(RabbitMQClient::class);
+        $receiver = new SessionUpdateReceiver($stubClient);
+
+        $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
+        $xml .= '<message><body>';
+        $xml .= '<session_name>Workshop AI</session_name>';
         $xml .= '</body></message>';
 
         $this->expectException(\InvalidArgumentException::class);
@@ -41,9 +56,10 @@ class SessionUpdateReceiverTest extends TestCase
 
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
         $xml .= '<message><body>';
-        $xml .= '<session_id>session-uuid-001</session_id>';
-        $xml .= '<new_time>14:00</new_time>';
-        $xml .= '<location>Zaal A</location>';
+        $xml .= '<session_name>Workshop AI</session_name>';
+        $xml .= '<status>updated</status>';
+        $xml .= '<start_time>2026-05-01T09:00:00.000Z</start_time>';
+        $xml .= '<end_time>2026-05-01T11:00:00.000Z</end_time>';
         $xml .= '</body></message>';
 
         $result = $receiver->processMessageFromXml($xml);

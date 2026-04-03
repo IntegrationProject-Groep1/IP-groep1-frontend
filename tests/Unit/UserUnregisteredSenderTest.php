@@ -42,7 +42,11 @@ class UserUnregisteredSenderTest extends TestCase
         ]);
 
         $this->assertStringContainsString('<type>user.unregistered</type>', $xml);
+        $this->assertStringContainsString('<version>2.0</version>', $xml);
+        $this->assertStringContainsString('<source>frontend.drupal</source>', $xml);
         $this->assertStringContainsString('<user_id>uuid-v4-hier</user_id>', $xml);
         $this->assertStringContainsString('<session_id>session-uuid-001</session_id>', $xml);
+        $this->assertStringNotContainsString('xmlns', $xml);
+        $this->assertStringNotContainsString('<receiver>', $xml);
     }
 }

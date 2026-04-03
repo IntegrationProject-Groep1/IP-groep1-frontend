@@ -42,7 +42,11 @@ class UserCheckinSenderTest extends TestCase
         ]);
 
         $this->assertStringContainsString('<type>user.checkin</type>', $xml);
+        $this->assertStringContainsString('<version>2.0</version>', $xml);
+        $this->assertStringContainsString('<source>frontend.drupal</source>', $xml);
         $this->assertStringContainsString('<user_id>uuid-v4-hier</user_id>', $xml);
         $this->assertStringContainsString('<badge_id>nfc-badge-abc123</badge_id>', $xml);
+        $this->assertStringNotContainsString('xmlns', $xml);
+        $this->assertStringNotContainsString('<receiver>', $xml);
     }
 }

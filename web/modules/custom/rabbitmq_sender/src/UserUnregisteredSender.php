@@ -56,18 +56,16 @@ class UserUnregisteredSender
             mt_rand(0, 0x3fff) | 0x8000,
             mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
         );
-        $timestamp = (new \DateTime())->format('c');
+        $timestamp = (new \DateTime('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s.000\Z');
 
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message xmlns="urn:integration:planning:v1">';
+        $xml .= '<message>';
         $xml .= '<header>';
         $xml .= "<message_id>{$messageId}</message_id>";
+        $xml .= '<version>2.0</version>';
+        $xml .= '<type>user.unregistered</type>';
         $xml .= "<timestamp>{$timestamp}</timestamp>";
         $xml .= '<source>frontend.drupal</source>';
-        $xml .= '<receiver>crm.salesforce planning.outlook mailing.sendgrid</receiver>';
-        $xml .= '<type>user.unregistered</type>';
-        $xml .= '<version>1.0</version>';
-        $xml .= '<correlation_id></correlation_id>';
         $xml .= '</header>';
         $xml .= '<body>';
         $xml .= '<user_id>' . htmlspecialchars($data['user_id'], ENT_XML1, 'UTF-8') . '</user_id>';

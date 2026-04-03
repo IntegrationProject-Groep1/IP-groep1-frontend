@@ -37,8 +37,14 @@ class UserCreatedSenderTest extends TestCase
         ]);
 
         $this->assertStringContainsString('<type>user.created</type>', $xml);
+        $this->assertStringContainsString('<version>2.0</version>', $xml);
+        $this->assertStringContainsString('<source>frontend.drupal</source>', $xml);
+        $this->assertStringContainsString('<customer>', $xml);
         $this->assertStringContainsString('<email>jan@test.be</email>', $xml);
+        $this->assertStringContainsString('<type>private</type>', $xml);
         $this->assertStringNotContainsString('<session>', $xml);
+        $this->assertStringNotContainsString('xmlns', $xml);
+        $this->assertStringNotContainsString('<receiver>', $xml);
     }
 
     public function test_company_data_included_when_is_company_true(): void
@@ -52,6 +58,8 @@ class UserCreatedSenderTest extends TestCase
             'vat_number' => 'BE0123456789',
         ]);
 
+        $this->assertStringContainsString('<type>company</type>', $xml);
+        $this->assertStringContainsString('<company_name>Bedrijf NV</company_name>', $xml);
         $this->assertStringContainsString('<vat_number>BE0123456789</vat_number>', $xml);
     }
 }

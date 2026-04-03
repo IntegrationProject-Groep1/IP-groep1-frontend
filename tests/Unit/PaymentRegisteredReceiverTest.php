@@ -24,22 +24,23 @@ class PaymentRegisteredReceiverTest extends TestCase
         $this->receiver->processMessageFromXml('invalid xml');
     }
 
-    public function test_throws_exception_when_user_id_is_missing(): void
+    public function test_throws_exception_when_payment_context_is_missing(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
         $xml .= '<message><body>';
-        $xml .= '<status>paid</status>';
+        $xml .= '<invoice><id>inv-001</id><status>paid</status><amount_paid>99.00</amount_paid><due_date>2026-05-01</due_date></invoice>';
         $xml .= '</body></message>';
         $this->receiver->processMessageFromXml($xml);
     }
 
-    public function test_throws_exception_when_status_is_missing(): void
+    public function test_throws_exception_when_invoice_status_is_missing(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
         $xml .= '<message><body>';
-        $xml .= '<user_id>uuid-v4-hier</user_id>';
+        $xml .= '<payment_context>registration</payment_context>';
+        $xml .= '<invoice><id>inv-001</id><amount_paid>99.00</amount_paid><due_date>2026-05-01</due_date></invoice>';
         $xml .= '</body></message>';
         $this->receiver->processMessageFromXml($xml);
     }
@@ -48,8 +49,8 @@ class PaymentRegisteredReceiverTest extends TestCase
     {
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
         $xml .= '<message><body>';
-        $xml .= '<user_id>uuid-v4-hier</user_id>';
-        $xml .= '<status>paid</status>';
+        $xml .= '<payment_context>registration</payment_context>';
+        $xml .= '<invoice><id>inv-001</id><status>paid</status><amount_paid>99.00</amount_paid><due_date>2026-05-01</due_date></invoice>';
         $xml .= '</body></message>';
         $result = $this->receiver->processMessageFromXml($xml);
         $this->assertTrue($result);

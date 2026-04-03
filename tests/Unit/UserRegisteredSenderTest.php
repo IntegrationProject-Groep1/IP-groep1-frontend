@@ -14,7 +14,7 @@ class UserRegisteredSenderTest extends TestCase
 
     protected function setUp(): void
     {
-        $mockClient = $this->createStub(RabbitMQClient::class);        
+        $mockClient = $this->createStub(RabbitMQClient::class);
         $this->sender = new UserRegisteredSender($mockClient);
     }
 
@@ -25,7 +25,6 @@ class UserRegisteredSenderTest extends TestCase
             'first_name' => 'Jan',
             'last_name' => 'Jansen',
             'session_id' => 'session-uuid-001',
-            'session_name' => 'Workshop AI',
             'is_company' => false,
         ]);
     }
@@ -37,7 +36,6 @@ class UserRegisteredSenderTest extends TestCase
             'first_name' => 'Jan',
             'last_name' => 'Jansen',
             'email' => 'jan@test.be',
-            'session_name' => 'Workshop AI',
             'is_company' => false,
         ]);
     }
@@ -50,10 +48,8 @@ class UserRegisteredSenderTest extends TestCase
             'last_name' => 'Jansen',
             'email' => 'jan@test.be',
             'session_id' => 'session-uuid-001',
-            'session_name' => 'Workshop AI',
             'is_company' => true,
             'company_name' => 'Bedrijf NV',
-            // vat_number ontbreekt
         ]);
     }
 
@@ -64,12 +60,20 @@ class UserRegisteredSenderTest extends TestCase
             'last_name' => 'Jansen',
             'email' => 'jan@test.be',
             'session_id' => 'session-uuid-001',
-            'session_name' => 'Workshop AI',
             'is_company' => false,
         ]);
 
-        $this->assertStringContainsString('<type>user.registered</type>', $xml);
+        $this->assertStringContainsString('<type>new_registration</type>', $xml);
+        $this->assertStringContainsString('<version>2.0</version>', $xml);
+        $this->assertStringContainsString('<source>frontend.drupal</source>', $xml);
+        $this->assertStringContainsString('<customer>', $xml);
         $this->assertStringContainsString('<email>jan@test.be</email>', $xml);
-        $this->assertStringContainsString('<payment_status>pending</payment_status>', $xml);
+        $this->assertStringContainsString('<type>private</type>', $xml);
+        $this->assertStringContainsString('<session_id>session-uuid-001</session_id>', $xml);
+        $this->assertStringContainsString('<payment_due>', $xml);
+        $this->assertStringContainsString('<amount>0.00</amount>', $xml);
+        $this->assertStringContainsString('<status>unpaid</status>', $xml);
+        $this->assertStringNotContainsString('xmlns', $xml);
+        $this->assertStringNotContainsString('<receiver>', $xml);
     }
 }

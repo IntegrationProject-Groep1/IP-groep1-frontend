@@ -6,9 +6,6 @@ namespace Drupal\rabbitmq_receiver;
 use Drupal\rabbitmq_sender\RabbitMQClient;
 use PhpAmqpLib\Message\AMQPMessage;
 
-/**
- * Consumes session update events from RabbitMQ.
- */
 class SessionUpdateReceiver
 {
     private RabbitMQClient $client;
@@ -52,10 +49,14 @@ class SessionUpdateReceiver
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
-        $sessionId = (string) $xml->body->session_id;
+        $sessionName = (string) $xml->body->session_name;
+        $status      = (string) $xml->body->status;
 
-        if (empty($sessionId)) {
-            throw new \InvalidArgumentException('session_id is required');
+        if (empty($sessionName)) {
+            throw new \InvalidArgumentException('session_name is required');
+        }
+        if (empty($status)) {
+            throw new \InvalidArgumentException('status is required');
         }
 
         return true;
@@ -70,17 +71,20 @@ class SessionUpdateReceiver
                 throw new \InvalidArgumentException('Invalid XML received');
             }
 
-            $sessionId = (string) $xml->body->session_id;
-            $newTime = (string) $xml->body->new_time;
-            $newLocation = (string) $xml->body->location;
+            $sessionName = (string) $xml->body->session_name;
+            $status      = (string) $xml->body->status;
+            $startTime   = (string) $xml->body->start_time;
+            $endTime     = (string) $xml->body->end_time;
 
-            if (empty($sessionId)) {
-                throw new \InvalidArgumentException('session_id is required');
+            if (empty($sessionName)) {
+                throw new \InvalidArgumentException('session_name is required');
+            }
+            if (empty($status)) {
+                throw new \InvalidArgumentException('status is required');
             }
 
-            // Update the session in Drupal storage.
-            // This placeholder will later be wired to the Drupal API/service layer.
-            echo "Session updated: {$sessionId} - {$newTime} - {$newLocation}\n";
+            // Update sessie in Drupal database
+            echo "Session updated: {$sessionName} - {$status} - {$startTime} - {$endTime}\n";
 
             $msg->ack();
 

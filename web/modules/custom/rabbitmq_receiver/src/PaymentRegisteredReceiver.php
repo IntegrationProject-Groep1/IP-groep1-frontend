@@ -6,9 +6,6 @@ namespace Drupal\rabbitmq_receiver;
 use Drupal\rabbitmq_sender\RabbitMQClient;
 use PhpAmqpLib\Message\AMQPMessage;
 
-/**
- * Consumes payment registration events from RabbitMQ.
- */
 class PaymentRegisteredReceiver
 {
     private RabbitMQClient $client;
@@ -49,14 +46,14 @@ class PaymentRegisteredReceiver
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
-        $userId = (string) $xml->body->user_id;
-        $status = (string) $xml->body->status;
+        $paymentContext = (string) $xml->body->payment_context;
+        $invoiceStatus  = (string) $xml->body->invoice->status;
 
-        if (empty($userId)) {
-            throw new \InvalidArgumentException('user_id is required');
+        if (empty($paymentContext)) {
+            throw new \InvalidArgumentException('payment_context is required');
         }
-        if (empty($status)) {
-            throw new \InvalidArgumentException('status is required');
+        if (empty($invoiceStatus)) {
+            throw new \InvalidArgumentException('invoice status is required');
         }
 
         return true;
@@ -71,18 +68,21 @@ class PaymentRegisteredReceiver
                 throw new \InvalidArgumentException('Invalid XML received');
             }
 
-            $userId = (string) $xml->body->user_id;
-            $status = (string) $xml->body->status;
+            $paymentContext = (string) $xml->body->payment_context;
+            $invoiceStatus  = (string) $xml->body->invoice->status;
+            $invoiceId      = (string) $xml->body->invoice->id;
+            $amountPaid     = (string) $xml->body->invoice->amount_paid;
+            $dueDate        = (string) $xml->body->invoice->due_date;
 
-            if (empty($userId)) {
-                throw new \InvalidArgumentException('user_id is required');
+            if (empty($paymentContext)) {
+                throw new \InvalidArgumentException('payment_context is required');
             }
-            if (empty($status)) {
-                throw new \InvalidArgumentException('status is required');
+            if (empty($invoiceStatus)) {
+                throw new \InvalidArgumentException('invoice status is required');
             }
 
-            // Update payment status in Drupal storage.
-            echo "Payment registered: {$userId} - {$status}\n";
+            // Update payment in Drupal database
+            echo "Payment registered: {$paymentContext} - {$invoiceId} - {$invoiceStatus} - {$amountPaid} - {$dueDate}\n";
 
             $msg->ack();
 
