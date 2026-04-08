@@ -6,6 +6,7 @@ namespace Drupal\registration_form\Service;
 
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\rabbitmq_sender\CalendarInviteSender;
 use Drupal\rabbitmq_sender\NewRegistrationSender;
 use Drupal\user\Entity\User;
 
@@ -23,6 +24,7 @@ class RegistrationService
         private readonly EntityTypeManagerInterface $entityTypeManager,
         private readonly NewRegistrationSender $registrationSender,
         private readonly ?RegistrationCrmPayloadBuilder $crmPayloadBuilder = null,
+        private readonly ?CalendarInviteSender $calendarInviteSender = null,
     ) {}
 
     /**
@@ -76,6 +78,12 @@ class RegistrationService
             $logger->warning('Registration stored locally for @email, but CRM synchronization is pending.', [
                 '@email' => $data['email'],
             ]);
+        }
+
+        // Stuur een calendar.invite naar Planning voor elke geselecteerde sessie.
+        $sessionIds = (array) ($data['session_ids'] ?? (isset($data['session_id']) ? [$data['session_id']] : []));
+        if (!empty($sessionIds) && $this->calendarInviteSender !== null) {
+            $this->sendCalendarInvites($sessionIds);
         }
     }
 
@@ -176,6 +184,61 @@ class RegistrationService
         }
 
         return in_array(strtolower(trim((string) $value)), ['1', 'true', 'yes', 'on'], true);
+    }
+
+    /**
+     * Stuurt een calendar.invite naar Planning voor elke geselecteerde sessie.
+     * Sessie-metadata (title, start_datetime, end_datetime) wordt opgezocht in
+     * Drupal State (gevuld door SessionViewResponseReceiver).
+     * Sessies die niet in State staan worden overgeslagen met een log-warning.
+     */
+    private function sendCalendarInvites(array $sessionIds): void
+    {
+        $logger = $this->loggerFactory->get('registration_form');
+
+        $allSessions = \Drupal::state()->get('planning.sessions', []);
+        $sessionMap = [];
+        foreach ($allSessions as $session) {
+            if (!empty($session['session_id'])) {
+                $sessionMap[(string) $session['session_id']] = $session;
+            }
+        }
+
+        foreach ($sessionIds as $sessionId) {
+            $sessionId = (string) $sessionId;
+
+            if (!isset($sessionMap[$sessionId])) {
+                $logger->warning('Kan geen calendar.invite sturen voor sessie @id: sessiedata niet in Planning State.', [
+                    '@id' => $sessionId,
+                ]);
+                continue;
+            }
+
+            $session = $sessionMap[$sessionId];
+
+            if (empty($session['start_datetime']) || empty($session['end_datetime']) || empty($session['title'])) {
+                $logger->warning('Kan geen calendar.invite sturen voor sessie @id: verplichte velden ontbreken.', [
+                    '@id' => $sessionId,
+                ]);
+                continue;
+            }
+
+            try {
+                $this->calendarInviteSender->send([
+                    'session_id'     => $sessionId,
+                    'title'          => $session['title'],
+                    'start_datetime' => $session['start_datetime'],
+                    'end_datetime'   => $session['end_datetime'],
+                    'location'       => $session['location'] ?? '',
+                ]);
+                $logger->info('Calendar invite verstuurd naar Planning voor sessie @id.', ['@id' => $sessionId]);
+            } catch (\Throwable $e) {
+                $logger->error('Versturen calendar.invite voor sessie @id mislukt: @message', [
+                    '@id'      => $sessionId,
+                    '@message' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
 }

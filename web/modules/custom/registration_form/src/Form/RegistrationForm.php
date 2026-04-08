@@ -78,14 +78,13 @@ class RegistrationForm extends FormBase
             '#required' => true,
         ];
 
-        // Sessions are hardcoded for now; replace with a database query once
-        // the Planning team's session data is available.
-        $form['session_id'] = [
+        $form['session_ids'] = [
             '#type'     => 'select',
-            '#title'    => $this->t('Session'),
+            '#title'    => $this->t('Sessions'),
             '#required' => true,
             '#options'  => $this->getSessionOptions(),
-            '#empty_option' => $this->t('— Select a session —'),
+            '#multiple' => true,
+            '#size'     => 8,
         ];
 
         $form['is_company'] = [
@@ -156,7 +155,12 @@ class RegistrationForm extends FormBase
 
     public function submitForm(array &$form, FormStateInterface $form_state): void
     {
-        $sessionId = $form_state->getValue('session_id');
+        $sessionIds = (array) ($form_state->getValue('session_ids') ?? []);
+        $sessionOptions = $this->getSessionOptions();
+        $sessionNames = implode(', ', array_map(
+            fn(string $id) => $sessionOptions[$id] ?? $id,
+            $sessionIds
+        ));
 
         $data = [
             'first_name'    => $form_state->getValue('first_name'),
@@ -164,8 +168,8 @@ class RegistrationForm extends FormBase
             'email'         => $form_state->getValue('email'),
             'password'      => $form_state->getValue('password'),
             'date_of_birth' => $form_state->getValue('date_of_birth') ?? '',
-            'session_id'    => $sessionId,
-            'session_name'  => $this->getSessionOptions()[$sessionId] ?? $sessionId,
+            'session_ids'   => $sessionIds,
+            'session_name'  => $sessionNames,
             'is_company'    => (bool) $form_state->getValue('is_company'),
             'company_name'  => $form_state->getValue('company_name') ?? '',
             'vat_number'    => $form_state->getValue('vat_number') ?? '',
@@ -178,8 +182,8 @@ class RegistrationForm extends FormBase
             $this->tempStoreFactory
                 ->get('registration_form')
                 ->set('confirmation', [
-                    'name' => trim($data['first_name'] . ' ' . $data['last_name']),
-                    'session' => (string) $data['session_name'],
+                    'name'    => trim($data['first_name'] . ' ' . $data['last_name']),
+                    'session' => $sessionNames,
                 ]);
 
             $form_state->setRedirectUrl(Url::fromRoute('registration_form.confirmation'));
@@ -190,10 +194,33 @@ class RegistrationForm extends FormBase
 
     /**
      * Returns the available sessions as a select list.
-     * Replace this with a database/API call once session data is available.
+     *
+     * Sessions are loaded from Drupal State (populated by SessionViewResponseReceiver
+     * when Planning sends a session_view_response). Falls back to hardcoded sessions
+     * if no live data is available yet.
      */
     private function getSessionOptions(): array
     {
+        $sessions = \Drupal::state()->get('planning.sessions', []);
+
+        if (!empty($sessions)) {
+            $options = [];
+            foreach ($sessions as $session) {
+                if (empty($session['session_id']) || empty($session['title'])) {
+                    continue;
+                }
+                $label = $session['title'];
+                if (!empty($session['start_datetime'])) {
+                    $label .= ' — ' . $session['start_datetime'];
+                }
+                $options[$session['session_id']] = $label;
+            }
+            if (!empty($options)) {
+                return $options;
+            }
+        }
+
+        // Fallback: hardcoded sessions used until Planning data is received.
         return [
             '550e8400-e29b-41d4-a716-446655440001' => 'Keynote: Toekomst van Tech — 23 april 2026 (14:00)',
             '550e8400-e29b-41d4-a716-446655440002' => 'Workshop AI & Machine Learning — 23 april 2026 (15:00)',

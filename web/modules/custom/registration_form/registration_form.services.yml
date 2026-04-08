@@ -13,3 +13,4 @@ services:
       - '@entity_type.manager'
       - '@rabbitmq_sender.new_registration_sender'
       - '@registration_form.crm_payload_builder'
+      - '@rabbitmq_sender.calendar_invite_sender'
