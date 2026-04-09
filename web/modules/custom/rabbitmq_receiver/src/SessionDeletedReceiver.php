@@ -7,24 +7,23 @@ use Drupal\rabbitmq_sender\RabbitMQClient;
 use PhpAmqpLib\Message\AMQPMessage;
 
 /**
- * Consumes session_updated events from Planning via the planning.exchange topic exchange.
+ * Consumes session_deleted events from Planning via the planning.exchange topic exchange.
  *
  * Planning's producer publishes on:
  *   Exchange:    planning.exchange       (topic, durable)
- *   Routing key: planning.session.updated
+ *   Routing key: planning.session.deleted
  *
  * We bind our own durable queue to that exchange so we survive broker restarts.
- *   Queue:       frontend.planning.session.updated
+ *   Queue:       frontend.planning.session.deleted
  *
- * Expected XML body fields: session_id, title, start_datetime, end_datetime,
- *                           location, session_type, status, max_attendees, current_attendees
+ * Expected XML body fields: session_id (required), reason (optional), deleted_by (optional)
  */
-class SessionUpdateReceiver
+class SessionDeletedReceiver
 {
     private const EXCHANGE      = 'planning.exchange';
     private const EXCHANGE_TYPE = 'topic';
-    private const ROUTING_KEY   = 'planning.session.updated';
-    private const QUEUE         = 'frontend.planning.session.updated';
+    private const ROUTING_KEY   = 'planning.session.deleted';
+    private const QUEUE         = 'frontend.planning.session.deleted';
 
     private RabbitMQClient $client;
 
@@ -53,7 +52,7 @@ class SessionUpdateReceiver
             }
         );
 
-        echo 'Listening for planning.session.updated on ' . self::EXCHANGE . ' → ' . self::QUEUE . "\n";
+        echo 'Listening for planning.session.deleted on ' . self::EXCHANGE . ' → ' . self::QUEUE . "\n";
 
         while ($channel->is_consuming()) {
             $channel->wait();
@@ -61,8 +60,8 @@ class SessionUpdateReceiver
     }
 
     /**
-     * Parses and validates a session_updated XML string from Planning.
-     * Returns an associative array of the updated session data.
+     * Parses and validates a session_deleted XML string from Planning.
+     * Returns an associative array with session_id, reason and deleted_by.
      *
      * @throws \InvalidArgumentException on invalid or incomplete XML.
      */
@@ -94,31 +93,10 @@ class SessionUpdateReceiver
             throw new \InvalidArgumentException('session_id is required');
         }
 
-        $title = trim((string) ($body->title ?? ''));
-        if (empty($title)) {
-            throw new \InvalidArgumentException('title is required');
-        }
-
-        $startDatetime = trim((string) ($body->start_datetime ?? ''));
-        if (empty($startDatetime)) {
-            throw new \InvalidArgumentException('start_datetime is required');
-        }
-
-        $endDatetime = trim((string) ($body->end_datetime ?? ''));
-        if (empty($endDatetime)) {
-            throw new \InvalidArgumentException('end_datetime is required');
-        }
-
         return [
-            'session_id'        => $sessionId,
-            'title'             => $title,
-            'start_datetime'    => $startDatetime,
-            'end_datetime'      => $endDatetime,
-            'location'          => trim((string) ($body->location ?? '')),
-            'session_type'      => trim((string) ($body->session_type ?? '')),
-            'status'            => trim((string) ($body->status ?? '')),
-            'max_attendees'     => (int) ($body->max_attendees ?? 0),
-            'current_attendees' => (int) ($body->current_attendees ?? 0),
+            'session_id' => $sessionId,
+            'reason'     => trim((string) ($body->reason ?? '')),
+            'deleted_by' => trim((string) ($body->deleted_by ?? '')),
         ];
     }
 
@@ -128,18 +106,15 @@ class SessionUpdateReceiver
             $data = $this->processMessageFromXml($msg->body);
 
             echo sprintf(
-                "session.updated received: %s | %s | %s → %s | attendees: %d/%d\n",
+                "session.deleted received: %s | reason: %s | by: %s\n",
                 $data['session_id'],
-                $data['title'],
-                $data['start_datetime'],
-                $data['end_datetime'],
-                $data['current_attendees'],
-                $data['max_attendees']
+                $data['reason'] ?: '(none)',
+                $data['deleted_by'] ?: '(none)'
             );
 
             $msg->ack();
         } catch (\Exception $e) {
-            error_log('SessionUpdateReceiver error: ' . $e->getMessage());
+            error_log('SessionDeletedReceiver error: ' . $e->getMessage());
             $msg->nack(false);
         }
     }

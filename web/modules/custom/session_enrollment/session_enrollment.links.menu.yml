@@ -1,0 +1,5 @@
+session_enrollment.enroll:
+  title: 'Enroll in sessions'
+  route_name: session_enrollment.enroll
+  menu_name: main
+  weight: 20

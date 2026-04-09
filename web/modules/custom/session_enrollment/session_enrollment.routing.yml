@@ -1,0 +1,15 @@
+session_enrollment.enroll:
+  path: '/sessions/enroll'
+  defaults:
+    _form: '\Drupal\session_enrollment\Form\SessionEnrollForm'
+    _title: 'Enroll in sessions'
+  requirements:
+    _role: 'authenticated'
+
+session_enrollment.confirmation:
+  path: '/sessions/enroll/confirmation'
+  defaults:
+    _controller: '\Drupal\session_enrollment\Controller\EnrollmentConfirmationController::page'
+    _title: 'Enrollment confirmed'
+  requirements:
+    _role: 'authenticated'

@@ -1,0 +1,34 @@
+{#
+  Template: enrollment-confirmation.html.twig
+  Variables:
+    - name:     Full name of the enrolled user
+    - sessions: Array of session labels the user enrolled in
+#}
+<div class="enrollment-confirmation">
+  <div class="confirmation-card">
+    <div class="confirmation-icon">✓</div>
+    <h1>{{ 'You are enrolled!'|t }}</h1>
+
+    {% if name %}
+      <p class="confirmation-greeting">{{ 'Hello, @name!'|t({'@name': name}) }}</p>
+    {% endif %}
+
+    {% if sessions is not empty %}
+      <div class="confirmation-details">
+        <h2>{{ 'Your enrolled sessions'|t }}</h2>
+        <ul>
+          {% for session in sessions %}
+            <li>{{ session }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <div class="confirmation-info">
+      <p>{{ 'A calendar invite has been sent to the Planning service.'|t }}</p>
+      <p>{{ 'Please pay your registration fee at the event desk when you arrive.'|t }}</p>
+    </div>
+
+    <a href="/sessions/enroll" class="btn-enroll-more">{{ 'Enroll in more sessions'|t }}</a>
+  </div>
+</div>

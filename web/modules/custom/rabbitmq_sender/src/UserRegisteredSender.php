@@ -12,10 +12,10 @@ class UserRegisteredSender
 {
     use RetryTrait;
 
-    private RabbitMQClient $client;
+    private ?RabbitMQClient $client;
     private string $queueName;
 
-    public function __construct(RabbitMQClient $client, ?string $queueName = null)
+    public function __construct(?RabbitMQClient $client = null, ?string $queueName = null)
     {
         $this->client = $client;
         $prefix = getenv('RABBITMQ_PREFIX') ?: 'frontend.';
@@ -38,7 +38,7 @@ class UserRegisteredSender
         $xml = $this->buildXml($data);
         $this->sendWithRetry(function () use ($xml): void {
             $msg = new AMQPMessage($xml, ['delivery_mode' => 2]);
-            $this->client->getChannel()->basic_publish($msg, '', $this->queueName);
+            $this->resolveClient()->getChannel()->basic_publish($msg, '', $this->queueName);
         });
     }
 
@@ -81,7 +81,7 @@ class UserRegisteredSender
 
         $xml .= '</user>';
         $xml .= '<session>';
-        $xml .= '<id>' . htmlspecialchars($data['session_id'], ENT_XML1, 'UTF-8') . '</id>';
+        $xml .= '<session_id>' . htmlspecialchars($data['session_id'], ENT_XML1, 'UTF-8') . '</session_id>';
         $xml .= '<name>' . htmlspecialchars($data['session_name'], ENT_XML1, 'UTF-8') . '</name>';
         $xml .= '</session>';
         $xml .= '<payment_status>pending</payment_status>';
@@ -89,5 +89,22 @@ class UserRegisteredSender
         $xml .= '</message>';
 
         return $xml;
+    }
+
+    private function resolveClient(): RabbitMQClient
+    {
+        if ($this->client !== null) {
+            return $this->client;
+        }
+
+        $this->client = new RabbitMQClient(
+            getenv('RABBITMQ_HOST') ?: 'rabbitmq_broker',
+            (int) (getenv('RABBITMQ_PORT') ?: '5672'),
+            getenv('RABBITMQ_USER') ?: 'guest',
+            getenv('RABBITMQ_PASS') ?: 'guest',
+            getenv('RABBITMQ_VHOST') ?: '/'
+        );
+
+        return $this->client;
     }
 }

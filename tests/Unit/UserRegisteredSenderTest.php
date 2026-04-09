@@ -71,5 +71,9 @@ class UserRegisteredSenderTest extends TestCase
         $this->assertStringContainsString('<type>user.registered</type>', $xml);
         $this->assertStringContainsString('<email>jan@test.be</email>', $xml);
         $this->assertStringContainsString('<payment_status>pending</payment_status>', $xml);
+        // XSD: session element uses <session_id> not <id>
+        $this->assertStringContainsString('<session_id>session-uuid-001</session_id>', $xml);
+        $this->assertStringContainsString('<name>Workshop AI</name>', $xml);
+        $this->assertStringNotContainsString('<id>session-uuid-001</id>', $xml);
     }
 }
