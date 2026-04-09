@@ -78,15 +78,6 @@ class RegistrationForm extends FormBase
             '#required' => true,
         ];
 
-        $form['session_ids'] = [
-            '#type'     => 'select',
-            '#title'    => $this->t('Sessions'),
-            '#required' => true,
-            '#options'  => $this->getSessionOptions(),
-            '#multiple' => true,
-            '#size'     => 8,
-        ];
-
         $form['is_company'] = [
             '#type'  => 'checkbox',
             '#title' => $this->t('I am registering as a company'),
@@ -155,21 +146,12 @@ class RegistrationForm extends FormBase
 
     public function submitForm(array &$form, FormStateInterface $form_state): void
     {
-        $sessionIds = (array) ($form_state->getValue('session_ids') ?? []);
-        $sessionOptions = $this->getSessionOptions();
-        $sessionNames = implode(', ', array_map(
-            fn(string $id) => $sessionOptions[$id] ?? $id,
-            $sessionIds
-        ));
-
         $data = [
             'first_name'    => $form_state->getValue('first_name'),
             'last_name'     => $form_state->getValue('last_name'),
             'email'         => $form_state->getValue('email'),
             'password'      => $form_state->getValue('password'),
             'date_of_birth' => $form_state->getValue('date_of_birth') ?? '',
-            'session_ids'   => $sessionIds,
-            'session_name'  => $sessionNames,
             'is_company'    => (bool) $form_state->getValue('is_company'),
             'company_name'  => $form_state->getValue('company_name') ?? '',
             'vat_number'    => $form_state->getValue('vat_number') ?? '',
@@ -178,56 +160,15 @@ class RegistrationForm extends FormBase
         try {
             $this->registrationService->register($data);
 
-            // Keep confirmation details out of the URL.
             $this->tempStoreFactory
                 ->get('registration_form')
                 ->set('confirmation', [
-                    'name'    => trim($data['first_name'] . ' ' . $data['last_name']),
-                    'session' => $sessionNames,
+                    'name' => trim($data['first_name'] . ' ' . $data['last_name']),
                 ]);
 
             $form_state->setRedirectUrl(Url::fromRoute('registration_form.confirmation'));
         } catch (\InvalidArgumentException $e) {
             $this->messenger()->addError($this->t('Registration failed: @error', ['@error' => $e->getMessage()]));
         }
-    }
-
-    /**
-     * Returns the available sessions as a select list.
-     *
-     * Sessions are loaded from Drupal State (populated by SessionViewResponseReceiver
-     * when Planning sends a session_view_response). Falls back to hardcoded sessions
-     * if no live data is available yet.
-     */
-    private function getSessionOptions(): array
-    {
-        $sessions = \Drupal::state()->get('planning.sessions', []);
-
-        if (!empty($sessions)) {
-            $options = [];
-            foreach ($sessions as $session) {
-                if (empty($session['session_id']) || empty($session['title'])) {
-                    continue;
-                }
-                $label = $session['title'];
-                if (!empty($session['start_datetime'])) {
-                    $label .= ' — ' . $session['start_datetime'];
-                }
-                $options[$session['session_id']] = $label;
-            }
-            if (!empty($options)) {
-                return $options;
-            }
-        }
-
-        // Fallback: hardcoded sessions used until Planning data is received.
-        return [
-            '550e8400-e29b-41d4-a716-446655440001' => 'Keynote: Toekomst van Tech — 23 april 2026 (14:00)',
-            '550e8400-e29b-41d4-a716-446655440002' => 'Workshop AI & Machine Learning — 23 april 2026 (15:00)',
-            '550e8400-e29b-41d4-a716-446655440003' => 'Workshop Cloud & DevOps — 23 april 2026 (15:00)',
-            '550e8400-e29b-41d4-a716-446655440004' => 'Workshop Cybersecurity — 23 april 2026 (15:00)',
-            '550e8400-e29b-41d4-a716-446655440005' => 'Prijsuitreiking Beste Eindwerken — 23 april 2026 (16:30)',
-            '550e8400-e29b-41d4-a716-446655440006' => 'Netwerkreceptie & Drinks — 23 april 2026 (18:00)',
-        ];
     }
 }

@@ -1,0 +1,23 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * @file
+ * Integration hooks for the session_enrollment module.
+ */
+
+/**
+ * Implements hook_theme().
+ */
+function session_enrollment_theme(): array
+{
+    return [
+        'enrollment_confirmation' => [
+            'variables' => [
+                'name'     => '',
+                'sessions' => [],
+            ],
+        ],
+    ];
+}
