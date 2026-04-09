@@ -68,12 +68,10 @@ class UserRegisteredSenderTest extends TestCase
         $this->assertStringContainsString('<source>frontend.drupal</source>', $xml);
         $this->assertStringContainsString('<customer>', $xml);
         $this->assertStringContainsString('<email>jan@test.be</email>', $xml);
-        $this->assertStringContainsString('<type>private</type>', $xml);
+        $this->assertStringContainsString('<payment_status>pending</payment_status>', $xml);
+        // XSD: session element uses <session_id> not <id>
         $this->assertStringContainsString('<session_id>session-uuid-001</session_id>', $xml);
-        $this->assertStringContainsString('<payment_due>', $xml);
-        $this->assertStringContainsString('<amount>0.00</amount>', $xml);
-        $this->assertStringContainsString('<status>unpaid</status>', $xml);
-        $this->assertStringNotContainsString('xmlns', $xml);
-        $this->assertStringNotContainsString('<receiver>', $xml);
+        $this->assertStringContainsString('<name>Workshop AI</name>', $xml);
+        $this->assertStringNotContainsString('<id>session-uuid-001</id>', $xml);
     }
 }

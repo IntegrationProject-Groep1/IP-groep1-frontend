@@ -122,4 +122,48 @@ class RegistrationCrmPayloadBuilderTest extends TestCase
         $this->assertSame([], $payload['address']);
         $this->assertSame([], $payload['registration_fee']);
     }
+
+    public function test_build_joins_session_ids_array_into_comma_separated_session_id(): void
+    {
+        $builder = new RegistrationCrmPayloadBuilder();
+
+        $payload = $builder->build([
+            'email'       => 'jan@example.com',
+            'first_name'  => 'Jan',
+            'last_name'   => 'Janssen',
+            'date_of_birth' => '1990-05-15',
+            'session_ids' => ['sess-001', 'sess-002', 'sess-003'],
+        ], '5');
+
+        $this->assertSame('sess-001,sess-002,sess-003', $payload['session_id']);
+    }
+
+    public function test_build_falls_back_to_session_id_string_when_session_ids_not_provided(): void
+    {
+        $builder = new RegistrationCrmPayloadBuilder();
+
+        $payload = $builder->build([
+            'email'       => 'jan@example.com',
+            'first_name'  => 'Jan',
+            'last_name'   => 'Janssen',
+            'date_of_birth' => '1990-05-15',
+            'session_id'  => 'sess-single-001',
+        ], '5');
+
+        $this->assertSame('sess-single-001', $payload['session_id']);
+    }
+
+    public function test_build_returns_empty_session_id_when_neither_key_provided(): void
+    {
+        $builder = new RegistrationCrmPayloadBuilder();
+
+        $payload = $builder->build([
+            'email'       => 'jan@example.com',
+            'first_name'  => 'Jan',
+            'last_name'   => 'Janssen',
+            'date_of_birth' => '1990-05-15',
+        ], '5');
+
+        $this->assertSame('', $payload['session_id']);
+    }
 }
