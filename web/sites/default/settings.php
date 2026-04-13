@@ -59,6 +59,5 @@ if (getenv('DRUPAL_REVERSE_PROXY') === 'true') {
 $settings['trusted_host_patterns'][] = '^integrationproject-2526s2-dag01\.westeurope\.cloudapp\.azure\.com$';
 $settings['trusted_host_patterns'][] = '^integrationproject-2526s2-dag01\.westeurope\.cloudapp\.azure\.com:30020$';
 
-// Cloudflare Tunnel — desiderius.me (requested by Enwin).
-$settings['trusted_host_patterns'][] = '^desiderius\.me$';
-$settings['trusted_host_patterns'][] = '^.*\.desiderius\.me$';
+// Cloudflare Tunnel — desiderius.me
+$settings['trusted_host_patterns'][] = '^(.+\\.)?desiderius\\.me(:\\d+)?$';
