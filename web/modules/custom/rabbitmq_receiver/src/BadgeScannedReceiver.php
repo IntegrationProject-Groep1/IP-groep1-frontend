@@ -5,6 +5,7 @@ namespace Drupal\rabbitmq_receiver;
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
 use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable; // ✅ toegevoegd
 
 /**
  * Consumes badge scan events from RabbitMQ.
@@ -22,7 +23,27 @@ class BadgeScannedReceiver
     {
         // Subscribe to queue and process incoming messages synchronously.
         $channel = $this->client->getChannel();
-        $channel->queue_declare('badge.scanned', false, true, false, false);
+
+        // ✅ DLX + DLQ toegevoegd
+        $channel->exchange_declare('dlx_exchange', 'direct', false, true, false);
+        $channel->queue_declare('badge.scanned.dlq', false, true, false, false);
+        $channel->queue_bind('badge.scanned.dlq', 'dlx_exchange', 'badge.scanned.dlq');
+
+        // ✅ Main queue aangepast met DLQ config
+        $args = new AMQPTable([
+            'x-dead-letter-exchange' => 'dlx_exchange',
+            'x-dead-letter-routing-key' => 'badge.scanned.dlq'
+        ]);
+
+        $channel->queue_declare(
+            'badge.scanned',
+            false,
+            true,
+            false,
+            false,
+            false,
+            $args
+        );
 
         $channel->basic_consume(
             'badge.scanned',
@@ -90,7 +111,8 @@ class BadgeScannedReceiver
 
         } catch (\Exception $e) {
             error_log('BadgeScannedReceiver error: ' . $e->getMessage());
-            $msg->nack();
+
+            $msg->nack(false, false); // 🔥 naar DLQ
         }
     }
 }
