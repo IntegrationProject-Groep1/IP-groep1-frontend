@@ -5,7 +5,7 @@ namespace Drupal\rabbitmq_receiver;
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
 use PhpAmqpLib\Message\AMQPMessage;
-use PhpAmqpLib\Wire\AMQPTable; // ✅ toegevoegd
+use PhpAmqpLib\Wire\AMQPTable;
 
 /**
  * Consumes badge scan events from RabbitMQ.
@@ -21,15 +21,14 @@ class BadgeScannedReceiver
 
     public function listen(): void
     {
-        // Subscribe to queue and process incoming messages synchronously.
         $channel = $this->client->getChannel();
 
-        // ✅ DLX + DLQ toegevoegd
+        // DLX + DLQ setup
         $channel->exchange_declare('dlx_exchange', 'direct', false, true, false);
         $channel->queue_declare('badge.scanned.dlq', false, true, false, false);
         $channel->queue_bind('badge.scanned.dlq', 'dlx_exchange', 'badge.scanned.dlq');
 
-        // ✅ Main queue aangepast met DLQ config
+        // Main queue met DLQ config
         $args = new AMQPTable([
             'x-dead-letter-exchange' => 'dlx_exchange',
             'x-dead-letter-routing-key' => 'badge.scanned.dlq'
@@ -66,7 +65,6 @@ class BadgeScannedReceiver
 
     public function processMessageFromXml(string $xmlString): bool
     {
-        // Exposed for unit tests to validate payload contract without AMQP plumbing.
         $xml = @simplexml_load_string($xmlString);
         if ($xml === false) {
             throw new \InvalidArgumentException('Invalid XML received');
@@ -104,7 +102,6 @@ class BadgeScannedReceiver
                 throw new \InvalidArgumentException('badge_id is required');
             }
 
-            // Placeholder for updating the badge assignment in Drupal storage.
             echo "Badge scanned: {$userId} - {$badgeId}\n";
 
             $msg->ack();
@@ -112,7 +109,8 @@ class BadgeScannedReceiver
         } catch (\Exception $e) {
             error_log('BadgeScannedReceiver error: ' . $e->getMessage());
 
-            $msg->nack(false, false); // 🔥 naar DLQ
+            // naar DLQ
+            $msg->nack(false, false);
         }
     }
 }

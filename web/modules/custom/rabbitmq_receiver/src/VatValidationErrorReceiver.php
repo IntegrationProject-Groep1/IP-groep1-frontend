@@ -5,7 +5,7 @@ namespace Drupal\rabbitmq_receiver;
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
 use PhpAmqpLib\Message\AMQPMessage;
-use PhpAmqpLib\Wire\AMQPTable; // ✅ toegevoegd
+use PhpAmqpLib\Wire\AMQPTable;
 
 /**
  * Consumes VAT validation error events from RabbitMQ.
@@ -23,12 +23,12 @@ class VatValidationErrorReceiver
     {
         $channel = $this->client->getChannel();
 
-        // ✅ DLX + DLQ toegevoegd
+        // DLX + DLQ setup
         $channel->exchange_declare('dlx_exchange', 'direct', false, true, false);
         $channel->queue_declare('vat.validation.error.dlq', false, true, false, false);
         $channel->queue_bind('vat.validation.error.dlq', 'dlx_exchange', 'vat.validation.error.dlq');
 
-        // ✅ Main queue aangepast
+        // Main queue met DLQ config
         $args = new AMQPTable([
             'x-dead-letter-exchange' => 'dlx_exchange',
             'x-dead-letter-routing-key' => 'vat.validation.error.dlq'
@@ -110,7 +110,8 @@ class VatValidationErrorReceiver
         } catch (\Exception $e) {
             error_log('VatValidationErrorReceiver error: ' . $e->getMessage());
 
-            $msg->nack(false, false); // 🔥 aangepast → DLQ
+            // naar DLQ
+            $msg->nack(false, false);
         }
     }
 }

@@ -11,6 +11,7 @@ on:
       - 'chore/**'
       - 'hotfix/**'
     tags: [ "v*" ]
+
   pull_request:
     branches:
       - main
@@ -31,6 +32,7 @@ jobs:
         with:
           php-version: '8.4'
           coverage: none
+          extensions: mbstring, xml, simplexml
 
       - name: Validate composer.json
         run: composer validate --strict
@@ -42,5 +44,4 @@ jobs:
         run: composer audit
 
       - name: Run PHPUnit
-        run: |
-          vendor/bin/phpunit tests/ --colors=never
+        run: vendor/bin/phpunit tests/ --colors=never

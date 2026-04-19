@@ -27,20 +27,24 @@ class PaymentRegisteredReceiverTest extends TestCase
     public function test_throws_exception_when_user_id_is_missing(): void
     {
         $this->expectException(\InvalidArgumentException::class);
+
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
         $xml .= '<message><body>';
         $xml .= '<status>paid</status>';
         $xml .= '</body></message>';
+
         $this->receiver->processMessageFromXml($xml);
     }
 
     public function test_throws_exception_when_status_is_missing(): void
     {
         $this->expectException(\InvalidArgumentException::class);
+
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
         $xml .= '<message><body>';
         $xml .= '<user_id>uuid-v4-hier</user_id>';
         $xml .= '</body></message>';
+
         $this->receiver->processMessageFromXml($xml);
     }
 
@@ -51,6 +55,7 @@ class PaymentRegisteredReceiverTest extends TestCase
         $xml .= '<user_id>uuid-v4-hier</user_id>';
         $xml .= '<status>paid</status>';
         $xml .= '</body></message>';
+
         $result = $this->receiver->processMessageFromXml($xml);
         $this->assertTrue($result);
     }

@@ -25,7 +25,6 @@ class NewRegistrationSender
 
     public function send(array $data): void
     {
-        // Validate required contract fields before building and publishing XML.
         if (empty($data['email'])) {
             throw new \InvalidArgumentException('email is required');
         }
@@ -39,42 +38,33 @@ class NewRegistrationSender
             throw new \InvalidArgumentException('last_name is required');
         }
         if (empty($data['date_of_birth'])) {
-            throw new \InvalidArgumentException('date_of_birth is required; without it CRM will not synchronize the registration to Kassa.');
+            throw new \InvalidArgumentException('date_of_birth is required');
         }
+
         if (!empty($data['is_company']) && empty($data['vat_number'])) {
             throw new \InvalidArgumentException('vat_number is required for companies');
         }
 
         $xml = $this->buildXml($data);
 
-        try {
-            $this->sendWithRetry(function () use ($xml): void {
-                // Ensure target queue exists before publishing to the default exchange.
-                $this->resolveClient()->declareQueue(self::QUEUE_NAME);
-                $msg = new AMQPMessage($xml, [
-                    'delivery_mode' => 2,
-                    'content_type' => 'application/xml',
-                ]);
-                $this->resolveClient()->getChannel()->basic_publish($msg, '', self::QUEUE_NAME);
-            });
-        } catch (\Throwable $e) {
-            // Let callers decide logging strategy through Drupal's logger channels.
-            throw $e;
-        }
+        $this->sendWithRetry(function () use ($xml): void {
+            $this->resolveClient()->declareQueue(self::QUEUE_NAME);
+
+            $msg = new AMQPMessage($xml, [
+                'delivery_mode' => 2,
+                'content_type' => 'application/xml',
+            ]);
+
+            $this->resolveClient()->getChannel()->basic_publish($msg, '', self::QUEUE_NAME);
+        });
     }
 
     public function buildXml(array $data): string
     {
-        if (empty($data['date_of_birth'])) {
-            throw new \InvalidArgumentException('date_of_birth is required; without it CRM will not synchronize the registration to Kassa.');
-        }
-
-        // Correlation and message IDs are aligned to simplify cross-system tracing.
         $messageId = $this->generateUuidV4();
         $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
 
         $xml = new \DOMDocument('1.0', 'UTF-8');
-        $xml->formatOutput = false;
 
         $message = $xml->createElement('message');
         $xml->appendChild($message);
@@ -90,86 +80,15 @@ class NewRegistrationSender
 
         $body = $xml->createElement('body');
         $customer = $xml->createElement('customer');
+
         $customer->appendChild($xml->createElement('email', (string) $data['email']));
         $customer->appendChild($xml->createElement('user_id', (string) $data['user_id']));
-
-        if (!empty($data['type'])) {
-            $customer->appendChild($xml->createElement('type', (string) $data['type']));
-        } elseif (array_key_exists('is_company', $data)) {
-            // Keep backward compatibility for clients still sending boolean company flags.
-            $customer->appendChild($xml->createElement('type', !empty($data['is_company']) ? 'company' : 'private'));
-        }
-
-        if (array_key_exists('is_company_linked', $data)) {
-            $customer->appendChild($xml->createElement('is_company_linked', !empty($data['is_company_linked']) ? 'true' : 'false'));
-        } elseif (array_key_exists('is_company', $data)) {
-            $customer->appendChild($xml->createElement('is_company_linked', !empty($data['is_company']) ? 'true' : 'false'));
-        }
-
-        // CRM main branch expects first_name/last_name directly under customer.
         $customer->appendChild($xml->createElement('first_name', (string) $data['first_name']));
         $customer->appendChild($xml->createElement('last_name', (string) $data['last_name']));
-
-        // date_of_birth is always required by downstream CRM -> Kassa forwarding.
         $customer->appendChild($xml->createElement('date_of_birth', (string) $data['date_of_birth']));
-
-        if (!empty($data['registration_date'])) {
-            $customer->appendChild($xml->createElement('registration_date', (string) $data['registration_date']));
-        }
-
-        if (!empty($data['badge_id'])) {
-            $customer->appendChild($xml->createElement('badge_id', (string) $data['badge_id']));
-        }
-
-        if (!empty($data['company_name'])) {
-            $customer->appendChild($xml->createElement('company_name', (string) $data['company_name']));
-        }
 
         if (!empty($data['vat_number'])) {
             $customer->appendChild($xml->createElement('vat_number', (string) $data['vat_number']));
-        }
-
-        if (!empty($data['address']) && is_array($data['address'])) {
-            $address = $xml->createElement('address');
-            $addressFields = ['street', 'number', 'postal_code', 'city'];
-
-            foreach ($addressFields as $field) {
-                if (isset($data['address'][$field]) && $data['address'][$field] !== '') {
-                    $address->appendChild($xml->createElement($field, (string) $data['address'][$field]));
-                }
-            }
-
-            if (!empty($data['address']['country'])) {
-                $countryCode = strtoupper((string) $data['address']['country']);
-                if (strlen($countryCode) !== 2) {
-                    throw new \InvalidArgumentException('address.country must be a 2-letter country code');
-                }
-                $address->appendChild($xml->createElement('country', $countryCode));
-            }
-
-            if ($address->hasChildNodes()) {
-                $customer->appendChild($address);
-            }
-        }
-
-        if (!empty($data['registration_fee']) && is_array($data['registration_fee'])) {
-            $registrationFee = $xml->createElement('registration_fee');
-            if (isset($data['registration_fee']['amount']) && $data['registration_fee']['amount'] !== '') {
-                // CRM contract requires EUR for registration fee amounts.
-                $amount = $xml->createElement('amount', (string) $data['registration_fee']['amount']);
-                $amount->setAttribute('currency', 'eur');
-                $registrationFee->appendChild($amount);
-            }
-
-            if (array_key_exists('paid', $data['registration_fee'])) {
-                $registrationFee->appendChild(
-                    $xml->createElement('paid', !empty($data['registration_fee']['paid']) ? 'true' : 'false')
-                );
-            }
-
-            if ($registrationFee->hasChildNodes()) {
-                $customer->appendChild($registrationFee);
-            }
         }
 
         $body->appendChild($customer);
@@ -198,7 +117,6 @@ class NewRegistrationSender
             return $this->client;
         }
 
-        // Fall back to environment configuration when no client is injected.
         $this->client = new RabbitMQClient(
             getenv('RABBITMQ_HOST') ?: 'rabbitmq_broker',
             (int) (getenv('RABBITMQ_PORT') ?: '5672'),
