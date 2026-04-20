@@ -1,7 +1,6 @@
-<?php
 declare(strict_types=1);
 use Drupal\session_enrollment\Service\SessionEnrollmentService;
-use Drupal\rabbitmq_sender\NewRegistrationSender;
+use Drupal\rabbitmq_sender\UserRegisteredSender;
 use Drupal\rabbitmq_sender\CalendarInviteSender;
 use PHPUnit\Framework\TestCase;
 /**
@@ -46,18 +45,18 @@ class SessionEnrollmentServiceTest extends TestCase
     }
     public function test_enroll_calls_user_registered_sender_per_session(): void
     {
-        $newRegistrationSender = $this->createMock(NewRegistrationSender::class);
+        $userRegisteredSender = $this->createMock(UserRegisteredSender::class);
         $calendarInviteSender = $this->createMock(CalendarInviteSender::class);
-        $newRegistrationSender->expects($this->exactly(2))->method('send');
+        $userRegisteredSender->expects($this->exactly(2))->method('send');
         $calendarInviteSender->expects($this->exactly(2))->method('send');
-        $service = new SessionEnrollmentService($this->makeLogger(), $newRegistrationSender, $calendarInviteSender);
+        $service = new SessionEnrollmentService($this->makeLogger(), $userRegisteredSender, $calendarInviteSender);
         $service->enroll($this->makeUserData(), ['sess-001', 'sess-002'], $this->makeSessionMap());
     }
     public function test_enroll_passes_correct_data_to_user_registered_sender(): void
     {
-        $newRegistrationSender = $this->createMock(NewRegistrationSender::class);
+        $userRegisteredSender = $this->createMock(UserRegisteredSender::class);
         $calendarInviteSender = $this->createStub(CalendarInviteSender::class);
-        $newRegistrationSender->expects($this->once())
+        $userRegisteredSender->expects($this->once())
             ->method('send')
             ->with($this->callback(function (array $data): bool {
                 return $data['email'] === 'jan@test.be'
@@ -66,12 +65,12 @@ class SessionEnrollmentServiceTest extends TestCase
                     && $data['session_name'] === 'Keynote: AI 2026'
                     && $data['is_company'] === false;
             }));
-        $service = new SessionEnrollmentService($this->makeLogger(), $newRegistrationSender, $calendarInviteSender);
+        $service = new SessionEnrollmentService($this->makeLogger(), $userRegisteredSender, $calendarInviteSender);
         $service->enroll($this->makeUserData(), ['sess-001'], $this->makeSessionMap());
     }
     public function test_enroll_passes_correct_data_to_calendar_invite_sender(): void
     {
-        $newRegistrationSender = $this->createStub(NewRegistrationSender::class);
+        $userRegisteredSender = $this->createStub(UserRegisteredSender::class);
         $calendarInviteSender = $this->createMock(CalendarInviteSender::class);
         $calendarInviteSender->expects($this->once())
             ->method('send')
@@ -81,14 +80,14 @@ class SessionEnrollmentServiceTest extends TestCase
                     && $data['start_datetime'] === '2026-05-15T14:00:00Z'
                     && $data['end_datetime'] === '2026-05-15T15:00:00Z';
             }));
-        $service = new SessionEnrollmentService($this->makeLogger(), $newRegistrationSender, $calendarInviteSender);
+        $service = new SessionEnrollmentService($this->makeLogger(), $userRegisteredSender, $calendarInviteSender);
         $service->enroll($this->makeUserData(), ['sess-001'], $this->makeSessionMap());
     }
     public function test_enroll_throws_when_email_missing(): void
     {
         $service = new SessionEnrollmentService(
             $this->makeLogger(),
-            $this->createStub(NewRegistrationSender::class),
+            $this->createStub(UserRegisteredSender::class),
             $this->createStub(CalendarInviteSender::class)
         );
         $this->expectException(\InvalidArgumentException::class);
@@ -98,7 +97,7 @@ class SessionEnrollmentServiceTest extends TestCase
     {
         $service = new SessionEnrollmentService(
             $this->makeLogger(),
-            $this->createStub(NewRegistrationSender::class),
+            $this->createStub(UserRegisteredSender::class),
             $this->createStub(CalendarInviteSender::class)
         );
         $this->expectException(\InvalidArgumentException::class);
@@ -108,7 +107,7 @@ class SessionEnrollmentServiceTest extends TestCase
     {
         $service = new SessionEnrollmentService(
             $this->makeLogger(),
-            $this->createStub(NewRegistrationSender::class),
+            $this->createStub(UserRegisteredSender::class),
             $this->createStub(CalendarInviteSender::class)
         );
         $this->expectException(\InvalidArgumentException::class);
@@ -116,26 +115,26 @@ class SessionEnrollmentServiceTest extends TestCase
     }
     public function test_enroll_skips_unknown_session_ids(): void
     {
-        $newRegistrationSender = $this->createMock(NewRegistrationSender::class);
+        $userRegisteredSender = $this->createMock(UserRegisteredSender::class);
         $calendarInviteSender = $this->createMock(CalendarInviteSender::class);
         // Only sess-001 exists in the map, unknown-id should be skipped.
-        $newRegistrationSender->expects($this->once())->method('send');
+        $userRegisteredSender->expects($this->once())->method('send');
         $calendarInviteSender->expects($this->once())->method('send');
-        $service = new SessionEnrollmentService($this->makeLogger(), $newRegistrationSender, $calendarInviteSender);
+        $service = new SessionEnrollmentService($this->makeLogger(), $userRegisteredSender, $calendarInviteSender);
         $service->enroll($this->makeUserData(), ['sess-001', 'unknown-id'], $this->makeSessionMap());
     }
     public function test_enroll_rethrows_user_registered_send_exception(): void
     {
-        $newRegistrationSender = $this->createMock(NewRegistrationSender::class);
-        $newRegistrationSender->method('send')->willThrowException(new \RuntimeException('Connection refused'));
+        $userRegisteredSender = $this->createMock(UserRegisteredSender::class);
+        $userRegisteredSender->method('send')->willThrowException(new \RuntimeException('Connection refused'));
         $calendarInviteSender = $this->createStub(CalendarInviteSender::class);
-        $service = new SessionEnrollmentService($this->makeLogger(), $newRegistrationSender, $calendarInviteSender);
+        $service = new SessionEnrollmentService($this->makeLogger(), $userRegisteredSender, $calendarInviteSender);
         $this->expectException(\RuntimeException::class);
         $service->enroll($this->makeUserData(), ['sess-001'], $this->makeSessionMap());
     }
     public function test_enroll_continues_after_calendar_invite_failure(): void
     {
-        $newRegistrationSender = $this->createStub(NewRegistrationSender::class);
+        $userRegisteredSender = $this->createStub(UserRegisteredSender::class);
         $calendarInviteSender = $this->createMock(CalendarInviteSender::class);
         // calendar.invite fails for sess-001 but sess-002 should still be processed.
         $calendarInviteSender->method('send')
@@ -144,16 +143,16 @@ class SessionEnrollmentServiceTest extends TestCase
                     throw new \RuntimeException('Exchange unreachable');
                 }
             });
-        // Both sessions should still call newRegistrationSender (CRM is primary).
-        $newRegistrationSender = $this->createMock(NewRegistrationSender::class);
-        $newRegistrationSender->expects($this->exactly(2))->method('send');
-        $service = new SessionEnrollmentService($this->makeLogger(), $newRegistrationSender, $calendarInviteSender);
+        // Both sessions should still call userRegisteredSender (CRM is primary).
+        $userRegisteredSender = $this->createMock(UserRegisteredSender::class);
+        $userRegisteredSender->expects($this->exactly(2))->method('send');
+        $service = new SessionEnrollmentService($this->makeLogger(), $userRegisteredSender, $calendarInviteSender);
         // Should not throw despite sess-001 calendar.invite failure.
         $service->enroll($this->makeUserData(), ['sess-001', 'sess-002'], $this->makeSessionMap());
     }
     public function test_enroll_skips_calendar_invite_when_datetime_missing(): void
     {
-        $newRegistrationSender = $this->createStub(NewRegistrationSender::class);
+        $userRegisteredSender = $this->createStub(UserRegisteredSender::class);
         $calendarInviteSender = $this->createMock(CalendarInviteSender::class);
         $calendarInviteSender->expects($this->never())->method('send');
         $sessionMapWithoutDatetime = [
@@ -163,7 +162,7 @@ class SessionEnrollmentServiceTest extends TestCase
                 // start_datetime and end_datetime are intentionally absent
             ],
         ];
-        $service = new SessionEnrollmentService($this->makeLogger(), $newRegistrationSender, $calendarInviteSender);
+        $service = new SessionEnrollmentService($this->makeLogger(), $userRegisteredSender, $calendarInviteSender);
         $service->enroll($this->makeUserData(), ['sess-no-dt'], $sessionMapWithoutDatetime);
     }
 }
