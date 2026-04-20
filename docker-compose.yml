@@ -1,0 +1,63 @@
+services:
+  frontend_db:
+    image: mariadb:10.11
+    container_name: frontend_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DRUPAL_DB_ROOT_PASS}
+      MYSQL_DATABASE: ${DRUPAL_DB_NAME}
+      MYSQL_USER: ${DRUPAL_DB_USER}
+      MYSQL_PASSWORD: ${DRUPAL_DB_PASS}
+    volumes:
+      - frontend_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - shift_net
+
+  frontend_drupal:
+    build:
+      context: .
+    image: frontend-drupal:local
+    container_name: frontend_drupal
+    restart: unless-stopped
+    command: >
+      sh -lc "mkdir -p /var/www/html/sites/default/files
+      && chown -R www-data:www-data /var/www/html/sites/default/files
+      && chmod -R 775 /var/www/html/sites/default/files
+      && exec apache2-foreground"
+    ports:
+      - "${FRONTEND_HTTP_PORT:-30020}:80"
+    environment:
+      DRUPAL_DB_HOST: ${DRUPAL_DB_HOST:-frontend_db}
+      DRUPAL_DB_NAME: ${DRUPAL_DB_NAME:-drupal}
+      DRUPAL_DB_USER: ${DRUPAL_DB_USER:-drupal_user}
+      DRUPAL_DB_PASSWORD: ${DRUPAL_DB_PASS}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-30000}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASS: ${RABBITMQ_PASS}
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST:-/}
+      RABBITMQ_PREFIX: ${RABBITMQ_PREFIX:-frontend.}
+      REGISTRATION_REQUIRE_RABBITMQ_SYNC: ${REGISTRATION_REQUIRE_RABBITMQ_SYNC:-1}
+    volumes:
+      - ./web/modules/custom:/var/www/html/modules/custom
+      - ./web/themes/custom:/var/www/html/themes/custom
+      - ./web/sites/default:/var/www/html/sites/default
+    depends_on:
+      frontend_db:
+        condition: service_healthy
+    networks:
+      - shift_net
+
+volumes:
+  frontend_db_data:
+
+networks:
+  shift_net:
+    name: shift_net
+    driver: bridge

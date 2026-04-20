@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * @file
+ * Integration hooks for the registration_form module.
+ */
+
+/**
+ * Implements hook_theme().
+ *
+ * Registers the confirmation template and variables used after registration.
+ */
+function registration_form_theme(): array
+{
+    return [
+        'registration_confirmation' => [
+            'variables' => [
+                'name'    => '',
+                'session' => '',
+            ],
+        ],
+    ];
+}

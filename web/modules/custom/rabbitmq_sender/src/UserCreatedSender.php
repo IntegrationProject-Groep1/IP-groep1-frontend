@@ -5,6 +5,9 @@ namespace Drupal\rabbitmq_sender;
 
 use PhpAmqpLib\Message\AMQPMessage;
 
+/**
+ * Publishes user creation events to RabbitMQ.
+ */
 class UserCreatedSender
 {
     use RetryTrait;
@@ -18,11 +21,13 @@ class UserCreatedSender
 
     public function send(array $data): void
     {
+        // Email is the primary identity field expected by downstream systems.
         if (empty($data['email'])) {
             throw new \InvalidArgumentException('email is required');
         }
 
         $xml = $this->buildXml($data);
+
         $this->sendWithRetry(function () use ($xml): void {
             $msg = new AMQPMessage($xml, ['delivery_mode' => 2]);
             $this->client->getChannel()->basic_publish($msg, '', 'user.created');
@@ -31,6 +36,7 @@ class UserCreatedSender
 
     public function buildXml(array $data): string
     {
+        // Generate a UUID-like identifier for event-level observability.
         $messageId = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
             mt_rand(0, 0xffff), mt_rand(0, 0xffff),
             mt_rand(0, 0xffff),
@@ -38,10 +44,11 @@ class UserCreatedSender
             mt_rand(0, 0x3fff) | 0x8000,
             mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
         );
+
         $timestamp = (new \DateTime())->format('c');
 
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message>';
+        $xml .= '<message xmlns="urn:integration:planning:v1">';
         $xml .= '<header>';
         $xml .= "<message_id>{$messageId}</message_id>";
         $xml .= "<timestamp>{$timestamp}</timestamp>";
@@ -49,8 +56,10 @@ class UserCreatedSender
         $xml .= '<receiver>crm.salesforce</receiver>';
         $xml .= '<type>user.created</type>';
         $xml .= '<version>1.0</version>';
+        $xml .= '<correlation_id></correlation_id>';
         $xml .= '</header>';
-        $xml .= '<payload>';
+
+        $xml .= '<body>';
         $xml .= '<user>';
         $xml .= '<first_name>' . htmlspecialchars($data['first_name'] ?? '', ENT_XML1, 'UTF-8') . '</first_name>';
         $xml .= '<last_name>' . htmlspecialchars($data['last_name'] ?? '', ENT_XML1, 'UTF-8') . '</last_name>';
@@ -65,7 +74,7 @@ class UserCreatedSender
         }
 
         $xml .= '</user>';
-        $xml .= '</payload>';
+        $xml .= '</body>';
         $xml .= '</message>';
 
         return $xml;

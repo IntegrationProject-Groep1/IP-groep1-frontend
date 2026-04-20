@@ -5,6 +5,9 @@ use PHPUnit\Framework\TestCase;
 use Drupal\rabbitmq_receiver\PaymentRegisteredReceiver;
 use Drupal\rabbitmq_sender\RabbitMQClient;
 
+/**
+ * Unit tests for payment registered receiver XML validation.
+ */
 class PaymentRegisteredReceiverTest extends TestCase
 {
     private PaymentRegisteredReceiver $receiver;
@@ -24,30 +27,35 @@ class PaymentRegisteredReceiverTest extends TestCase
     public function test_throws_exception_when_user_id_is_missing(): void
     {
         $this->expectException(\InvalidArgumentException::class);
+
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message><payload>';
+        $xml .= '<message><body>';
         $xml .= '<status>paid</status>';
-        $xml .= '</payload></message>';
+        $xml .= '</body></message>';
+
         $this->receiver->processMessageFromXml($xml);
     }
 
     public function test_throws_exception_when_status_is_missing(): void
     {
         $this->expectException(\InvalidArgumentException::class);
+
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message><payload>';
+        $xml .= '<message><body>';
         $xml .= '<user_id>uuid-v4-hier</user_id>';
-        $xml .= '</payload></message>';
+        $xml .= '</body></message>';
+
         $this->receiver->processMessageFromXml($xml);
     }
 
     public function test_valid_xml_is_processed_correctly(): void
     {
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message><payload>';
+        $xml .= '<message><body>';
         $xml .= '<user_id>uuid-v4-hier</user_id>';
         $xml .= '<status>paid</status>';
-        $xml .= '</payload></message>';
+        $xml .= '</body></message>';
+
         $result = $this->receiver->processMessageFromXml($xml);
         $this->assertTrue($result);
     }

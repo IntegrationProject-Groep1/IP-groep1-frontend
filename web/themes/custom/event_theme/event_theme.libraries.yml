@@ -1,0 +1,5 @@
+# Global frontend assets loaded by the event theme.
+global:
+  css:
+    theme:
+      css/style.css: {}

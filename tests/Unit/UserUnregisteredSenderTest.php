@@ -5,6 +5,9 @@ use PHPUnit\Framework\TestCase;
 use Drupal\rabbitmq_sender\UserUnregisteredSender;
 use Drupal\rabbitmq_sender\RabbitMQClient;
 
+/**
+ * Unit tests for user unregistered sender validation and XML generation.
+ */
 class UserUnregisteredSenderTest extends TestCase
 {
     private UserUnregisteredSender $sender;
@@ -18,6 +21,7 @@ class UserUnregisteredSenderTest extends TestCase
     public function test_throws_exception_when_user_id_is_missing(): void
     {
         $this->expectException(\InvalidArgumentException::class);
+
         $this->sender->send([
             'session_id' => 'session-uuid-001',
         ]);
@@ -26,6 +30,7 @@ class UserUnregisteredSenderTest extends TestCase
     public function test_throws_exception_when_session_id_is_missing(): void
     {
         $this->expectException(\InvalidArgumentException::class);
+
         $this->sender->send([
             'user_id' => 'uuid-v4-hier',
         ]);

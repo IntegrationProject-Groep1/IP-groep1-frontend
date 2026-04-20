@@ -5,7 +5,11 @@ namespace Drupal\rabbitmq_receiver;
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
 use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable;
 
+/**
+ * Consumes badge scan events from RabbitMQ.
+ */
 class BadgeScannedReceiver
 {
     private RabbitMQClient $client;
@@ -18,7 +22,27 @@ class BadgeScannedReceiver
     public function listen(): void
     {
         $channel = $this->client->getChannel();
-        $channel->queue_declare('badge.scanned', false, true, false, false);
+
+        // DLX + DLQ setup
+        $channel->exchange_declare('dlx_exchange', 'direct', false, true, false);
+        $channel->queue_declare('badge.scanned.dlq', false, true, false, false);
+        $channel->queue_bind('badge.scanned.dlq', 'dlx_exchange', 'badge.scanned.dlq');
+
+        // Main queue met DLQ config
+        $args = new AMQPTable([
+            'x-dead-letter-exchange' => 'dlx_exchange',
+            'x-dead-letter-routing-key' => 'badge.scanned.dlq'
+        ]);
+
+        $channel->queue_declare(
+            'badge.scanned',
+            false,
+            true,
+            false,
+            false,
+            false,
+            $args
+        );
 
         $channel->basic_consume(
             'badge.scanned',
@@ -46,8 +70,8 @@ class BadgeScannedReceiver
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
-        $userId = (string) $xml->payload->user_id;
-        $badgeId = (string) $xml->payload->badge_id;
+        $userId = (string) $xml->body->user_id;
+        $badgeId = (string) $xml->body->badge_id;
 
         if (empty($userId)) {
             throw new \InvalidArgumentException('user_id is required');
@@ -68,8 +92,8 @@ class BadgeScannedReceiver
                 throw new \InvalidArgumentException('Invalid XML received');
             }
 
-            $userId = (string) $xml->payload->user_id;
-            $badgeId = (string) $xml->payload->badge_id;
+            $userId = (string) $xml->body->user_id;
+            $badgeId = (string) $xml->body->badge_id;
 
             if (empty($userId)) {
                 throw new \InvalidArgumentException('user_id is required');
@@ -78,14 +102,15 @@ class BadgeScannedReceiver
                 throw new \InvalidArgumentException('badge_id is required');
             }
 
-            // Update badge_id in Drupal database
             echo "Badge scanned: {$userId} - {$badgeId}\n";
 
             $msg->ack();
 
         } catch (\Exception $e) {
             error_log('BadgeScannedReceiver error: ' . $e->getMessage());
-            $msg->nack();
+
+            // naar DLQ
+            $msg->nack(false, false);
         }
     }
 }

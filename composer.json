@@ -1,4 +1,7 @@
 {
+    "name": "integrationproject-groep1/ip-groep1-frontend",
+    "description": "Drupal frontend service for the Integration Project event platform.",
+    "license": "proprietary",
     "require": {
         "php-amqplib/php-amqplib": "^3.7"
     },
@@ -8,12 +11,17 @@
     "autoload": {
         "psr-4": {
             "Drupal\\rabbitmq_sender\\": "web/modules/custom/rabbitmq_sender/src/",
-            "Drupal\\rabbitmq_receiver\\": "web/modules/custom/rabbitmq_receiver/src/"
+            "Drupal\\rabbitmq_receiver\\": "web/modules/custom/rabbitmq_receiver/src/",
+            "Drupal\\registration_form\\": "web/modules/custom/registration_form/src/",
+            "Drupal\\session_enrollment\\": "web/modules/custom/session_enrollment/src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
             "Tests\\": "tests/"
         }
+    },
+    "scripts": {
+        "rabbitmq:smoke": "php scripts/rabbitmq_smoke_test.php"
     }
 }

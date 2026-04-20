@@ -5,7 +5,11 @@ namespace Drupal\rabbitmq_receiver;
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
 use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable;
 
+/**
+ * Consumes payment registration events from RabbitMQ.
+ */
 class PaymentRegisteredReceiver
 {
     private RabbitMQClient $client;
@@ -18,7 +22,27 @@ class PaymentRegisteredReceiver
     public function listen(): void
     {
         $channel = $this->client->getChannel();
-        $channel->queue_declare('payment.registered', false, true, false, false);
+
+        // DLX + DLQ setup
+        $channel->exchange_declare('dlx_exchange', 'direct', false, true, false);
+        $channel->queue_declare('payment.registered.dlq', false, true, false, false);
+        $channel->queue_bind('payment.registered.dlq', 'dlx_exchange', 'payment.registered.dlq');
+
+        // Main queue met DLQ config
+        $args = new AMQPTable([
+            'x-dead-letter-exchange' => 'dlx_exchange',
+            'x-dead-letter-routing-key' => 'payment.registered.dlq'
+        ]);
+
+        $channel->queue_declare(
+            'payment.registered',
+            false,
+            true,
+            false,
+            false,
+            false,
+            $args
+        );
 
         $channel->basic_consume(
             'payment.registered',
@@ -46,8 +70,8 @@ class PaymentRegisteredReceiver
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
-        $userId = (string) $xml->payload->user_id;
-        $status = (string) $xml->payload->status;
+        $userId = (string) $xml->body->user_id;
+        $status = (string) $xml->body->status;
 
         if (empty($userId)) {
             throw new \InvalidArgumentException('user_id is required');
@@ -68,8 +92,8 @@ class PaymentRegisteredReceiver
                 throw new \InvalidArgumentException('Invalid XML received');
             }
 
-            $userId = (string) $xml->payload->user_id;
-            $status = (string) $xml->payload->status;
+            $userId = (string) $xml->body->user_id;
+            $status = (string) $xml->body->status;
 
             if (empty($userId)) {
                 throw new \InvalidArgumentException('user_id is required');
@@ -78,14 +102,15 @@ class PaymentRegisteredReceiver
                 throw new \InvalidArgumentException('status is required');
             }
 
-            // Update payment_status in Drupal database
             echo "Payment registered: {$userId} - {$status}\n";
 
             $msg->ack();
 
         } catch (\Exception $e) {
             error_log('PaymentRegisteredReceiver error: ' . $e->getMessage());
-            $msg->nack();
+
+            // naar DLQ
+            $msg->nack(false, false);
         }
     }
 }

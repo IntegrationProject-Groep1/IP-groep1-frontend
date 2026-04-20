@@ -1,0 +1,54 @@
+{#
+  Template: registration-form.html.twig
+  Overrides the default Drupal form render for registration_form.
+#}
+{{ attach_library('event_theme/global') }}
+
+<div class="registration-card">
+  <div class="registration-card__header">
+    <h1 class="registration-card__title">Register for a session</h1>
+    <p class="registration-card__subtitle">
+      Fill in your details below to reserve your spot.
+    </p>
+  </div>
+
+  {# Status messages #}
+  {% if message %}
+    {{ message }}
+  {% endif %}
+
+  <form{{ attributes }}>
+    {{ form.form_build_id }}
+    {{ form.form_token }}
+    {{ form.form_id }}
+
+    {# Personal details #}
+    <div class="form-section">
+      <p class="form-section__title">Personal details</p>
+      <div class="form-row">
+        <div class="form-item">{{ form.first_name }}</div>
+        <div class="form-item">{{ form.last_name }}</div>
+      </div>
+      <div class="form-item">{{ form.email }}</div>
+    </div>
+
+    {# Session selection #}
+    <div class="form-section">
+      <p class="form-section__title">Session</p>
+      <div class="form-item">{{ form.session_id }}</div>
+    </div>
+
+    {# Company toggle + conditional fields #}
+    <div class="form-section">
+      <p class="form-section__title">Company (optional)</p>
+      <div class="form-item form-item--checkbox">
+        {{ form.is_company }}
+      </div>
+      <div class="form-fieldset">{{ form.company_fields }}</div>
+    </div>
+
+    {# Submit #}
+    {{ form.submit }}
+
+  </form>
+</div>

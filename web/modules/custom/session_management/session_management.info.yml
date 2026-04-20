@@ -1,0 +1,8 @@
+name: Session Management
+type: module
+description: 'Provides session creation and RabbitMQ integration with the Planning service.'
+core_version_requirement: ^10
+package: Custom
+dependencies:
+  - drupal:system
+  - rabbitmq_sender:rabbitmq_sender

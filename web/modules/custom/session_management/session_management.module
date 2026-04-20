@@ -1,0 +1,8 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * @file
+ * Integration hooks for the session_management module.
+ */

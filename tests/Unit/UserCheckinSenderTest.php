@@ -5,6 +5,9 @@ use PHPUnit\Framework\TestCase;
 use Drupal\rabbitmq_sender\UserCheckinSender;
 use Drupal\rabbitmq_sender\RabbitMQClient;
 
+/**
+ * Unit tests for user check-in sender input validation and XML output.
+ */
 class UserCheckinSenderTest extends TestCase
 {
     private UserCheckinSender $sender;

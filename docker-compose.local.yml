@@ -1,0 +1,25 @@
+services:
+  rabbitmq_local:
+    image: rabbitmq:3-management
+    container_name: rabbitmq_local
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_VHOST: /
+    networks:
+      - shift_net
+
+  frontend_drupal:
+    environment:
+      RABBITMQ_HOST: rabbitmq_local
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      RABBITMQ_VHOST: /
+    depends_on:
+      rabbitmq_local:
+        condition: service_started
