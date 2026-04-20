@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Drupal\session_enrollment\Service\SessionEnrollmentService;
-use Drupal\rabbitmq_sender\UserRegisteredSender;
+use Drupal\rabbitmq_sender\NewRegistrationSender;
 use Drupal\rabbitmq_sender\CalendarInviteSender;
 use PHPUnit\Framework\TestCase;
 
