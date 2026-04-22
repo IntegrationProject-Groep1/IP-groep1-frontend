@@ -5,14 +5,6 @@ namespace Drupal\rabbitmq_sender;
 
 /**
  * Sends calendar invite messages to Planning via the calendar.exchange topic exchange.
- *
- * Planning's consumer listens on:
- *   Exchange:    calendar.exchange  (topic, durable)
- *   Routing key: calendar.invite
- *   Queue:       planning.calendar.invite
- *
- * Required body fields: session_id, title, start_datetime, end_datetime
- * Optional body fields: location
  */
 class CalendarInviteSender
 {
@@ -47,7 +39,8 @@ class CalendarInviteSender
             throw new \InvalidArgumentException('end_datetime is required');
         }
 
-        \Drupal::logger('rabbitmq_sender')->info('Sending calendar invite', [
+        // ✅ FIX: safe logging
+        $this->log('info', 'Sending calendar invite', [
             'session_id' => $data['session_id'],
         ]);
 
@@ -83,7 +76,6 @@ class CalendarInviteSender
         $message = $dom->createElementNS(self::NAMESPACE, 'message');
         $dom->appendChild($message);
 
-        // Header
         $header = $dom->createElement('header');
         $header->appendChild($dom->createElement('message_id', $messageId));
         $header->appendChild($dom->createElement('timestamp', $timestamp));
@@ -91,7 +83,6 @@ class CalendarInviteSender
         $header->appendChild($dom->createElement('type', self::TYPE));
         $message->appendChild($header);
 
-        // Body
         $body = $dom->createElement('body');
         $body->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('title', htmlspecialchars((string) $data['title'], ENT_XML1, 'UTF-8')));
@@ -131,5 +122,15 @@ class CalendarInviteSender
         $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
 
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+    }
+
+    /**
+     * ✅ Safe logger (werkt in Drupal + PHPUnit)
+     */
+    private function log(string $level, string $message, array $context = []): void
+    {
+        if (class_exists('\Drupal')) {
+            \Drupal::logger('rabbitmq_sender')->{$level}($message, $context);
+        }
     }
 }
