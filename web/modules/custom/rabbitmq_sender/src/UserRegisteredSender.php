@@ -35,7 +35,14 @@ class UserRegisteredSender
             throw new \InvalidArgumentException('vat_number is required for companies');
         }
 
+        // ✅ Logging (business event)
+        \Drupal::logger('rabbitmq_sender')->info('Sending user registered event', [
+            'email' => $data['email'],
+            'session_id' => $data['session_id'],
+        ]);
+
         $xml = $this->buildXml($data);
+
         $this->sendWithRetry(function () use ($xml): void {
             $msg = new AMQPMessage($xml, ['delivery_mode' => 2]);
             $this->resolveClient()->getChannel()->basic_publish($msg, '', $this->queueName);

@@ -45,6 +45,12 @@ class NewRegistrationSender
             throw new \InvalidArgumentException('vat_number is required for companies');
         }
 
+        // ✅ Logging (business event)
+        \Drupal::logger('rabbitmq_sender')->info('Sending new registration', [
+            'user_id' => $data['user_id'],
+            'email' => $data['email'],
+        ]);
+
         $xml = $this->buildXml($data);
 
         try {
@@ -58,7 +64,7 @@ class NewRegistrationSender
                 $this->resolveClient()->getChannel()->basic_publish($msg, '', self::QUEUE_NAME);
             });
         } catch (\Throwable $e) {
-            // Let callers decide logging strategy through Drupal's logger channels.
+            // Do not log here → RabbitMQClient handles error logging
             throw $e;
         }
     }
@@ -69,7 +75,6 @@ class NewRegistrationSender
             throw new \InvalidArgumentException('date_of_birth is required; without it CRM will not synchronize the registration to Kassa.');
         }
 
-        // Correlation and message IDs are aligned to simplify cross-system tracing.
         $messageId = $this->generateUuidV4();
         $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
 
@@ -96,7 +101,6 @@ class NewRegistrationSender
         if (!empty($data['type'])) {
             $customer->appendChild($xml->createElement('type', (string) $data['type']));
         } elseif (array_key_exists('is_company', $data)) {
-            // Keep backward compatibility for clients still sending boolean company flags.
             $customer->appendChild($xml->createElement('type', !empty($data['is_company']) ? 'company' : 'private'));
         }
 
@@ -106,11 +110,8 @@ class NewRegistrationSender
             $customer->appendChild($xml->createElement('is_company_linked', !empty($data['is_company']) ? 'true' : 'false'));
         }
 
-        // CRM main branch expects first_name/last_name directly under customer.
         $customer->appendChild($xml->createElement('first_name', (string) $data['first_name']));
         $customer->appendChild($xml->createElement('last_name', (string) $data['last_name']));
-
-        // date_of_birth is always required by downstream CRM -> Kassa forwarding.
         $customer->appendChild($xml->createElement('date_of_birth', (string) $data['date_of_birth']));
 
         if (!empty($data['registration_date'])) {
@@ -155,7 +156,6 @@ class NewRegistrationSender
         if (!empty($data['registration_fee']) && is_array($data['registration_fee'])) {
             $registrationFee = $xml->createElement('registration_fee');
             if (isset($data['registration_fee']['amount']) && $data['registration_fee']['amount'] !== '') {
-                // CRM contract requires EUR for registration fee amounts.
                 $amount = $xml->createElement('amount', (string) $data['registration_fee']['amount']);
                 $amount->setAttribute('currency', 'eur');
                 $registrationFee->appendChild($amount);
@@ -198,7 +198,6 @@ class NewRegistrationSender
             return $this->client;
         }
 
-        // Fall back to environment configuration when no client is injected.
         $this->client = new RabbitMQClient(
             getenv('RABBITMQ_HOST') ?: 'rabbitmq_broker',
             (int) (getenv('RABBITMQ_PORT') ?: '5672'),

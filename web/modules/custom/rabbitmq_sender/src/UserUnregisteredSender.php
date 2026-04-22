@@ -35,6 +35,13 @@ class UserUnregisteredSender
             throw new \InvalidArgumentException('session_id is required');
         }
 
+        // ✅ Logging (business event)
+        \Drupal::logger('rabbitmq_sender')->info('Sending user unregistered event', [
+            'user_id' => $data['user_id'],
+            'session_id' => $data['session_id'],
+            'queues' => self::QUEUES,
+        ]);
+
         $xml = $this->buildXml($data);
 
         // Fan out to all subscribed integration queues.

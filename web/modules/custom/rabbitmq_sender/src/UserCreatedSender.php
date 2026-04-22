@@ -26,7 +26,14 @@ class UserCreatedSender
             throw new \InvalidArgumentException('email is required');
         }
 
+        // ✅ Logging (business event)
+        \Drupal::logger('rabbitmq_sender')->info('Sending user created event', [
+            'email' => $data['email'],
+            'is_company' => !empty($data['is_company']),
+        ]);
+
         $xml = $this->buildXml($data);
+
         $this->sendWithRetry(function () use ($xml): void {
             $msg = new AMQPMessage($xml, ['delivery_mode' => 2]);
             $this->client->getChannel()->basic_publish($msg, '', 'user.created');

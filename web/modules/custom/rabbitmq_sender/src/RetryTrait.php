@@ -18,7 +18,6 @@ trait RetryTrait
     ): void {
         $attempt = 0;
 
-        // Retry up to maxRetries and rethrow on final failure.
         while ($attempt < $maxRetries) {
             try {
                 $sendFunction();
@@ -26,13 +25,24 @@ trait RetryTrait
             } catch (\Exception $e) {
                 $attempt++;
 
+                // ⚠️ Optional: warning bij retry
+                \Drupal::logger('rabbitmq_sender')->warning('Retrying message send', [
+                    'attempt' => $attempt,
+                    'max_retries' => $maxRetries,
+                    'error' => $e->getMessage(),
+                ]);
+
                 if ($attempt >= $maxRetries) {
-                    error_log("Failed to send message after {$maxRetries} attempts: " . $e->getMessage());
+                    // ❗ Final failure = error
+                    \Drupal::logger('rabbitmq_sender')->error('Failed to send message after retries', [
+                        'max_retries' => $maxRetries,
+                        'error' => $e->getMessage(),
+                    ]);
+
                     throw $e;
                 }
 
                 if ($waitSeconds > 0) {
-                    // Keep retries bounded and quiet in web requests.
                     sleep(min($waitSeconds, 5));
                 }
             }

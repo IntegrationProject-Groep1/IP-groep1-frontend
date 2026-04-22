@@ -29,7 +29,14 @@ class UserCheckinSender
             throw new \InvalidArgumentException('badge_id is required');
         }
 
+        // ✅ Logging (business event)
+        \Drupal::logger('rabbitmq_sender')->info('Sending user check-in', [
+            'user_id' => $data['user_id'],
+            'badge_id' => $data['badge_id'],
+        ]);
+
         $xml = $this->buildXml($data);
+
         $this->sendWithRetry(function () use ($xml): void {
             $msg = new AMQPMessage($xml, ['delivery_mode' => 2]);
             $this->client->getChannel()->basic_publish($msg, '', 'user.checkin');
