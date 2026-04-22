@@ -5,6 +5,7 @@ namespace Drupal\rabbitmq_receiver;
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
 use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable; // ✅ toegevoegd
 
 /**
  * Consumes session_updated events from Planning via the planning.exchange topic exchange.
@@ -38,7 +39,19 @@ class SessionUpdateReceiver
         $channel = $this->client->getChannel();
 
         $channel->exchange_declare(self::EXCHANGE, self::EXCHANGE_TYPE, false, true, false);
-        $channel->queue_declare(self::QUEUE, false, true, false, false);
+
+        // ✅ DLX + DLQ toegevoegd
+        $channel->exchange_declare('dlx_exchange', 'direct', false, true, false);
+        $channel->queue_declare(self::QUEUE . '.dlq', false, true, false, false);
+        $channel->queue_bind(self::QUEUE . '.dlq', 'dlx_exchange', self::QUEUE . '.dlq');
+
+        // ✅ Main queue aangepast
+        $args = new AMQPTable([
+            'x-dead-letter-exchange' => 'dlx_exchange',
+            'x-dead-letter-routing-key' => self::QUEUE . '.dlq'
+        ]);
+
+        $channel->queue_declare(self::QUEUE, false, true, false, false, false, $args);
         $channel->queue_bind(self::QUEUE, self::EXCHANGE, self::ROUTING_KEY);
 
         $channel->basic_consume(
@@ -140,7 +153,8 @@ class SessionUpdateReceiver
             $msg->ack();
         } catch (\Exception $e) {
             error_log('SessionUpdateReceiver error: ' . $e->getMessage());
-            $msg->nack(false);
+
+            $msg->nack(false, false); // 🔥 aangepast → DLQ
         }
     }
 }
