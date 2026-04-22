@@ -63,6 +63,7 @@ class UserUnregisteredSender
             mt_rand(0, 0x3fff) | 0x8000,
             mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
         );
+
         $timestamp = (new \DateTime())->format('c');
 
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
@@ -76,11 +77,13 @@ class UserUnregisteredSender
         $xml .= '<version>1.0</version>';
         $xml .= '<correlation_id></correlation_id>';
         $xml .= '</header>';
+
         $xml .= '<body>';
         $xml .= '<user_id>' . htmlspecialchars($data['user_id'], ENT_XML1, 'UTF-8') . '</user_id>';
         $xml .= '<session_id>' . htmlspecialchars($data['session_id'], ENT_XML1, 'UTF-8') . '</session_id>';
         $xml .= "<timestamp>{$timestamp}</timestamp>";
         $xml .= '</body>';
+
         $xml .= '</message>';
 
         return $xml;
