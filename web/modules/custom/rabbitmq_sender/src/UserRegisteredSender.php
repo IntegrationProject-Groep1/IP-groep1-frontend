@@ -41,6 +41,12 @@ class UserRegisteredSender
             'session_id' => $data['session_id'],
         ]);
 
+        // ✅ Logging (business event)
+        \Drupal::logger('rabbitmq_sender')->info('Sending user registered event', [
+            'email' => $data['email'],
+            'session_id' => $data['session_id'],
+        ]);
+
         $xml = $this->buildXml($data);
 
         $this->sendWithRetry(function () use ($xml): void {

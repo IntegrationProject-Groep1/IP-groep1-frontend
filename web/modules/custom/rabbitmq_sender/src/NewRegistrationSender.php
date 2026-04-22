@@ -25,7 +25,6 @@ class NewRegistrationSender
 
     public function send(array $data): void
     {
-        // Validate required contract fields before building and publishing XML.
         if (empty($data['email'])) {
             throw new \InvalidArgumentException('email is required');
         }
@@ -39,13 +38,14 @@ class NewRegistrationSender
             throw new \InvalidArgumentException('last_name is required');
         }
         if (empty($data['date_of_birth'])) {
-            throw new \InvalidArgumentException('date_of_birth is required; without it CRM will not synchronize the registration to Kassa.');
+            throw new \InvalidArgumentException('date_of_birth is required');
         }
+
         if (!empty($data['is_company']) && empty($data['vat_number'])) {
             throw new \InvalidArgumentException('vat_number is required for companies');
         }
 
-        // ✅ Logging (business event)
+        // ✅ Logging
         \Drupal::logger('rabbitmq_sender')->info('Sending new registration', [
             'user_id' => $data['user_id'],
             'email' => $data['email'],
@@ -55,31 +55,27 @@ class NewRegistrationSender
 
         try {
             $this->sendWithRetry(function () use ($xml): void {
-                // Ensure target queue exists before publishing to the default exchange.
                 $this->resolveClient()->declareQueue(self::QUEUE_NAME);
+
                 $msg = new AMQPMessage($xml, [
                     'delivery_mode' => 2,
                     'content_type' => 'application/xml',
                 ]);
+
                 $this->resolveClient()->getChannel()->basic_publish($msg, '', self::QUEUE_NAME);
             });
         } catch (\Throwable $e) {
-            // Do not log here → RabbitMQClient handles error logging
+            // logging gebeurt in RabbitMQClient
             throw $e;
         }
     }
 
     public function buildXml(array $data): string
     {
-        if (empty($data['date_of_birth'])) {
-            throw new \InvalidArgumentException('date_of_birth is required; without it CRM will not synchronize the registration to Kassa.');
-        }
-
         $messageId = $this->generateUuidV4();
         $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
 
         $xml = new \DOMDocument('1.0', 'UTF-8');
-        $xml->formatOutput = false;
 
         $message = $xml->createElement('message');
         $xml->appendChild($message);
@@ -95,15 +91,18 @@ class NewRegistrationSender
 
         $body = $xml->createElement('body');
         $customer = $xml->createElement('customer');
+
         $customer->appendChild($xml->createElement('email', (string) $data['email']));
         $customer->appendChild($xml->createElement('user_id', (string) $data['user_id']));
 
+        // type handling
         if (!empty($data['type'])) {
             $customer->appendChild($xml->createElement('type', (string) $data['type']));
         } elseif (array_key_exists('is_company', $data)) {
             $customer->appendChild($xml->createElement('type', !empty($data['is_company']) ? 'company' : 'private'));
         }
 
+        // company link
         if (array_key_exists('is_company_linked', $data)) {
             $customer->appendChild($xml->createElement('is_company_linked', !empty($data['is_company_linked']) ? 'true' : 'false'));
         } elseif (array_key_exists('is_company', $data)) {
@@ -114,28 +113,16 @@ class NewRegistrationSender
         $customer->appendChild($xml->createElement('last_name', (string) $data['last_name']));
         $customer->appendChild($xml->createElement('date_of_birth', (string) $data['date_of_birth']));
 
-        if (!empty($data['registration_date'])) {
-            $customer->appendChild($xml->createElement('registration_date', (string) $data['registration_date']));
-        }
-
-        if (!empty($data['badge_id'])) {
-            $customer->appendChild($xml->createElement('badge_id', (string) $data['badge_id']));
-        }
-
-        if (!empty($data['company_name'])) {
-            $customer->appendChild($xml->createElement('company_name', (string) $data['company_name']));
-        }
-
         if (!empty($data['vat_number'])) {
             $customer->appendChild($xml->createElement('vat_number', (string) $data['vat_number']));
         }
 
+        // address
         if (!empty($data['address']) && is_array($data['address'])) {
             $address = $xml->createElement('address');
-            $addressFields = ['street', 'number', 'postal_code', 'city'];
 
-            foreach ($addressFields as $field) {
-                if (isset($data['address'][$field]) && $data['address'][$field] !== '') {
+            foreach (['street', 'number', 'postal_code', 'city'] as $field) {
+                if (!empty($data['address'][$field])) {
                     $address->appendChild($xml->createElement($field, (string) $data['address'][$field]));
                 }
             }
@@ -153,9 +140,11 @@ class NewRegistrationSender
             }
         }
 
+        // registration fee
         if (!empty($data['registration_fee']) && is_array($data['registration_fee'])) {
             $registrationFee = $xml->createElement('registration_fee');
-            if (isset($data['registration_fee']['amount']) && $data['registration_fee']['amount'] !== '') {
+
+            if (!empty($data['registration_fee']['amount'])) {
                 $amount = $xml->createElement('amount', (string) $data['registration_fee']['amount']);
                 $amount->setAttribute('currency', 'eur');
                 $registrationFee->appendChild($amount);
