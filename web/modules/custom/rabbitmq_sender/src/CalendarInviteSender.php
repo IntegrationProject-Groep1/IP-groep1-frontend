@@ -1,38 +1,38 @@
-    <?php
-    declare(strict_types=1);
+<?php
+declare(strict_types=1);
 
-    namespace Drupal\rabbitmq_sender;
+namespace Drupal\rabbitmq_sender;
 
-    /**
-     * Sends calendar invite messages to Planning via the calendar.exchange topic exchange.
-     *
-     * Planning's consumer listens on:
-     *   Exchange:    calendar.exchange  (topic, durable)
-     *   Routing key: calendar.invite
-     *   Queue:       planning.calendar.invite
-     *
-     * Required body fields: session_id, title, start_datetime, end_datetime
-     * Optional body fields: location
-     */
-    class CalendarInviteSender
+/**
+ * Sends calendar invite messages to Planning via the calendar.exchange topic exchange.
+ *
+ * Planning's consumer listens on:
+ *   Exchange:    calendar.exchange  (topic, durable)
+ *   Routing key: calendar.invite
+ *   Queue:       planning.calendar.invite
+ *
+ * Required body fields: session_id, title, start_datetime, end_datetime
+ * Optional body fields: location
+ */
+class CalendarInviteSender
+{
+    use RetryTrait;
+
+    private const EXCHANGE      = 'calendar.exchange';
+    private const ROUTING_KEY   = 'calendar.invite';
+    private const EXCHANGE_TYPE = 'topic';
+    private const SOURCE        = 'frontend';
+    private const TYPE          = 'calendar.invite';
+    private const NAMESPACE     = 'urn:integration:planning:v1';
+
+    private ?RabbitMQClient $client;
+
+    public function __construct(?RabbitMQClient $client = null)
     {
-        use RetryTrait;
+        $this->client = $client;
+    }
 
-        private const EXCHANGE      = 'calendar.exchange';
-        private const ROUTING_KEY   = 'calendar.invite';
-        private const EXCHANGE_TYPE = 'topic';
-        private const SOURCE        = 'frontend';
-        private const TYPE          = 'calendar.invite';
-        private const NAMESPACE     = 'urn:integration:planning:v1';
-
-        private ?RabbitMQClient $client;
-
-        public function __construct(?RabbitMQClient $client = null)
-        {
-            $this->client = $client;
-        }
-
-        public function send(array $data): void
+    public function send(array $data): void
     {
         if (empty($data['session_id'])) {
             throw new \InvalidArgumentException('session_id is required');
@@ -59,79 +59,77 @@
         });
     }
 
-        public function buildXml(array $data): string
-        {
-            if (empty($data['session_id'])) {
-                throw new \InvalidArgumentException('session_id is required');
-            }
-            if (empty($data['title'])) {
-                throw new \InvalidArgumentException('title is required');
-            }
-            if (empty($data['start_datetime'])) {
-                throw new \InvalidArgumentException('start_datetime is required');
-            }
-            if (empty($data['end_datetime'])) {
-                throw new \InvalidArgumentException('end_datetime is required');
-            }
-
-            $messageId = $this->generateUuidV4();
-            $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
-
-            $dom = new \DOMDocument('1.0', 'UTF-8');
-            $dom->formatOutput = false;
-
-            $message = $dom->createElementNS(self::NAMESPACE, 'message');
-            $dom->appendChild($message);
-
-            // Header — aligned with Planning's expected namespace and field names.
-            $header = $dom->createElement('header');
-            $header->appendChild($dom->createElement('message_id', $messageId));
-            $header->appendChild($dom->createElement('timestamp', $timestamp));
-            $header->appendChild($dom->createElement('source', self::SOURCE));
-            $header->appendChild($dom->createElement('type', self::TYPE));
-            $message->appendChild($header);
-
-            // Body — only the fields Planning's consumer actually reads.
-            $body = $dom->createElement('body');
-            $body->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
-            $body->appendChild($dom->createElement('title', htmlspecialchars((string) $data['title'], ENT_XML1, 'UTF-8')));
-            $body->appendChild($dom->createElement('start_datetime', htmlspecialchars((string) $data['start_datetime'], ENT_XML1, 'UTF-8')));
-            $body->appendChild($dom->createElement('end_datetime', htmlspecialchars((string) $data['end_datetime'], ENT_XML1, 'UTF-8')));
-
-            // location is optional per Planning's schema.
-            if (array_key_exists('location', $data)) {
-                $body->appendChild($dom->createElement('location', htmlspecialchars((string) $data['location'], ENT_XML1, 'UTF-8')));
-            }
-
-            $message->appendChild($body);
-
-            return $dom->saveXML() ?: '';
+    public function buildXml(array $data): string
+    {
+        if (empty($data['session_id'])) {
+            throw new \InvalidArgumentException('session_id is required');
+        }
+        if (empty($data['title'])) {
+            throw new \InvalidArgumentException('title is required');
+        }
+        if (empty($data['start_datetime'])) {
+            throw new \InvalidArgumentException('start_datetime is required');
+        }
+        if (empty($data['end_datetime'])) {
+            throw new \InvalidArgumentException('end_datetime is required');
         }
 
-        private function resolveClient(): RabbitMQClient
-        {
-            if ($this->client !== null) {
-                return $this->client;
-            }
+        $messageId = $this->generateUuidV4();
+        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
 
-            // Fall back to environment configuration when no client is injected.
-            $this->client = new RabbitMQClient(
-                (string) (getenv('RABBITMQ_HOST') ?: 'rabbitmq_broker'),
-                (int)    (getenv('RABBITMQ_PORT') ?: 5672),
-                (string) (getenv('RABBITMQ_USER') ?: 'guest'),
-                (string) (getenv('RABBITMQ_PASS') ?: 'guest'),
-                (string) (getenv('RABBITMQ_VHOST') ?: '/')
-            );
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        $dom->formatOutput = false;
 
+        $message = $dom->createElementNS(self::NAMESPACE, 'message');
+        $dom->appendChild($message);
+
+        // Header
+        $header = $dom->createElement('header');
+        $header->appendChild($dom->createElement('message_id', $messageId));
+        $header->appendChild($dom->createElement('timestamp', $timestamp));
+        $header->appendChild($dom->createElement('source', self::SOURCE));
+        $header->appendChild($dom->createElement('type', self::TYPE));
+        $message->appendChild($header);
+
+        // Body
+        $body = $dom->createElement('body');
+        $body->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
+        $body->appendChild($dom->createElement('title', htmlspecialchars((string) $data['title'], ENT_XML1, 'UTF-8')));
+        $body->appendChild($dom->createElement('start_datetime', htmlspecialchars((string) $data['start_datetime'], ENT_XML1, 'UTF-8')));
+        $body->appendChild($dom->createElement('end_datetime', htmlspecialchars((string) $data['end_datetime'], ENT_XML1, 'UTF-8')));
+
+        if (array_key_exists('location', $data)) {
+            $body->appendChild($dom->createElement('location', htmlspecialchars((string) $data['location'], ENT_XML1, 'UTF-8')));
+        }
+
+        $message->appendChild($body);
+
+        return $dom->saveXML() ?: '';
+    }
+
+    private function resolveClient(): RabbitMQClient
+    {
+        if ($this->client !== null) {
             return $this->client;
         }
 
-        private function generateUuidV4(): string
-        {
-            $bytes = random_bytes(16);
-            $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
-            $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+        $this->client = new RabbitMQClient(
+            (string) (getenv('RABBITMQ_HOST') ?: 'rabbitmq_broker'),
+            (int) (getenv('RABBITMQ_PORT') ?: 5672),
+            (string) (getenv('RABBITMQ_USER') ?: 'guest'),
+            (string) (getenv('RABBITMQ_PASS') ?: 'guest'),
+            (string) (getenv('RABBITMQ_VHOST') ?: '/')
+        );
 
-            return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
-        }
+        return $this->client;
     }
+
+    private function generateUuidV4(): string
+    {
+        $bytes = random_bytes(16);
+        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+    }
+}
