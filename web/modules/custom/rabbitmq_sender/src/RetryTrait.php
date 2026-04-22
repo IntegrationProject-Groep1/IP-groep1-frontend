@@ -25,16 +25,15 @@ trait RetryTrait
             } catch (\Exception $e) {
                 $attempt++;
 
-                // ⚠️ Optional: warning bij retry
-                \Drupal::logger('rabbitmq_sender')->warning('Retrying message send', [
+                // Logging alleen als Drupal bestaat (CI-safe)
+                $this->log('warning', 'Retrying message send', [
                     'attempt' => $attempt,
                     'max_retries' => $maxRetries,
                     'error' => $e->getMessage(),
                 ]);
 
                 if ($attempt >= $maxRetries) {
-                    // ❗ Final failure = error
-                    \Drupal::logger('rabbitmq_sender')->error('Failed to send message after retries', [
+                    $this->log('error', 'Failed to send message after retries', [
                         'max_retries' => $maxRetries,
                         'error' => $e->getMessage(),
                     ]);
@@ -46,6 +45,16 @@ trait RetryTrait
                     sleep(min($waitSeconds, 5));
                 }
             }
+        }
+    }
+
+    /**
+     * Safe logger (werkt zowel in Drupal als PHPUnit)
+     */
+    private function log(string $level, string $message, array $context = []): void
+    {
+        if (class_exists('\Drupal')) {
+            \Drupal::logger('rabbitmq_sender')->{$level}($message, $context);
         }
     }
 }
