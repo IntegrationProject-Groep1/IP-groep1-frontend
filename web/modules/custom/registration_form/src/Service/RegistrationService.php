@@ -6,6 +6,7 @@ namespace Drupal\registration_form\Service;
 
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\rabbitmq_sender\IdentityServiceClient;
 use Drupal\rabbitmq_sender\NewRegistrationSender;
 use Drupal\user\Entity\User;
 
@@ -23,6 +24,7 @@ class RegistrationService
         private readonly EntityTypeManagerInterface $entityTypeManager,
         private readonly NewRegistrationSender $registrationSender,
         private readonly ?RegistrationCrmPayloadBuilder $crmPayloadBuilder = null,
+        private readonly ?IdentityServiceClient $identityClient = null,
     ) {}
 
     /**
@@ -43,6 +45,15 @@ class RegistrationService
         ]);
 
         $user = $this->createLocalUser($data);
+
+        // Retrieve the master UUID from the Identity Service so CRM can correlate
+        // this user across all downstream systems. Non-fatal: if Identity Service
+        // is unavailable the registration still succeeds locally.
+        $masterUuid = $this->resolveMasterUuid((string) $data['email'], $logger);
+        if ($masterUuid !== '') {
+            $this->storeMasterUuidOnUser((int) $user->id(), $masterUuid);
+            $data['master_uuid'] = $masterUuid;
+        }
 
         $payloadBuilder = $this->crmPayloadBuilder ?? new RegistrationCrmPayloadBuilder();
         $payload = $payloadBuilder->build($data, (string) $user->id());
@@ -176,6 +187,40 @@ class RegistrationService
         }
 
         return in_array(strtolower(trim((string) $value)), ['1', 'true', 'yes', 'on'], true);
+    }
+
+    /**
+     * Calls the Identity Service to retrieve (or create) the master UUID for an email.
+     * Returns an empty string when the client is not configured or the call fails.
+     */
+    private function resolveMasterUuid(string $email, \Drupal\Core\Logger\LoggerChannelInterface $logger): string
+    {
+        if ($this->identityClient === null) {
+            return '';
+        }
+
+        try {
+            return $this->identityClient->createOrGet($email);
+        } catch (\Throwable $e) {
+            $logger->warning('Identity Service call failed for @email: @message', [
+                '@email'   => $email,
+                '@message' => $e->getMessage(),
+            ]);
+
+            return '';
+        }
+    }
+
+    /**
+     * Stores master_uuid on the Drupal user via user.data (no schema change needed).
+     */
+    private function storeMasterUuidOnUser(int $userId, string $masterUuid): void
+    {
+        if (!class_exists('\Drupal') || !\Drupal::hasContainer()) {
+            return;
+        }
+
+        \Drupal::service('user.data')->set('registration_form', $userId, 'master_uuid', $masterUuid);
     }
 
 }

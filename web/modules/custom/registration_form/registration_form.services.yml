@@ -3,6 +3,9 @@ services:
   rabbitmq_sender.new_registration_sender:
     class: Drupal\rabbitmq_sender\NewRegistrationSender
 
+  rabbitmq_sender.identity_service_client:
+    class: Drupal\rabbitmq_sender\IdentityServiceClient
+
   registration_form.crm_payload_builder:
     class: Drupal\registration_form\Service\RegistrationCrmPayloadBuilder
 
@@ -13,3 +16,4 @@ services:
       - '@entity_type.manager'
       - '@rabbitmq_sender.new_registration_sender'
       - '@registration_form.crm_payload_builder'
+      - '@rabbitmq_sender.identity_service_client'

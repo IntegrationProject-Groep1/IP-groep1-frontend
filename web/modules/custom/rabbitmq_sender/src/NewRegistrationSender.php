@@ -86,6 +86,11 @@ class NewRegistrationSender
         $header->appendChild($xml->createElement('type', self::MESSAGE_TYPE));
         $header->appendChild($xml->createElement('timestamp', $timestamp));
         $header->appendChild($xml->createElement('source', $this->resolveSource()));
+
+        if (!empty($data['master_uuid'])) {
+            $header->appendChild($xml->createElement('master_uuid', (string) $data['master_uuid']));
+        }
+
         $message->appendChild($header);
 
         $body = $xml->createElement('body');
