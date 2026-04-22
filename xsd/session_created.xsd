@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  XSD: session.created  (received by Frontend from Planning)
+  Direction : Planning → Frontend
+              (exchange: planning.exchange, routing key: planning.session.created,
+               queue:    frontend.planning.session.created)
+  Receiver  : SessionCreatedReceiver
+  Namespace : urn:integration:planning:v1
+-->
+<xs:schema
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:tns="urn:integration:planning:v1"
+    targetNamespace="urn:integration:planning:v1"
+    elementFormDefault="qualified"
+    attributeFormDefault="unqualified">
+
+  <xs:element name="message">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="header">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="message_id"     type="xs:string"/>
+              <xs:element name="timestamp"      type="xs:dateTime"/>
+              <xs:element name="source"         type="xs:string"/>
+              <xs:element name="type"           type="xs:string" fixed="session.created"/>
+              <xs:element name="version"        type="xs:string"/>
+              <xs:element name="correlation_id" type="xs:string" minOccurs="0"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+        <xs:element name="body">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="session_id"         type="xs:string"/>
+              <xs:element name="title"              type="xs:string"/>
+              <xs:element name="start_datetime"     type="xs:dateTime"/>
+              <xs:element name="end_datetime"       type="xs:dateTime"/>
+              <xs:element name="location"           type="xs:string" minOccurs="0"/>
+              <xs:element name="session_type"       type="xs:string" minOccurs="0"/>
+              <xs:element name="status"             type="xs:string" minOccurs="0"/>
+              <xs:element name="max_attendees"      type="xs:nonNegativeInteger" minOccurs="0"/>
+              <xs:element name="current_attendees"  type="xs:nonNegativeInteger" minOccurs="0"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>
