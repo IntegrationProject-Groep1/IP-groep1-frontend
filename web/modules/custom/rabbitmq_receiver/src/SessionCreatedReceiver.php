@@ -5,6 +5,7 @@ namespace Drupal\rabbitmq_receiver;
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
 use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable; // ✅ toegevoegd
 
 /**
  * Receives session.created events from Planning via the planning.exchange topic exchange.
@@ -40,8 +41,19 @@ class SessionCreatedReceiver
         // Declare the exchange idempotently — safe to call even if Planning already declared it.
         $channel->exchange_declare(self::EXCHANGE, self::EXCHANGE_TYPE, false, true, false);
 
+        // ✅ DLX + DLQ toegevoegd
+        $channel->exchange_declare('dlx_exchange', 'direct', false, true, false);
+        $channel->queue_declare(self::QUEUE . '.dlq', false, true, false, false);
+        $channel->queue_bind(self::QUEUE . '.dlq', 'dlx_exchange', self::QUEUE . '.dlq');
+
+        // ✅ Main queue aangepast met DLQ config
+        $args = new AMQPTable([
+            'x-dead-letter-exchange' => 'dlx_exchange',
+            'x-dead-letter-routing-key' => self::QUEUE . '.dlq'
+        ]);
+
         // Declare our own durable queue so messages queue up when we are offline.
-        $channel->queue_declare(self::QUEUE, false, true, false, false);
+        $channel->queue_declare(self::QUEUE, false, true, false, false, false, $args);
 
         // Bind our queue to the exchange with Planning's routing key.
         $channel->queue_bind(self::QUEUE, self::EXCHANGE, self::ROUTING_KEY);
@@ -79,12 +91,9 @@ class SessionCreatedReceiver
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
-        // Planning wraps content in <header> + <body>. Register the namespace so
-        // XPath works regardless of whether the prefix is declared on child nodes.
         $namespaces = $xml->getNamespaces(true);
         $ns = reset($namespaces) ?: null;
 
-        // Access body — handle both namespaced and non-namespaced XML gracefully.
         if ($ns !== null) {
             $xml->registerXPathNamespace('ns', $ns);
             $bodyNodes = $xml->xpath('ns:body') ?: $xml->xpath('body');
@@ -136,7 +145,6 @@ class SessionCreatedReceiver
         try {
             $data = $this->processMessageFromXml($msg->body);
 
-            // Placeholder — wire to Drupal session storage / calendar service here.
             echo sprintf(
                 "session.created received: %s | %s | %s → %s | attendees: %d/%d\n",
                 $data['session_id'],
@@ -150,8 +158,8 @@ class SessionCreatedReceiver
             $msg->ack();
         } catch (\Exception $e) {
             error_log('SessionCreatedReceiver error: ' . $e->getMessage());
-            // Do not requeue — malformed messages must not loop indefinitely.
-            $msg->nack(false);
+
+            $msg->nack(false, false); // 🔥 aangepast → DLQ
         }
     }
 }
