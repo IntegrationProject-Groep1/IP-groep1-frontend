@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  XSD: UserCreated  (received by Frontend from Identity Service)
+  Direction : Identity Service → Frontend
+              (exchange: user.events [fanout], queue: frontend.user_created)
+  Receiver  : UserCreatedReceiver
+
+  INTENTIONAL: flat structure — all fields are direct children of the root
+  <user_event> element, with no <header>/<body> wrapping and no namespace.
+  This is the Identity Service's own envelope format, not the planning:v1 standard.
+  Confirmed by UserCreatedReceiverTest.php which uses <user_event> as the root.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:element name="user_event">
+    <xs:complexType>
+      <xs:sequence>
+        <!-- Must be exactly "UserCreated" — receiver rejects any other value -->
+        <xs:element name="event">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="UserCreated"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="master_uuid"   type="xs:string"/>
+        <xs:element name="email"         type="xs:string"/>
+        <xs:element name="source_system" type="xs:string" minOccurs="0"/>
+        <xs:element name="timestamp"     type="xs:dateTime" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

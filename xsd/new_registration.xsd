@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  XSD: new_registration
+  Direction : Frontend → CRM (queue: crm.incoming)
+  Sender    : NewRegistrationSender
+  Version   : 2.0 (no target namespace)
+
+  INTENTIONAL DEVIATIONS from the v1.0 planning standard:
+  1. No xmlns / targetNamespace — CRM uses its own contract (v2.0).
+  2. <correlation_id> appears BEFORE <version> in the header.
+     This is the exact order NewRegistrationSender.php produces (DOMDocument
+     appends children in call order). Tests in NewRegistrationSenderTest verify
+     both fields are present; XSD field order here must stay in sync with the PHP.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:element name="message">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="header">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="message_id"     type="xs:string"/>
+              <xs:element name="correlation_id" type="xs:string"/>
+              <xs:element name="version"        type="xs:string" fixed="2.0"/>
+              <xs:element name="type"           type="xs:string" fixed="new_registration"/>
+              <xs:element name="timestamp"      type="xs:dateTime"/>
+              <xs:element name="source"         type="xs:string"/>
+              <xs:element name="master_uuid"    type="xs:string" minOccurs="0"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+        <xs:element name="body">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="customer">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="email"       type="xs:string"/>
+                    <xs:element name="user_id"     type="xs:string"/>
+                    <xs:element name="type"        minOccurs="0">
+                      <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                          <xs:enumeration value="private"/>
+                          <xs:enumeration value="company"/>
+                        </xs:restriction>
+                      </xs:simpleType>
+                    </xs:element>
+                    <xs:element name="is_company_linked" minOccurs="0">
+                      <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                          <xs:enumeration value="true"/>
+                          <xs:enumeration value="false"/>
+                        </xs:restriction>
+                      </xs:simpleType>
+                    </xs:element>
+                    <xs:element name="first_name"        type="xs:string"/>
+                    <xs:element name="last_name"         type="xs:string"/>
+                    <xs:element name="date_of_birth"     type="xs:string"/>
+                    <xs:element name="registration_date" type="xs:string" minOccurs="0"/>
+                    <xs:element name="badge_id"          type="xs:string" minOccurs="0"/>
+                    <xs:element name="company_name"      type="xs:string" minOccurs="0"/>
+                    <xs:element name="vat_number"        type="xs:string" minOccurs="0"/>
+
+                    <xs:element name="address" minOccurs="0">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="street"      type="xs:string" minOccurs="0"/>
+                          <xs:element name="number"      type="xs:string" minOccurs="0"/>
+                          <xs:element name="postal_code" type="xs:string" minOccurs="0"/>
+                          <xs:element name="city"        type="xs:string" minOccurs="0"/>
+                          <xs:element name="country"     minOccurs="0">
+                            <xs:simpleType>
+                              <xs:restriction base="xs:string">
+                                <!-- ISO 3166-1 alpha-2 country code, always uppercase -->
+                                <xs:pattern value="[A-Z]{2}"/>
+                              </xs:restriction>
+                            </xs:simpleType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+
+                    <xs:element name="registration_fee" minOccurs="0">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="amount" minOccurs="0">
+                            <xs:complexType>
+                              <xs:simpleContent>
+                                <xs:extension base="xs:decimal">
+                                  <!-- CRM contract requires EUR; attribute value is always "eur" -->
+                                  <xs:attribute name="currency" type="xs:string" use="required"/>
+                                </xs:extension>
+                              </xs:simpleContent>
+                            </xs:complexType>
+                          </xs:element>
+                          <xs:element name="paid" minOccurs="0">
+                            <xs:simpleType>
+                              <xs:restriction base="xs:string">
+                                <xs:enumeration value="true"/>
+                                <xs:enumeration value="false"/>
+                              </xs:restriction>
+                            </xs:simpleType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+
+              <xs:element name="session_id" type="xs:string" minOccurs="0"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>
