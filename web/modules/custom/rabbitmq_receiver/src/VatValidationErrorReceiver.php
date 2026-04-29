@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Drupal\rabbitmq_receiver;
@@ -8,110 +9,80 @@ use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
 
 /**
- * Consumes VAT validation error events from RabbitMQ.
+ * Receives vat_validation_error messages from the CRM system.
  */
 class VatValidationErrorReceiver
 {
-    private RabbitMQClient $client;
+    private const QUEUE = 'frontend.crm.vat.validation.error';
+    private const DLQ   = 'frontend.crm.vat.validation.error.dlq';
+    private const DLX   = 'frontend.crm.dlx';
 
-    public function __construct(RabbitMQClient $client)
+    public function __construct(private readonly RabbitMQClient $client) {}
+
+    /**
+     * Parse and validate an incoming vat_validation_error XML message.
+     *
+     * @return true
+     * @throws \InvalidArgumentException
+     */
+    public function processMessageFromXml(string $xmlString): mixed
     {
-        $this->client = $client;
-    }
+        libxml_use_internal_errors(true);
+        $xml = simplexml_load_string($xmlString);
+        libxml_clear_errors();
 
-    public function listen(): void
-    {
-        $channel = $this->client->getChannel();
-
-        // DLX + DLQ setup
-        $channel->exchange_declare('dlx_exchange', 'direct', false, true, false);
-        $channel->queue_declare('vat.validation.error.dlq', false, true, false, false);
-        $channel->queue_bind('vat.validation.error.dlq', 'dlx_exchange', 'vat.validation.error.dlq');
-
-        // Main queue met DLQ config
-        $args = new AMQPTable([
-            'x-dead-letter-exchange' => 'dlx_exchange',
-            'x-dead-letter-routing-key' => 'vat.validation.error.dlq'
-        ]);
-
-        $channel->queue_declare(
-            'vat.validation.error',
-            false,
-            true,
-            false,
-            false,
-            false,
-            $args
-        );
-
-        $channel->basic_consume(
-            'vat.validation.error',
-            '',
-            false,
-            false,
-            false,
-            false,
-            function (AMQPMessage $msg) {
-                $this->processMessage($msg);
-            }
-        );
-
-        echo "Listening for VAT validation errors...\n";
-
-        while ($channel->is_consuming()) {
-            $channel->wait();
-        }
-    }
-
-    public function processMessageFromXml(string $xmlString): bool
-    {
-        $xml = @simplexml_load_string($xmlString);
         if ($xml === false) {
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
-        $userId = (string) $xml->body->user_id;
-        $vatNumber = (string) $xml->body->vat_number;
+        $body = $xml->body;
 
-        if (empty($userId)) {
+        $userId = trim((string) $body->user_id);
+        if ($userId === '') {
             throw new \InvalidArgumentException('user_id is required');
         }
-        if (empty($vatNumber)) {
+
+        $vatNumber = trim((string) $body->vat_number);
+        if ($vatNumber === '') {
             throw new \InvalidArgumentException('vat_number is required');
         }
 
         return true;
     }
 
-    private function processMessage(AMQPMessage $msg): void
+    /**
+     * Subscribe to the vat_validation_error queue with DLQ support.
+     */
+    public function listen(): void
     {
-        try {
-            $xml = simplexml_load_string($msg->body);
+        $channel = $this->client->getChannel();
 
-            if ($xml === false) {
-                throw new \InvalidArgumentException('Invalid XML received');
+        $args = new AMQPTable([
+            'x-dead-letter-exchange'    => self::DLX,
+            'x-dead-letter-routing-key' => self::DLQ,
+        ]);
+
+        $channel->queue_declare(self::QUEUE, false, true, false, false, false, $args);
+
+        $channel->basic_consume(
+            self::QUEUE,
+            '',
+            false,
+            false,
+            false,
+            false,
+            function (AMQPMessage $msg): void {
+                try {
+                    $this->processMessageFromXml($msg->body);
+                    $msg->ack();
+                } catch (\Throwable $e) {
+                    $msg->nack(false, false);
+                }
             }
+        );
 
-            $userId = (string) $xml->body->user_id;
-            $vatNumber = (string) $xml->body->vat_number;
-            $errorMessage = (string) $xml->body->error_message;
-
-            if (empty($userId)) {
-                throw new \InvalidArgumentException('user_id is required');
-            }
-            if (empty($vatNumber)) {
-                throw new \InvalidArgumentException('vat_number is required');
-            }
-
-            echo "VAT validation error: {$userId} - {$vatNumber} - {$errorMessage}\n";
-
-            $msg->ack();
-
-        } catch (\Exception $e) {
-            error_log('VatValidationErrorReceiver error: ' . $e->getMessage());
-
-            // naar DLQ
-            $msg->nack(false, false);
+        while ($channel->is_consuming()) {
+            $channel->wait();
         }
     }
 }

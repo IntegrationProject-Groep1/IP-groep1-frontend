@@ -3,9 +3,9 @@ services:
     class: Drupal\session_enrollment\Service\SessionEnrollmentService
     arguments:
       - '@logger.factory'
-      - '@rabbitmq_sender.user_registered_sender'
+      - '@rabbitmq_sender.new_registration_sender'
       - '@rabbitmq_sender.calendar_invite_sender'
-  rabbitmq_sender.user_registered_sender:
-    class: Drupal\rabbitmq_sender\UserRegisteredSender
+  rabbitmq_sender.new_registration_sender:
+    class: Drupal\rabbitmq_sender\NewRegistrationSender
   rabbitmq_sender.calendar_invite_sender:
     class: Drupal\rabbitmq_sender\CalendarInviteSender
