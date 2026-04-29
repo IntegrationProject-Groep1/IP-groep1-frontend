@@ -11,7 +11,7 @@ class CalendarInviteSender
     use RetryTrait;
 
     private const EXCHANGE      = 'calendar.exchange';
-    private const ROUTING_KEY   = 'calendar.invite';
+    private const ROUTING_KEY   = 'frontend.to.planning.calendar.invite';
     private const EXCHANGE_TYPE = 'topic';
     private const SOURCE        = 'frontend';
     private const TYPE          = 'calendar.invite';

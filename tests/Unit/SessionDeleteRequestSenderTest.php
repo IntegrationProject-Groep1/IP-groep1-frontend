@@ -143,7 +143,7 @@ class SessionDeleteRequestSenderTest extends TestCase
         $mock->method('declareExchange');
         $mock->expects($this->once())
             ->method('publishToExchange')
-            ->with('planning.exchange', 'planning.session.delete.request', $this->anything());
+            ->with('planning.exchange', 'frontend.to.planning.session.delete', $this->anything());
 
         (new SessionDeleteRequestSender($mock))->send(['session_id' => 'sess-001']);
     }
@@ -156,7 +156,7 @@ class SessionDeleteRequestSenderTest extends TestCase
             ->method('publishToExchange')
             ->with(
                 'planning.exchange',
-                'planning.session.delete.request',
+                'frontend.to.planning.session.delete',
                 $this->callback(static function (string $xml): bool {
                     $dom = new \DOMDocument();
                     return $dom->loadXML($xml) !== false;

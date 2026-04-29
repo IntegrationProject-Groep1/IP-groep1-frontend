@@ -256,7 +256,7 @@ class CalendarInviteSenderTest extends TestCase
             ->method('publishToExchange')
             ->with(
                 'calendar.exchange',
-                'calendar.invite',
+                'frontend.to.planning.calendar.invite',
                 $this->anything()
             );
 
@@ -311,7 +311,7 @@ class CalendarInviteSenderTest extends TestCase
             ->method('publishToExchange')
             ->with(
                 'calendar.exchange',
-                'calendar.invite',
+                'frontend.to.planning.calendar.invite',
                 $this->callback(static function (string $xml): bool {
                     $dom = new \DOMDocument();
                     return $dom->loadXML($xml) !== false;

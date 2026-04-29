@@ -18,7 +18,7 @@ class SessionUpdateRequestSender
     use RetryTrait;
 
     private const EXCHANGE      = 'planning.exchange';
-    private const ROUTING_KEY   = 'planning.session.update.request';
+    private const ROUTING_KEY   = 'frontend.to.planning.session.update';
     private const EXCHANGE_TYPE = 'topic';
     private const SOURCE        = 'frontend';
     private const TYPE          = 'session_update_request';

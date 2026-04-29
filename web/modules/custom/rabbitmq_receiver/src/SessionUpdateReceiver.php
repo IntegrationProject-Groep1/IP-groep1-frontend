@@ -24,7 +24,7 @@ class SessionUpdateReceiver
 {
     private const EXCHANGE      = 'planning.exchange';
     private const EXCHANGE_TYPE = 'topic';
-    private const ROUTING_KEY   = 'planning.session.updated';
+    private const ROUTING_KEY   = 'planning.to.frontend.session.updated';
     private const QUEUE         = 'frontend.planning.session.updated';
 
     private RabbitMQClient $client;

@@ -214,7 +214,7 @@ class SessionUpdateRequestSenderTest extends TestCase
         $mock->method('declareExchange');
         $mock->expects($this->once())
             ->method('publishToExchange')
-            ->with('planning.exchange', 'planning.session.update.request', $this->anything());
+            ->with('planning.exchange', 'frontend.to.planning.session.update', $this->anything());
 
         (new SessionUpdateRequestSender($mock))->send($this->validData());
     }
@@ -227,7 +227,7 @@ class SessionUpdateRequestSenderTest extends TestCase
             ->method('publishToExchange')
             ->with(
                 'planning.exchange',
-                'planning.session.update.request',
+                'frontend.to.planning.session.update',
                 $this->callback(static function (string $xml): bool {
                     $dom = new \DOMDocument();
                     return $dom->loadXML($xml) !== false;
