@@ -39,4 +39,40 @@ class RabbitMQClientTest extends TestCase
         $client = new RabbitMQClient('localhost', 5672, 'user', 'pass', '/myvhost');
         $this->assertInstanceOf(RabbitMQClient::class, $client);
     }
+
+    public function test_constructor_accepts_environment_defaults(): void
+    {
+        $previousHost = getenv('RABBITMQ_HOST');
+        $previousPort = getenv('RABBITMQ_PORT');
+        $previousUser = getenv('RABBITMQ_USER');
+        $previousPass = getenv('RABBITMQ_PASS');
+        $previousVhost = getenv('RABBITMQ_VHOST');
+
+        putenv('RABBITMQ_HOST=localhost');
+        putenv('RABBITMQ_PORT=5672');
+        putenv('RABBITMQ_USER=guest');
+        putenv('RABBITMQ_PASS=guest');
+        putenv('RABBITMQ_VHOST=/');
+
+        try {
+            $client = new RabbitMQClient();
+            $this->assertInstanceOf(RabbitMQClient::class, $client);
+        } finally {
+            $this->restoreEnv('RABBITMQ_HOST', $previousHost);
+            $this->restoreEnv('RABBITMQ_PORT', $previousPort);
+            $this->restoreEnv('RABBITMQ_USER', $previousUser);
+            $this->restoreEnv('RABBITMQ_PASS', $previousPass);
+            $this->restoreEnv('RABBITMQ_VHOST', $previousVhost);
+        }
+    }
+
+    private function restoreEnv(string $name, string|false $value): void
+    {
+        if ($value === false) {
+            putenv($name);
+            return;
+        }
+
+        putenv($name . '=' . $value);
+    }
 }

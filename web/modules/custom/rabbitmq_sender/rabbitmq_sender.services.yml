@@ -1,0 +1,3 @@
+services:
+  rabbitmq_sender.client:
+    class: Drupal\rabbitmq_sender\RabbitMQClient
