@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  XSD: event_ended
-  Direction : Frontend → Facturatie (queue: event.ended)
-  Sender    : EventEndedSender
-  Version   : 2.0
-  Namespace : none (v2.0 standard — geen xmlns op <message>)
+  XSD: session_view_request
+  Direction : Frontend → Planning
+              (exchange: planning.exchange, routing key: planning.session.view.request)
+  Sender    : SessionViewRequestSender
+  Version   : 1.0
+  Namespace : urn:integration:planning:v1
 -->
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+<xs:schema
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:tns="urn:integration:planning:v1"
+    targetNamespace="urn:integration:planning:v1"
+    elementFormDefault="qualified"
+    attributeFormDefault="unqualified">
 
   <xs:element name="message">
     <xs:complexType>
@@ -15,10 +21,10 @@
           <xs:complexType>
             <xs:sequence>
               <xs:element name="message_id"     type="xs:string"/>
-              <xs:element name="version"        type="xs:string" fixed="2.0"/>
-              <xs:element name="type"           type="xs:string" fixed="event_ended"/>
               <xs:element name="timestamp"      type="xs:dateTime"/>
               <xs:element name="source"         type="xs:string"/>
+              <xs:element name="type"           type="xs:string" fixed="session_view_request"/>
+              <xs:element name="version"        type="xs:string" minOccurs="0"/>
               <xs:element name="correlation_id" type="xs:string" minOccurs="0"/>
             </xs:sequence>
           </xs:complexType>
@@ -27,8 +33,8 @@
         <xs:element name="body">
           <xs:complexType>
             <xs:sequence>
-              <xs:element name="session_id" type="xs:string"/>
-              <xs:element name="ended_at"   type="xs:dateTime"/>
+              <!-- optional: omit to request all sessions -->
+              <xs:element name="session_id" type="xs:string" minOccurs="0"/>
             </xs:sequence>
           </xs:complexType>
         </xs:element>

@@ -7,7 +7,7 @@
   Receiver  : SessionViewResponseReceiver
   Namespace : urn:integration:planning:v1
 
-  The body carries a status field and an optional <sessions> list.
+  The body carries a request_message_id, status, session_count and an optional <sessions> list.
   When status = "not_found", <sessions> is absent.
 -->
 <xs:schema
@@ -17,13 +17,13 @@
     elementFormDefault="qualified"
     attributeFormDefault="unqualified">
 
-  <!-- Reusable session entry type (same shape as session_created body) -->
+  <!-- Reusable session entry type -->
   <xs:complexType name="SessionType">
     <xs:sequence>
       <xs:element name="session_id"        type="xs:string"/>
       <xs:element name="title"             type="xs:string" minOccurs="0"/>
-      <xs:element name="start_datetime"    type="xs:dateTime" minOccurs="0"/>
-      <xs:element name="end_datetime"      type="xs:dateTime" minOccurs="0"/>
+      <xs:element name="start_datetime"    type="xs:string" minOccurs="0"/>
+      <xs:element name="end_datetime"      type="xs:string" minOccurs="0"/>
       <xs:element name="location"          type="xs:string" minOccurs="0"/>
       <xs:element name="session_type"      type="xs:string" minOccurs="0"/>
       <xs:element name="status"            type="xs:string" minOccurs="0"/>
@@ -42,7 +42,7 @@
               <xs:element name="timestamp"      type="xs:dateTime"/>
               <xs:element name="source"         type="xs:string"/>
               <xs:element name="type"           type="xs:string" fixed="session_view_response"/>
-              <xs:element name="version"        type="xs:string"/>
+              <xs:element name="version"        type="xs:string" minOccurs="0"/>
               <xs:element name="correlation_id" type="xs:string" minOccurs="0"/>
             </xs:sequence>
           </xs:complexType>
@@ -51,8 +51,11 @@
         <xs:element name="body">
           <xs:complexType>
             <xs:sequence>
-              <!-- "not_found" | "ok" | other provider-defined values -->
+              <xs:element name="request_message_id"   type="xs:string" minOccurs="0"/>
+              <xs:element name="requested_session_id" type="xs:string" minOccurs="0"/>
+              <!-- "not_found" | "ok" -->
               <xs:element name="status" type="xs:string"/>
+              <xs:element name="session_count" type="xs:nonNegativeInteger" minOccurs="0"/>
               <xs:element name="sessions" minOccurs="0">
                 <xs:complexType>
                   <xs:sequence>
