@@ -2,10 +2,21 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ "main", "dev", "prod", "feature/**" ]
+    branches:
+      - main
+      - dev
+      - prod
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'chore/**'
+      - 'hotfix/**'
     tags: [ "v*" ]
+
   pull_request:
-    branches: [ "main", "dev", "prod" ]
+    branches:
+      - main
+      - dev
+      - prod
 
 jobs:
   unit-tests:
@@ -21,6 +32,7 @@ jobs:
         with:
           php-version: '8.4'
           coverage: none
+          extensions: mbstring, xml, simplexml
 
       - name: Validate composer.json
         run: composer validate --strict
@@ -32,5 +44,4 @@ jobs:
         run: composer audit
 
       - name: Run PHPUnit
-        run: |
-          vendor/bin/phpunit tests/ --colors=never
+        run: vendor/bin/phpunit tests/ --colors=never

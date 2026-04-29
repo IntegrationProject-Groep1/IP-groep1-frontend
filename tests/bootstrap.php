@@ -11,7 +11,7 @@ namespace {
     require_once __DIR__ . '/../vendor/autoload.php';
 }
 
-// ─── PSR-3 Logger ────────────────────────────────────────────────────────────
+// ─── PSR-3 Logger ────────────────────────────────────────────────────────
 
 namespace Psr\Log {
     if (!interface_exists('Psr\Log\LoggerInterface', false)) {
@@ -30,7 +30,7 @@ namespace Psr\Log {
     }
 }
 
-// ─── Drupal Core Logger ───────────────────────────────────────────────────────
+// ─── Drupal Core Logger ──────────────────────────────────────────────────────
 
 namespace Drupal\Core\Logger {
     if (!interface_exists('Drupal\Core\Logger\LoggerChannelInterface', false)) {

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  XSD: payment_registered
+  Direction : Facturatie → Frontend (queue: payment.registered)
+  Receiver  : PaymentRegisteredReceiver
+  No target namespace.
+
+  INTENTIONAL: <header> is optional.
+  Facturatie publishes a minimal envelope without a header;
+  PaymentRegisteredReceiver only reads body/user_id and body/status.
+  Tests confirm the minimal format:
+    <message><body><user_id>…</user_id><status>…</status></body></message>
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:element name="message">
+    <xs:complexType>
+      <xs:sequence>
+        <!-- header is absent in Facturatie messages; kept optional for forward compatibility -->
+        <xs:element name="header" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="message_id"     type="xs:string" minOccurs="0"/>
+              <xs:element name="timestamp"      type="xs:dateTime" minOccurs="0"/>
+              <xs:element name="source"         type="xs:string" minOccurs="0"/>
+              <xs:element name="type"           type="xs:string" minOccurs="0"/>
+              <xs:element name="version"        type="xs:string" minOccurs="0"/>
+              <xs:element name="correlation_id" type="xs:string" minOccurs="0"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+        <xs:element name="body">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="user_id" type="xs:string"/>
+              <xs:element name="status"  type="xs:string"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

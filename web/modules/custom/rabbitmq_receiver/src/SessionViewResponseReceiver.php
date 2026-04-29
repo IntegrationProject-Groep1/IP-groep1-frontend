@@ -5,6 +5,7 @@ namespace Drupal\rabbitmq_receiver;
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
 use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable; // ✅ toegevoegd
 
 /**
  * Consumes session_view_response messages from Planning.
@@ -40,7 +41,19 @@ class SessionViewResponseReceiver
         $channel = $this->client->getChannel();
 
         $channel->exchange_declare(self::EXCHANGE, self::EXCHANGE_TYPE, false, true, false);
-        $channel->queue_declare(self::QUEUE, false, true, false, false);
+
+        // ✅ DLX + DLQ toegevoegd
+        $channel->exchange_declare('dlx_exchange', 'direct', false, true, false);
+        $channel->queue_declare(self::QUEUE . '.dlq', false, true, false, false);
+        $channel->queue_bind(self::QUEUE . '.dlq', 'dlx_exchange', self::QUEUE . '.dlq');
+
+        // ✅ Main queue aangepast
+        $args = new AMQPTable([
+            'x-dead-letter-exchange' => 'dlx_exchange',
+            'x-dead-letter-routing-key' => self::QUEUE . '.dlq'
+        ]);
+
+        $channel->queue_declare(self::QUEUE, false, true, false, false, false, $args);
         $channel->queue_bind(self::QUEUE, self::EXCHANGE, self::ROUTING_KEY);
 
         $channel->basic_consume(
@@ -62,12 +75,6 @@ class SessionViewResponseReceiver
         }
     }
 
-    /**
-     * Parses a session_view_response XML string from Planning.
-     * Returns an array of session arrays, each matching SessionCreatedReceiver's shape.
-     *
-     * @throws \InvalidArgumentException on invalid or incomplete XML.
-     */
     public function processMessageFromXml(string $xmlString): array
     {
         $xml = @simplexml_load_string($xmlString);
@@ -106,7 +113,6 @@ class SessionViewResponseReceiver
             foreach ($body->sessions->session as $session) {
                 $sessionId = trim((string) ($session->session_id ?? ''));
                 if (empty($sessionId)) {
-                    // Skip malformed session entries rather than aborting the whole response.
                     continue;
                 }
 
@@ -132,7 +138,6 @@ class SessionViewResponseReceiver
         try {
             $sessions = $this->processMessageFromXml($msg->body);
 
-            // Store in Drupal State so RegistrationForm can use live planning data.
             if (function_exists('drupal_get_profile')) {
                 \Drupal::state()->set(self::STATE_KEY, $sessions);
             }
@@ -142,7 +147,8 @@ class SessionViewResponseReceiver
             $msg->ack();
         } catch (\Exception $e) {
             error_log('SessionViewResponseReceiver error: ' . $e->getMessage());
-            $msg->nack(false);
+
+            $msg->nack(false, false); // 🔥 aangepast → DLQ
         }
     }
 }
