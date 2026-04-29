@@ -4,29 +4,24 @@ declare(strict_types=1);
 namespace Drupal\rabbitmq_sender;
 
 /**
- * Sends session_view_request messages to Planning to retrieve available sessions.
+ * Sends session_create_request messages to Planning.
  *
  * Frontend publishes on:
  *   Exchange:    planning.exchange      (topic, durable)
- *   Routing key: frontend.to.planning.session.view
+ *   Routing key: frontend.to.planning.session.create
  *
- * Planning responds via:
- *   Exchange:    planning.exchange
- *   Routing key: planning.to.frontend.session.view.response
- *   Queue:       frontend.planning.session.view.response  (handled by SessionViewResponseReceiver)
- *
- * The optional session_id body field scopes the request to a single session.
- * Omit it to request all available sessions.
+ * Required body fields: title, start_datetime, end_datetime
+ * Optional body fields: location, session_type, status, max_attendees
  */
-class SessionViewRequestSender
+class SessionCreateRequestSender
 {
     use RetryTrait;
 
     private const EXCHANGE      = 'planning.exchange';
-    private const ROUTING_KEY   = 'frontend.to.planning.session.view';
+    private const ROUTING_KEY   = 'frontend.to.planning.session.create';
     private const EXCHANGE_TYPE = 'topic';
     private const SOURCE        = 'frontend';
-    private const TYPE          = 'session_view_request';
+    private const TYPE          = 'session_create_request';
     private const NAMESPACE     = 'urn:integration:planning:v1';
     private const VERSION       = '1.0';
 
@@ -37,7 +32,7 @@ class SessionViewRequestSender
         $this->client = $client;
     }
 
-    public function send(array $data = []): void
+    public function send(array $data): void
     {
         $xml = $this->buildXml($data);
 
@@ -47,8 +42,18 @@ class SessionViewRequestSender
         });
     }
 
-    public function buildXml(array $data = []): string
+    public function buildXml(array $data): string
     {
+        if (empty($data['title'])) {
+            throw new \InvalidArgumentException('title is required');
+        }
+        if (empty($data['start_datetime'])) {
+            throw new \InvalidArgumentException('start_datetime is required');
+        }
+        if (empty($data['end_datetime'])) {
+            throw new \InvalidArgumentException('end_datetime is required');
+        }
+
         $messageId = $this->generateUuidV4();
         $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
 
@@ -67,9 +72,23 @@ class SessionViewRequestSender
         $message->appendChild($header);
 
         $body = $dom->createElement('body');
-        if (!empty($data['session_id'])) {
-            $body->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
+        $body->appendChild($dom->createElement('title', htmlspecialchars((string) $data['title'], ENT_XML1, 'UTF-8')));
+        $body->appendChild($dom->createElement('start_datetime', htmlspecialchars((string) $data['start_datetime'], ENT_XML1, 'UTF-8')));
+        $body->appendChild($dom->createElement('end_datetime', htmlspecialchars((string) $data['end_datetime'], ENT_XML1, 'UTF-8')));
+
+        if (!empty($data['location'])) {
+            $body->appendChild($dom->createElement('location', htmlspecialchars((string) $data['location'], ENT_XML1, 'UTF-8')));
         }
+        if (!empty($data['session_type'])) {
+            $body->appendChild($dom->createElement('session_type', htmlspecialchars((string) $data['session_type'], ENT_XML1, 'UTF-8')));
+        }
+        if (!empty($data['status'])) {
+            $body->appendChild($dom->createElement('status', htmlspecialchars((string) $data['status'], ENT_XML1, 'UTF-8')));
+        }
+        if (isset($data['max_attendees'])) {
+            $body->appendChild($dom->createElement('max_attendees', (string) (int) $data['max_attendees']));
+        }
+
         $message->appendChild($body);
 
         return $dom->saveXML() ?: '';

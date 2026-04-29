@@ -13,7 +13,7 @@ use PhpAmqpLib\Wire\AMQPTable;
  */
 class CalendarInviteConfirmedReceiver
 {
-    private const EXCHANGE      = 'planning.exchange';
+    private const EXCHANGE      = 'calendar.exchange';
     private const EXCHANGE_TYPE = 'topic';
     private const ROUTING_KEY   = 'planning.to.frontend.calendar.invite.confirmed';
     private const QUEUE         = 'frontend.planning.calendar.invite.confirmed';

@@ -133,7 +133,7 @@ class SessionViewRequestSenderTest extends TestCase
         $mock->method('declareExchange');
         $mock->expects($this->once())
             ->method('publishToExchange')
-            ->with('planning.exchange', 'planning.session.view.request', $this->anything());
+            ->with('planning.exchange', 'frontend.to.planning.session.view', $this->anything());
 
         (new SessionViewRequestSender($mock))->send();
     }
@@ -146,7 +146,7 @@ class SessionViewRequestSenderTest extends TestCase
             ->method('publishToExchange')
             ->with(
                 'planning.exchange',
-                'planning.session.view.request',
+                'frontend.to.planning.session.view',
                 $this->callback(static function (string $xml): bool {
                     $dom = new \DOMDocument();
                     return $dom->loadXML($xml) !== false;

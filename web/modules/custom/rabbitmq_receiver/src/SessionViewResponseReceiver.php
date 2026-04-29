@@ -15,10 +15,12 @@ use PhpAmqpLib\Wire\AMQPTable;
  */
 class SessionViewResponseReceiver
 {
-    private const QUEUE     = 'frontend.planning.session.view.response';
-    private const DLQ       = 'frontend.planning.session.view.response.dlq';
-    private const DLX       = 'frontend.planning.dlx';
-    private const NAMESPACE = 'urn:integration:planning:v1';
+    private const EXCHANGE      = 'planning.exchange';
+    private const EXCHANGE_TYPE = 'topic';
+    private const ROUTING_KEY   = 'planning.to.frontend.session.view.response';
+    private const QUEUE         = 'frontend.planning.session.view.response';
+    private const DLQ           = 'frontend.planning.session.view.response.dlq';
+    private const DLX           = 'frontend.planning.dlx';
 
     public function __construct(private readonly RabbitMQClient $client) {}
 
@@ -83,7 +85,9 @@ class SessionViewResponseReceiver
             'x-dead-letter-routing-key' => self::DLQ,
         ]);
 
+        $channel->exchange_declare(self::EXCHANGE, self::EXCHANGE_TYPE, false, true, false);
         $channel->queue_declare(self::QUEUE, false, true, false, false, false, $args);
+        $channel->queue_bind(self::QUEUE, self::EXCHANGE, self::ROUTING_KEY);
 
         $channel->basic_consume(
             self::QUEUE,

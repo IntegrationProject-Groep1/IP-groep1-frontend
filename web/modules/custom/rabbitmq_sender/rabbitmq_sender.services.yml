@@ -8,6 +8,9 @@ services:
       - '%env(RABBITMQ_PASS)%'
       - '%env(RABBITMQ_VHOST)%'
 
+  rabbitmq_sender.session_create_request_sender:
+    class: Drupal\rabbitmq_sender\SessionCreateRequestSender
+
   rabbitmq_sender.session_update_request_sender:
     class: Drupal\rabbitmq_sender\SessionUpdateRequestSender
 
