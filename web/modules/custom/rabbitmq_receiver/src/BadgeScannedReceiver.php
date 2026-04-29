@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Drupal\rabbitmq_receiver;
@@ -8,109 +9,80 @@ use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
 
 /**
- * Consumes badge scan events from RabbitMQ.
+ * Receives badge_scanned messages from the CRM system.
  */
 class BadgeScannedReceiver
 {
-    private RabbitMQClient $client;
+    private const QUEUE = 'frontend.crm.badge.scanned';
+    private const DLQ   = 'frontend.crm.badge.scanned.dlq';
+    private const DLX   = 'frontend.crm.dlx';
 
-    public function __construct(RabbitMQClient $client)
+    public function __construct(private readonly RabbitMQClient $client) {}
+
+    /**
+     * Parse and validate an incoming badge_scanned XML message.
+     *
+     * @return true
+     * @throws \InvalidArgumentException
+     */
+    public function processMessageFromXml(string $xmlString): mixed
     {
-        $this->client = $client;
-    }
+        libxml_use_internal_errors(true);
+        $xml = simplexml_load_string($xmlString);
+        libxml_clear_errors();
 
-    public function listen(): void
-    {
-        $channel = $this->client->getChannel();
-
-        // DLX + DLQ setup
-        $channel->exchange_declare('dlx_exchange', 'direct', false, true, false);
-        $channel->queue_declare('badge.scanned.dlq', false, true, false, false);
-        $channel->queue_bind('badge.scanned.dlq', 'dlx_exchange', 'badge.scanned.dlq');
-
-        // Main queue met DLQ config
-        $args = new AMQPTable([
-            'x-dead-letter-exchange' => 'dlx_exchange',
-            'x-dead-letter-routing-key' => 'badge.scanned.dlq'
-        ]);
-
-        $channel->queue_declare(
-            'badge.scanned',
-            false,
-            true,
-            false,
-            false,
-            false,
-            $args
-        );
-
-        $channel->basic_consume(
-            'badge.scanned',
-            '',
-            false,
-            false,
-            false,
-            false,
-            function (AMQPMessage $msg) {
-                $this->processMessage($msg);
-            }
-        );
-
-        echo "Listening for badge scans...\n";
-
-        while ($channel->is_consuming()) {
-            $channel->wait();
-        }
-    }
-
-    public function processMessageFromXml(string $xmlString): bool
-    {
-        $xml = @simplexml_load_string($xmlString);
         if ($xml === false) {
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
-        $userId = (string) $xml->body->user_id;
-        $badgeId = (string) $xml->body->badge_id;
+        $body = $xml->body;
 
-        if (empty($userId)) {
+        $userId = trim((string) $body->user_id);
+        if ($userId === '') {
             throw new \InvalidArgumentException('user_id is required');
         }
-        if (empty($badgeId)) {
+
+        $badgeId = trim((string) $body->badge_id);
+        if ($badgeId === '') {
             throw new \InvalidArgumentException('badge_id is required');
         }
 
         return true;
     }
 
-    private function processMessage(AMQPMessage $msg): void
+    /**
+     * Subscribe to the badge_scanned queue with DLQ support.
+     */
+    public function listen(): void
     {
-        try {
-            $xml = simplexml_load_string($msg->body);
+        $channel = $this->client->getChannel();
 
-            if ($xml === false) {
-                throw new \InvalidArgumentException('Invalid XML received');
+        $args = new AMQPTable([
+            'x-dead-letter-exchange'    => self::DLX,
+            'x-dead-letter-routing-key' => self::DLQ,
+        ]);
+
+        $channel->queue_declare(self::QUEUE, false, true, false, false, false, $args);
+
+        $channel->basic_consume(
+            self::QUEUE,
+            '',
+            false,
+            false,
+            false,
+            false,
+            function (AMQPMessage $msg): void {
+                try {
+                    $this->processMessageFromXml($msg->body);
+                    $msg->ack();
+                } catch (\Throwable $e) {
+                    $msg->nack(false, false);
+                }
             }
+        );
 
-            $userId = (string) $xml->body->user_id;
-            $badgeId = (string) $xml->body->badge_id;
-
-            if (empty($userId)) {
-                throw new \InvalidArgumentException('user_id is required');
-            }
-            if (empty($badgeId)) {
-                throw new \InvalidArgumentException('badge_id is required');
-            }
-
-            echo "Badge scanned: {$userId} - {$badgeId}\n";
-
-            $msg->ack();
-
-        } catch (\Exception $e) {
-            error_log('BadgeScannedReceiver error: ' . $e->getMessage());
-
-            // naar DLQ
-            $msg->nack(false, false);
+        while ($channel->is_consuming()) {
+            $channel->wait();
         }
     }
 }

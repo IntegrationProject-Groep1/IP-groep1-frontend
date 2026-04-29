@@ -78,10 +78,12 @@ class SessionEnrollForm extends FormBase
         $sessionMap  = $this->buildSessionMap();
 
         $userData = [
-            'email'      => $currentUser->getEmail(),
-            'first_name' => $this->resolveUserField($currentUser->id(), 'field_first_name') ?: $currentUser->getAccountName(),
-            'last_name'  => $this->resolveUserField($currentUser->id(), 'field_last_name') ?: '',
-            'is_company' => false,
+            'email'         => $currentUser->getEmail(),
+            'user_id'       => (string) $currentUser->id(),
+            'first_name'    => $this->resolveUserField($currentUser->id(), 'field_first_name') ?: $currentUser->getAccountName(),
+            'last_name'     => $this->resolveUserField($currentUser->id(), 'field_last_name') ?: '',
+            'date_of_birth' => $this->resolveUserField($currentUser->id(), 'field_date_of_birth') ?: '',
+            'is_company'    => false,
         ];
 
         try {

@@ -1,0 +1,27 @@
+services:
+  rabbitmq_receiver.badge_scanned_receiver:
+    class: Drupal\rabbitmq_receiver\BadgeScannedReceiver
+
+  rabbitmq_receiver.calendar_invite_confirmed_receiver:
+    class: Drupal\rabbitmq_receiver\CalendarInviteConfirmedReceiver
+
+  rabbitmq_receiver.payment_registered_receiver:
+    class: Drupal\rabbitmq_receiver\PaymentRegisteredReceiver
+
+  rabbitmq_receiver.session_created_receiver:
+    class: Drupal\rabbitmq_receiver\SessionCreatedReceiver
+
+  rabbitmq_receiver.session_deleted_receiver:
+    class: Drupal\rabbitmq_receiver\SessionDeletedReceiver
+
+  rabbitmq_receiver.session_update_receiver:
+    class: Drupal\rabbitmq_receiver\SessionUpdateReceiver
+
+  rabbitmq_receiver.session_view_response_receiver:
+    class: Drupal\rabbitmq_receiver\SessionViewResponseReceiver
+
+  rabbitmq_receiver.user_created_receiver:
+    class: Drupal\rabbitmq_receiver\UserCreatedReceiver
+
+  rabbitmq_receiver.vat_validation_error_receiver:
+    class: Drupal\rabbitmq_receiver\VatValidationErrorReceiver
