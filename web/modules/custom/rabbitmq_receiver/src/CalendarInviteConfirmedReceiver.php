@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Drupal\rabbitmq_receiver;
@@ -8,16 +9,7 @@ use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
 
 /**
- * Consumes calendar.invite.confirmed events from Planning.
- *
- * Planning sends this in response to a calendar.invite from the frontend,
- * confirming or rejecting the calendar entry.
- *
- * Exchange:    planning.exchange                          (topic, durable)
- * Routing key: planning.calendar.invite.confirmed
- * Queue:       frontend.planning.calendar.invite.confirmed
- *
- * Expected XML body fields: session_id, original_message_id, status (confirmed|failed)
+ * Receives calendar_invite_confirmed messages from the Planning system.
  */
 class CalendarInviteConfirmedReceiver
 {
@@ -25,31 +17,67 @@ class CalendarInviteConfirmedReceiver
     private const EXCHANGE_TYPE = 'topic';
     private const ROUTING_KEY   = 'planning.to.frontend.calendar.invite.confirmed';
     private const QUEUE         = 'frontend.planning.calendar.invite.confirmed';
+    private const DLQ       = 'frontend.planning.calendar.invite.confirmed.dlq';
+    private const DLX       = 'frontend.planning.dlx';
+    private const NAMESPACE = 'urn:integration:planning:v1';
 
-    private RabbitMQClient $client;
+    public function __construct(private readonly RabbitMQClient $client) {}
 
-    public function __construct(RabbitMQClient $client)
+    /**
+     * Parse and validate an incoming calendar_invite_confirmed XML message.
+     *
+     * @return array{session_id: string, original_message_id: string, status: string}
+     * @throws \InvalidArgumentException
+     */
+    public function processMessageFromXml(string $xmlString): array
     {
-        $this->client = $client;
+        $xml = $this->parseXml($xmlString);
+
+        if (count($xml->body) === 0) {
+            throw new \InvalidArgumentException('<body> element is missing');
+        }
+
+        $body = $xml->body;
+
+        $sessionId = trim((string) $body->session_id);
+        if ($sessionId === '') {
+            throw new \InvalidArgumentException('session_id is required');
+        }
+
+        $originalMessageId = trim((string) $body->original_message_id);
+        if ($originalMessageId === '') {
+            throw new \InvalidArgumentException('original_message_id is required');
+        }
+
+        $status = trim((string) $body->status);
+        if ($status === '') {
+            throw new \InvalidArgumentException('status is required');
+        }
+
+        if ($status !== 'confirmed' && $status !== 'failed') {
+            throw new \InvalidArgumentException('status must be "confirmed" or "failed"');
+        }
+
+        return [
+            'session_id'          => $sessionId,
+            'original_message_id' => $originalMessageId,
+            'status'              => $status,
+        ];
     }
 
+    /**
+     * Subscribe to the calendar_invite_confirmed queue with DLQ support.
+     */
     public function listen(): void
     {
         $channel = $this->client->getChannel();
 
-        $channel->exchange_declare(self::EXCHANGE, self::EXCHANGE_TYPE, false, true, false);
-
-        $channel->exchange_declare('dlx_exchange', 'direct', false, true, false);
-        $channel->queue_declare(self::QUEUE . '.dlq', false, true, false, false);
-        $channel->queue_bind(self::QUEUE . '.dlq', 'dlx_exchange', self::QUEUE . '.dlq');
-
         $args = new AMQPTable([
-            'x-dead-letter-exchange'    => 'dlx_exchange',
-            'x-dead-letter-routing-key' => self::QUEUE . '.dlq',
+            'x-dead-letter-exchange'    => self::DLX,
+            'x-dead-letter-routing-key' => self::DLQ,
         ]);
 
         $channel->queue_declare(self::QUEUE, false, true, false, false, false, $args);
-        $channel->queue_bind(self::QUEUE, self::EXCHANGE, self::ROUTING_KEY);
 
         $channel->basic_consume(
             self::QUEUE,
@@ -59,11 +87,14 @@ class CalendarInviteConfirmedReceiver
             false,
             false,
             function (AMQPMessage $msg): void {
-                $this->processMessage($msg);
+                try {
+                    $this->processMessageFromXml($msg->body);
+                    $msg->ack();
+                } catch (\Throwable $e) {
+                    $msg->nack(false, false);
+                }
             }
         );
-
-        echo 'Listening for planning.calendar.invite.confirmed on ' . self::EXCHANGE . ' → ' . self::QUEUE . "\n";
 
         while ($channel->is_consuming()) {
             $channel->wait();
@@ -71,77 +102,21 @@ class CalendarInviteConfirmedReceiver
     }
 
     /**
-     * Parses and validates a calendar.invite.confirmed XML string from Planning.
-     * Returns an associative array with session_id, original_message_id and status.
+     * Parse an XML string, stripping the default namespace for uniform access.
      *
-     * @throws \InvalidArgumentException on invalid or incomplete XML.
+     * @throws \InvalidArgumentException on invalid XML
      */
-    public function processMessageFromXml(string $xmlString): array
+    private function parseXml(string $xmlString): \SimpleXMLElement
     {
-        $xml = @simplexml_load_string($xmlString);
+        libxml_use_internal_errors(true);
+        $cleaned = preg_replace('/ xmlns="[^"]*"/', '', $xmlString);
+        $xml = simplexml_load_string($cleaned);
+        libxml_clear_errors();
+
         if ($xml === false) {
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
-        $namespaces = $xml->getNamespaces(true);
-        $ns = reset($namespaces) ?: null;
-
-        if ($ns !== null) {
-            $xml->registerXPathNamespace('ns', $ns);
-            $bodyNodes = $xml->xpath('ns:body') ?: $xml->xpath('body');
-        } else {
-            $bodyNodes = $xml->xpath('body');
-        }
-
-        $body = ($bodyNodes && count($bodyNodes) > 0) ? $bodyNodes[0] : $xml->body ?? null;
-
-        if ($body === null) {
-            throw new \InvalidArgumentException('<body> element is missing');
-        }
-
-        $sessionId = trim((string) ($body->session_id ?? ''));
-        if (empty($sessionId)) {
-            throw new \InvalidArgumentException('session_id is required');
-        }
-
-        $originalMessageId = trim((string) ($body->original_message_id ?? ''));
-        if (empty($originalMessageId)) {
-            throw new \InvalidArgumentException('original_message_id is required');
-        }
-
-        $status = trim((string) ($body->status ?? ''));
-        if (empty($status)) {
-            throw new \InvalidArgumentException('status is required');
-        }
-
-        if (!in_array($status, ['confirmed', 'failed'], true)) {
-            throw new \InvalidArgumentException('status must be "confirmed" or "failed"');
-        }
-
-        return [
-            'session_id'          => $sessionId,
-            'original_message_id' => $originalMessageId,
-            'status'              => $status,
-            'ics_url'             => trim((string) ($body->ics_url ?? '')),
-        ];
-    }
-
-    private function processMessage(AMQPMessage $msg): void
-    {
-        try {
-            $data = $this->processMessageFromXml($msg->body);
-
-            echo sprintf(
-                "calendar.invite.confirmed received: session=%s status=%s\n",
-                $data['session_id'],
-                $data['status']
-            );
-
-            $msg->ack();
-        } catch (\Exception $e) {
-            error_log('CalendarInviteConfirmedReceiver error: ' . $e->getMessage());
-
-            $msg->nack(false, false);
-        }
+        return $xml;
     }
 }

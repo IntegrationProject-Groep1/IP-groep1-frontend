@@ -1,0 +1,7 @@
+name: RabbitMQ Receiver
+type: module
+description: 'Provides RabbitMQ consumer services for inbound integration messages.'
+core_version_requirement: ^10
+package: Custom
+dependencies:
+  - drupal:system
