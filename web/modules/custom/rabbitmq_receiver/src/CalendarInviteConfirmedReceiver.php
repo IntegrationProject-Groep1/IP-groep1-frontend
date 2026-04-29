@@ -9,26 +9,31 @@ use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
 
 /**
- * Receives session_deleted messages from the Planning system.
+ * Receives calendar_invite_confirmed messages from the Planning system.
  */
-class SessionDeletedReceiver
+class CalendarInviteConfirmedReceiver
 {
-    private const QUEUE     = 'frontend.planning.session.deleted';
-    private const DLQ       = 'frontend.planning.session.deleted.dlq';
+    private const QUEUE     = 'frontend.planning.calendar.invite.confirmed';
+    private const DLQ       = 'frontend.planning.calendar.invite.confirmed.dlq';
     private const DLX       = 'frontend.planning.dlx';
     private const NAMESPACE = 'urn:integration:planning:v1';
 
     public function __construct(private readonly RabbitMQClient $client) {}
 
     /**
-     * Parse and validate an incoming session_deleted XML message.
+     * Parse and validate an incoming calendar_invite_confirmed XML message.
      *
-     * @return array{session_id: string, reason: string, deleted_by: string}
+     * @return array{session_id: string, original_message_id: string, status: string}
      * @throws \InvalidArgumentException
      */
     public function processMessageFromXml(string $xmlString): array
     {
         $xml = $this->parseXml($xmlString);
+
+        if (count($xml->body) === 0) {
+            throw new \InvalidArgumentException('<body> element is missing');
+        }
+
         $body = $xml->body;
 
         $sessionId = trim((string) $body->session_id);
@@ -36,15 +41,29 @@ class SessionDeletedReceiver
             throw new \InvalidArgumentException('session_id is required');
         }
 
+        $originalMessageId = trim((string) $body->original_message_id);
+        if ($originalMessageId === '') {
+            throw new \InvalidArgumentException('original_message_id is required');
+        }
+
+        $status = trim((string) $body->status);
+        if ($status === '') {
+            throw new \InvalidArgumentException('status is required');
+        }
+
+        if ($status !== 'confirmed' && $status !== 'failed') {
+            throw new \InvalidArgumentException('status must be "confirmed" or "failed"');
+        }
+
         return [
-            'session_id' => $sessionId,
-            'reason'     => trim((string) $body->reason),
-            'deleted_by' => trim((string) $body->deleted_by),
+            'session_id'          => $sessionId,
+            'original_message_id' => $originalMessageId,
+            'status'              => $status,
         ];
     }
 
     /**
-     * Subscribe to the session_deleted queue with DLQ support.
+     * Subscribe to the calendar_invite_confirmed queue with DLQ support.
      */
     public function listen(): void
     {

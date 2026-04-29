@@ -1,9 +1,5 @@
 services:
-  rabbitmq_sender.client:
-    class: Drupal\rabbitmq_sender\RabbitMQClient
-    arguments:
-      - '%env(RABBITMQ_HOST)%'
-      - '%env(int:RABBITMQ_PORT)%'
-      - '%env(RABBITMQ_USER)%'
-      - '%env(RABBITMQ_PASS)%'
-      - '%env(RABBITMQ_VHOST)%'
+  rabbitmq_sender.session_view_request_sender:
+    class: Drupal\rabbitmq_sender\SessionViewRequestSender
+  rabbitmq_sender.event_ended_sender:
+    class: Drupal\rabbitmq_sender\EventEndedSender

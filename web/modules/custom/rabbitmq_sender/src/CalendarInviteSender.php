@@ -93,6 +93,10 @@ class CalendarInviteSender
             $body->appendChild($dom->createElement('location', htmlspecialchars((string) $data['location'], ENT_XML1, 'UTF-8')));
         }
 
+        if (!empty($data['user_id'])) {
+            $body->appendChild($dom->createElement('user_id', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
+        }
+
         $message->appendChild($body);
 
         return $dom->saveXML() ?: '';

@@ -6,16 +6,16 @@ namespace Drupal\session_enrollment\Service;
 
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\rabbitmq_sender\CalendarInviteSender;
-use Drupal\rabbitmq_sender\UserRegisteredSender;
+use Drupal\rabbitmq_sender\NewRegistrationSender;
 
 /**
- * Handles session enrollment: notifies CRM (user.registered) and Planning (calendar.invite).
+ * Handles session enrollment: notifies CRM (new_registration) and Planning (calendar.invite).
  */
 class SessionEnrollmentService
 {
     public function __construct(
         private readonly LoggerChannelFactoryInterface $loggerFactory,
-        private readonly UserRegisteredSender $userRegisteredSender,
+        private readonly NewRegistrationSender $newRegistrationSender,
         private readonly CalendarInviteSender $calendarInviteSender,
     ) {}
 
@@ -26,8 +26,8 @@ class SessionEnrollmentService
      *  1. Sends user.registered to CRM (via frontend.user.registered queue)
      *  2. Sends calendar.invite to Planning (via calendar.exchange)
      *
-     * @param array $userData  Must contain: email, first_name, last_name, is_company.
-     *                         Optional: company_name, vat_number.
+     * @param array $userData  Must contain: email, user_id, first_name, last_name, date_of_birth.
+     *                         Optional: is_company, vat_number, address, registration_fee.
      * @param array $sessionIds  List of session UUIDs to enroll in.
      * @param array $sessionMap  Map of session_id => session data (from Drupal State).
      *
@@ -40,11 +40,17 @@ class SessionEnrollmentService
         if (empty($userData['email'])) {
             throw new \InvalidArgumentException('email is required for enrollment');
         }
+        if (empty($userData['user_id'])) {
+            throw new \InvalidArgumentException('user_id is required for enrollment');
+        }
         if (empty($userData['first_name'])) {
             throw new \InvalidArgumentException('first_name is required for enrollment');
         }
         if (empty($userData['last_name'])) {
             throw new \InvalidArgumentException('last_name is required for enrollment');
+        }
+        if (empty($userData['date_of_birth'])) {
+            throw new \InvalidArgumentException('date_of_birth is required for enrollment');
         }
         if (empty($sessionIds)) {
             throw new \InvalidArgumentException('At least one session must be selected');
@@ -62,24 +68,24 @@ class SessionEnrollmentService
 
             $session = $sessionMap[$sessionId];
 
-            // Notify CRM: user.registered (one per session per the XSD contract)
+            // Notify CRM: new_registration (one per session per the XSD contract)
             try {
-                $this->userRegisteredSender->send([
-                    'email'        => $userData['email'],
-                    'first_name'   => $userData['first_name'],
-                    'last_name'    => $userData['last_name'],
-                    'is_company'   => (bool) ($userData['is_company'] ?? false),
-                    'company_name' => $userData['company_name'] ?? '',
-                    'vat_number'   => $userData['vat_number'] ?? '',
-                    'session_id'   => $sessionId,
-                    'session_name' => $session['title'] ?? $sessionId,
+                $this->newRegistrationSender->send([
+                    'email'         => $userData['email'],
+                    'user_id'       => $userData['user_id'],
+                    'first_name'    => $userData['first_name'],
+                    'last_name'     => $userData['last_name'],
+                    'date_of_birth' => $userData['date_of_birth'],
+                    'is_company'    => (bool) ($userData['is_company'] ?? false),
+                    'vat_number'    => $userData['vat_number'] ?? '',
+                    'session_id'    => $sessionId,
                 ]);
-                $logger->info('user.registered verstuurd naar CRM voor @email / sessie @id.', [
+                $logger->info('new_registration verstuurd naar CRM voor @email / sessie @id.', [
                     '@email' => $userData['email'],
                     '@id'    => $sessionId,
                 ]);
             } catch (\Throwable $e) {
-                $logger->error('user.registered mislukt voor sessie @id: @message', [
+                $logger->error('new_registration mislukt voor sessie @id: @message', [
                     '@id'      => $sessionId,
                     '@message' => $e->getMessage(),
                 ]);

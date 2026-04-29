@@ -1,60 +1,89 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Drupal\rabbitmq_receiver;
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
 use PhpAmqpLib\Message\AMQPMessage;
-use PhpAmqpLib\Wire\AMQPTable; // ✅ toegevoegd
+use PhpAmqpLib\Wire\AMQPTable;
 
 /**
- * Consumes session_view_response messages from Planning.
+ * Receives session_view_response messages from the Planning system.
  *
- * Planning sends this in response to a session_view_request. The response
- * contains a list of sessions which we store in Drupal State API so the
- * registration form can display up-to-date session options.
- *
- * Exchange:    planning.exchange       (topic, durable)
- * Routing key: planning.session.view.response
- * Queue:       frontend.planning.session.view.response
- *
- * The stored sessions are available via:
- *   \Drupal::state()->get('planning.sessions', [])
+ * On success, stores the session list in Drupal state at key 'planning.sessions'.
  */
 class SessionViewResponseReceiver
 {
-    private const EXCHANGE      = 'planning.exchange';
-    private const EXCHANGE_TYPE = 'topic';
-    private const ROUTING_KEY   = 'planning.session.view.response';
-    private const QUEUE         = 'frontend.planning.session.view.response';
-    public  const STATE_KEY     = 'planning.sessions';
+    private const QUEUE     = 'frontend.planning.session.view.response';
+    private const DLQ       = 'frontend.planning.session.view.response.dlq';
+    private const DLX       = 'frontend.planning.dlx';
+    private const NAMESPACE = 'urn:integration:planning:v1';
 
-    private RabbitMQClient $client;
+    public function __construct(private readonly RabbitMQClient $client) {}
 
-    public function __construct(RabbitMQClient $client)
+    /**
+     * Parse an incoming session_view_response XML message.
+     *
+     * Returns an array of session arrays, or an empty array when status is 'not_found'.
+     * Sessions without a session_id are silently skipped.
+     *
+     * @return list<array<string, mixed>>
+     * @throws \InvalidArgumentException
+     */
+    public function processMessageFromXml(string $xmlString): array
     {
-        $this->client = $client;
+        $xml = $this->parseXml($xmlString);
+        $body = $xml->body;
+
+        $status = trim((string) $body->status);
+        if ($status === '') {
+            throw new \InvalidArgumentException('status is required');
+        }
+
+        if ($status === 'not_found') {
+            return [];
+        }
+
+        $sessions = [];
+
+        foreach ($body->sessions->session as $session) {
+            $sessionId = trim((string) $session->session_id);
+            if ($sessionId === '') {
+                continue;
+            }
+
+            $sessions[] = [
+                'session_id'        => $sessionId,
+                'title'             => trim((string) $session->title),
+                'start_datetime'    => trim((string) $session->start_datetime),
+                'end_datetime'      => trim((string) $session->end_datetime),
+                'location'          => trim((string) $session->location),
+                'session_type'      => trim((string) $session->session_type),
+                'status'            => trim((string) $session->status),
+                'max_attendees'     => (int) (string) $session->max_attendees,
+                'current_attendees' => (int) (string) $session->current_attendees,
+            ];
+        }
+
+        return $sessions;
     }
 
+    /**
+     * Subscribe to the session_view_response queue with DLQ support.
+     *
+     * Stores parsed sessions in Drupal state under 'planning.sessions'.
+     */
     public function listen(): void
     {
         $channel = $this->client->getChannel();
 
-        $channel->exchange_declare(self::EXCHANGE, self::EXCHANGE_TYPE, false, true, false);
-
-        // ✅ DLX + DLQ toegevoegd
-        $channel->exchange_declare('dlx_exchange', 'direct', false, true, false);
-        $channel->queue_declare(self::QUEUE . '.dlq', false, true, false, false);
-        $channel->queue_bind(self::QUEUE . '.dlq', 'dlx_exchange', self::QUEUE . '.dlq');
-
-        // ✅ Main queue aangepast
         $args = new AMQPTable([
-            'x-dead-letter-exchange' => 'dlx_exchange',
-            'x-dead-letter-routing-key' => self::QUEUE . '.dlq'
+            'x-dead-letter-exchange'    => self::DLX,
+            'x-dead-letter-routing-key' => self::DLQ,
         ]);
 
         $channel->queue_declare(self::QUEUE, false, true, false, false, false, $args);
-        $channel->queue_bind(self::QUEUE, self::EXCHANGE, self::ROUTING_KEY);
 
         $channel->basic_consume(
             self::QUEUE,
@@ -64,91 +93,37 @@ class SessionViewResponseReceiver
             false,
             false,
             function (AMQPMessage $msg): void {
-                $this->processMessage($msg);
+                try {
+                    $sessions = $this->processMessageFromXml($msg->body);
+                    \Drupal::state()->set('planning.sessions', $sessions);
+                    $msg->ack();
+                } catch (\Throwable $e) {
+                    $msg->nack(false, false);
+                }
             }
         );
-
-        echo 'Listening for planning.session.view.response on ' . self::EXCHANGE . ' → ' . self::QUEUE . "\n";
 
         while ($channel->is_consuming()) {
             $channel->wait();
         }
     }
 
-    public function processMessageFromXml(string $xmlString): array
+    /**
+     * Parse an XML string, stripping the default namespace for uniform access.
+     *
+     * @throws \InvalidArgumentException on invalid XML
+     */
+    private function parseXml(string $xmlString): \SimpleXMLElement
     {
-        $xml = @simplexml_load_string($xmlString);
+        libxml_use_internal_errors(true);
+        $cleaned = preg_replace('/ xmlns="[^"]*"/', '', $xmlString);
+        $xml = simplexml_load_string($cleaned);
+        libxml_clear_errors();
+
         if ($xml === false) {
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
-        $namespaces = $xml->getNamespaces(true);
-        $ns = reset($namespaces) ?: null;
-
-        if ($ns !== null) {
-            $xml->registerXPathNamespace('ns', $ns);
-            $bodyNodes = $xml->xpath('ns:body') ?: $xml->xpath('body');
-        } else {
-            $bodyNodes = $xml->xpath('body');
-        }
-
-        $body = ($bodyNodes && count($bodyNodes) > 0) ? $bodyNodes[0] : $xml->body ?? null;
-
-        if ($body === null) {
-            throw new \InvalidArgumentException('<body> element is missing');
-        }
-
-        $status = trim((string) ($body->status ?? ''));
-        if ($status === 'not_found') {
-            return [];
-        }
-
-        if (empty($status)) {
-            throw new \InvalidArgumentException('status is required');
-        }
-
-        $sessions = [];
-
-        if (isset($body->sessions->session)) {
-            foreach ($body->sessions->session as $session) {
-                $sessionId = trim((string) ($session->session_id ?? ''));
-                if (empty($sessionId)) {
-                    continue;
-                }
-
-                $sessions[] = [
-                    'session_id'        => $sessionId,
-                    'title'             => trim((string) ($session->title ?? '')),
-                    'start_datetime'    => trim((string) ($session->start_datetime ?? '')),
-                    'end_datetime'      => trim((string) ($session->end_datetime ?? '')),
-                    'location'          => trim((string) ($session->location ?? '')),
-                    'session_type'      => trim((string) ($session->session_type ?? '')),
-                    'status'            => trim((string) ($session->status ?? '')),
-                    'max_attendees'     => (int) ($session->max_attendees ?? 0),
-                    'current_attendees' => (int) ($session->current_attendees ?? 0),
-                ];
-            }
-        }
-
-        return $sessions;
-    }
-
-    private function processMessage(AMQPMessage $msg): void
-    {
-        try {
-            $sessions = $this->processMessageFromXml($msg->body);
-
-            if (function_exists('drupal_get_profile')) {
-                \Drupal::state()->set(self::STATE_KEY, $sessions);
-            }
-
-            echo sprintf("session.view.response received: %d session(s) stored.\n", count($sessions));
-
-            $msg->ack();
-        } catch (\Exception $e) {
-            error_log('SessionViewResponseReceiver error: ' . $e->getMessage());
-
-            $msg->nack(false, false); // 🔥 aangepast → DLQ
-        }
+        return $xml;
     }
 }

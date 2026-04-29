@@ -121,6 +121,43 @@ class CalendarInviteSenderTest extends TestCase
         $this->assertStringNotContainsString('<location>', $xml);
     }
 
+    public function test_buildXml_includes_user_id_when_provided(): void
+    {
+        $data = $this->validData();
+        $data['user_id'] = 'user-uuid-001';
+
+        $xml = $this->sender->buildXml($data);
+
+        $this->assertStringContainsString('<user_id>user-uuid-001</user_id>', $xml);
+    }
+
+    public function test_buildXml_omits_user_id_when_not_provided(): void
+    {
+        $xml = $this->sender->buildXml($this->validData());
+
+        $this->assertStringNotContainsString('<user_id>', $xml);
+    }
+
+    public function test_buildXml_omits_user_id_when_empty(): void
+    {
+        $data = $this->validData();
+        $data['user_id'] = '';
+
+        $xml = $this->sender->buildXml($data);
+
+        $this->assertStringNotContainsString('<user_id>', $xml);
+    }
+
+    public function test_buildXml_escapes_special_chars_in_user_id(): void
+    {
+        $data = $this->validData();
+        $data['user_id'] = 'id<with>&special';
+
+        $xml = $this->sender->buildXml($data);
+
+        $this->assertStringContainsString('<user_id>id&lt;with&gt;&amp;special</user_id>', $xml);
+    }
+
     public function test_buildXml_includes_empty_location_when_key_present_but_empty(): void
     {
         $data = $this->validData();
