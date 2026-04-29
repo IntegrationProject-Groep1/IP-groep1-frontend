@@ -163,9 +163,47 @@ class CalendarInviteConfirmedReceiverTest extends TestCase
         $this->assertArrayHasKey('session_id', $result);
         $this->assertArrayHasKey('original_message_id', $result);
         $this->assertArrayHasKey('status', $result);
+        $this->assertArrayHasKey('ics_url', $result);
+    }
+
+    public function test_returns_ics_url_when_present(): void
+    {
+        $xml = $this->buildConfirmedXmlWithIcsUrl('sess-001', 'orig-001', 'confirmed', 'http://example.com/ical/user-uuid-123?token=abc');
+
+        $result = $this->receiver->processMessageFromXml($xml);
+
+        $this->assertSame('http://example.com/ical/user-uuid-123?token=abc', $result['ics_url']);
+    }
+
+    public function test_ics_url_is_empty_string_when_not_present(): void
+    {
+        $result = $this->receiver->processMessageFromXml(
+            $this->buildConfirmedXml('sess-001', 'orig-001', 'confirmed')
+        );
+
+        $this->assertSame('', $result['ics_url']);
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
+
+    private function buildConfirmedXmlWithIcsUrl(string $sessionId, string $originalMessageId, string $status, string $icsUrl): string
+    {
+        return '<?xml version="1.0" encoding="UTF-8"?>'
+            . '<message xmlns="urn:integration:planning:v1">'
+            . '<header>'
+            . '<message_id>test-msg-id</message_id>'
+            . '<timestamp>2026-04-29T10:00:00Z</timestamp>'
+            . '<source>planning</source>'
+            . '<type>calendar.invite.confirmed</type>'
+            . '</header>'
+            . '<body>'
+            . '<session_id>' . htmlspecialchars($sessionId, ENT_XML1) . '</session_id>'
+            . '<original_message_id>' . htmlspecialchars($originalMessageId, ENT_XML1) . '</original_message_id>'
+            . '<status>' . htmlspecialchars($status, ENT_XML1) . '</status>'
+            . '<ics_url>' . htmlspecialchars($icsUrl, ENT_XML1) . '</ics_url>'
+            . '</body>'
+            . '</message>';
+    }
 
     private function buildConfirmedXml(string $sessionId, string $originalMessageId, string $status): string
     {
