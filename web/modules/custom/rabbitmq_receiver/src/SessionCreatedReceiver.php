@@ -24,7 +24,7 @@ class SessionCreatedReceiver
 {
     private const EXCHANGE      = 'planning.exchange';
     private const EXCHANGE_TYPE = 'topic';
-    private const ROUTING_KEY   = 'planning.session.created';
+    private const ROUTING_KEY   = 'planning.to.frontend.session.created';
     private const QUEUE         = 'frontend.planning.session.created';
 
     private RabbitMQClient $client;

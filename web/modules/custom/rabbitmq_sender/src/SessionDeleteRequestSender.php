@@ -4,18 +4,26 @@ declare(strict_types=1);
 namespace Drupal\rabbitmq_sender;
 
 /**
- * Sends calendar invite messages to Planning via the calendar.exchange topic exchange.
+ * Sends session_delete_request messages to Planning.
+ *
+ * Frontend publishes on:
+ *   Exchange:    planning.exchange      (topic, durable)
+ *   Routing key: planning.session.delete.request
+ *
+ * Required body fields: session_id
+ * Optional body fields: reason
  */
-class CalendarInviteSender
+class SessionDeleteRequestSender
 {
     use RetryTrait;
 
-    private const EXCHANGE      = 'calendar.exchange';
-    private const ROUTING_KEY   = 'frontend.to.planning.calendar.invite';
+    private const EXCHANGE      = 'planning.exchange';
+    private const ROUTING_KEY   = 'frontend.to.planning.session.delete';
     private const EXCHANGE_TYPE = 'topic';
     private const SOURCE        = 'frontend';
-    private const TYPE          = 'calendar.invite';
+    private const TYPE          = 'session_delete_request';
     private const NAMESPACE     = 'urn:integration:planning:v1';
+    private const VERSION       = '1.0';
 
     private ?RabbitMQClient $client;
 
@@ -26,24 +34,6 @@ class CalendarInviteSender
 
     public function send(array $data): void
     {
-        if (empty($data['session_id'])) {
-            throw new \InvalidArgumentException('session_id is required');
-        }
-        if (empty($data['title'])) {
-            throw new \InvalidArgumentException('title is required');
-        }
-        if (empty($data['start_datetime'])) {
-            throw new \InvalidArgumentException('start_datetime is required');
-        }
-        if (empty($data['end_datetime'])) {
-            throw new \InvalidArgumentException('end_datetime is required');
-        }
-
-        // ✅ FIX: safe logging
-        $this->log('info', 'Sending calendar invite', [
-            'session_id' => $data['session_id'],
-        ]);
-
         $xml = $this->buildXml($data);
 
         $this->sendWithRetry(function () use ($xml): void {
@@ -56,15 +46,6 @@ class CalendarInviteSender
     {
         if (empty($data['session_id'])) {
             throw new \InvalidArgumentException('session_id is required');
-        }
-        if (empty($data['title'])) {
-            throw new \InvalidArgumentException('title is required');
-        }
-        if (empty($data['start_datetime'])) {
-            throw new \InvalidArgumentException('start_datetime is required');
-        }
-        if (empty($data['end_datetime'])) {
-            throw new \InvalidArgumentException('end_datetime is required');
         }
 
         $messageId = $this->generateUuidV4();
@@ -81,20 +62,14 @@ class CalendarInviteSender
         $header->appendChild($dom->createElement('timestamp', $timestamp));
         $header->appendChild($dom->createElement('source', self::SOURCE));
         $header->appendChild($dom->createElement('type', self::TYPE));
+        $header->appendChild($dom->createElement('version', self::VERSION));
         $message->appendChild($header);
 
         $body = $dom->createElement('body');
         $body->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
-        $body->appendChild($dom->createElement('title', htmlspecialchars((string) $data['title'], ENT_XML1, 'UTF-8')));
-        $body->appendChild($dom->createElement('start_datetime', htmlspecialchars((string) $data['start_datetime'], ENT_XML1, 'UTF-8')));
-        $body->appendChild($dom->createElement('end_datetime', htmlspecialchars((string) $data['end_datetime'], ENT_XML1, 'UTF-8')));
 
-        if (array_key_exists('location', $data)) {
-            $body->appendChild($dom->createElement('location', htmlspecialchars((string) $data['location'], ENT_XML1, 'UTF-8')));
-        }
-
-        if (!empty($data['user_id'])) {
-            $body->appendChild($dom->createElement('user_id', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
+        if (!empty($data['reason'])) {
+            $body->appendChild($dom->createElement('reason', htmlspecialchars((string) $data['reason'], ENT_XML1, 'UTF-8')));
         }
 
         $message->appendChild($body);
@@ -126,15 +101,5 @@ class CalendarInviteSender
         $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
 
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
-    }
-
-    /**
-     * ✅ Safe logger (werkt in Drupal + PHPUnit)
-     */
-    private function log(string $level, string $message, array $context = []): void
-    {
-        if (class_exists('\Drupal')) {
-            \Drupal::logger('rabbitmq_sender')->{$level}($message, $context);
-        }
     }
 }

@@ -4,18 +4,26 @@ declare(strict_types=1);
 namespace Drupal\rabbitmq_sender;
 
 /**
- * Sends calendar invite messages to Planning via the calendar.exchange topic exchange.
+ * Sends session_update_request messages to Planning.
+ *
+ * Frontend publishes on:
+ *   Exchange:    planning.exchange      (topic, durable)
+ *   Routing key: planning.session.update.request
+ *
+ * Required body fields: session_id, title, start_datetime, end_datetime
+ * Optional body fields: location, session_type, status, max_attendees
  */
-class CalendarInviteSender
+class SessionUpdateRequestSender
 {
     use RetryTrait;
 
-    private const EXCHANGE      = 'calendar.exchange';
-    private const ROUTING_KEY   = 'frontend.to.planning.calendar.invite';
+    private const EXCHANGE      = 'planning.exchange';
+    private const ROUTING_KEY   = 'frontend.to.planning.session.update';
     private const EXCHANGE_TYPE = 'topic';
     private const SOURCE        = 'frontend';
-    private const TYPE          = 'calendar.invite';
+    private const TYPE          = 'session_update_request';
     private const NAMESPACE     = 'urn:integration:planning:v1';
+    private const VERSION       = '1.0';
 
     private ?RabbitMQClient $client;
 
@@ -26,24 +34,6 @@ class CalendarInviteSender
 
     public function send(array $data): void
     {
-        if (empty($data['session_id'])) {
-            throw new \InvalidArgumentException('session_id is required');
-        }
-        if (empty($data['title'])) {
-            throw new \InvalidArgumentException('title is required');
-        }
-        if (empty($data['start_datetime'])) {
-            throw new \InvalidArgumentException('start_datetime is required');
-        }
-        if (empty($data['end_datetime'])) {
-            throw new \InvalidArgumentException('end_datetime is required');
-        }
-
-        // ✅ FIX: safe logging
-        $this->log('info', 'Sending calendar invite', [
-            'session_id' => $data['session_id'],
-        ]);
-
         $xml = $this->buildXml($data);
 
         $this->sendWithRetry(function () use ($xml): void {
@@ -81,6 +71,7 @@ class CalendarInviteSender
         $header->appendChild($dom->createElement('timestamp', $timestamp));
         $header->appendChild($dom->createElement('source', self::SOURCE));
         $header->appendChild($dom->createElement('type', self::TYPE));
+        $header->appendChild($dom->createElement('version', self::VERSION));
         $message->appendChild($header);
 
         $body = $dom->createElement('body');
@@ -89,12 +80,17 @@ class CalendarInviteSender
         $body->appendChild($dom->createElement('start_datetime', htmlspecialchars((string) $data['start_datetime'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('end_datetime', htmlspecialchars((string) $data['end_datetime'], ENT_XML1, 'UTF-8')));
 
-        if (array_key_exists('location', $data)) {
+        if (!empty($data['location'])) {
             $body->appendChild($dom->createElement('location', htmlspecialchars((string) $data['location'], ENT_XML1, 'UTF-8')));
         }
-
-        if (!empty($data['user_id'])) {
-            $body->appendChild($dom->createElement('user_id', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
+        if (!empty($data['session_type'])) {
+            $body->appendChild($dom->createElement('session_type', htmlspecialchars((string) $data['session_type'], ENT_XML1, 'UTF-8')));
+        }
+        if (!empty($data['status'])) {
+            $body->appendChild($dom->createElement('status', htmlspecialchars((string) $data['status'], ENT_XML1, 'UTF-8')));
+        }
+        if (isset($data['max_attendees'])) {
+            $body->appendChild($dom->createElement('max_attendees', (string) (int) $data['max_attendees']));
         }
 
         $message->appendChild($body);
@@ -126,15 +122,5 @@ class CalendarInviteSender
         $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
 
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
-    }
-
-    /**
-     * ✅ Safe logger (werkt in Drupal + PHPUnit)
-     */
-    private function log(string $level, string $message, array $context = []): void
-    {
-        if (class_exists('\Drupal')) {
-            \Drupal::logger('rabbitmq_sender')->{$level}($message, $context);
-        }
     }
 }

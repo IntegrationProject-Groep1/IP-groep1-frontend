@@ -23,7 +23,7 @@ class CalendarInviteConfirmedReceiver
 {
     private const EXCHANGE      = 'planning.exchange';
     private const EXCHANGE_TYPE = 'topic';
-    private const ROUTING_KEY   = 'planning.calendar.invite.confirmed';
+    private const ROUTING_KEY   = 'planning.to.frontend.calendar.invite.confirmed';
     private const QUEUE         = 'frontend.planning.calendar.invite.confirmed';
 
     private RabbitMQClient $client;
@@ -122,6 +122,7 @@ class CalendarInviteConfirmedReceiver
             'session_id'          => $sessionId,
             'original_message_id' => $originalMessageId,
             'status'              => $status,
+            'ics_url'             => trim((string) ($body->ics_url ?? '')),
         ];
     }
 

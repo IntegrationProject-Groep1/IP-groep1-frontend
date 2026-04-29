@@ -23,7 +23,7 @@ class SessionDeletedReceiver
 {
     private const EXCHANGE      = 'planning.exchange';
     private const EXCHANGE_TYPE = 'topic';
-    private const ROUTING_KEY   = 'planning.session.deleted';
+    private const ROUTING_KEY   = 'planning.to.frontend.session.deleted';
     private const QUEUE         = 'frontend.planning.session.deleted';
 
     private RabbitMQClient $client;
