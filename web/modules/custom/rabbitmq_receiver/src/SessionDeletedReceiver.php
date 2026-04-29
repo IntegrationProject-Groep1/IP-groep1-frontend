@@ -17,9 +17,8 @@ class SessionDeletedReceiver
     private const EXCHANGE_TYPE = 'topic';
     private const ROUTING_KEY   = 'planning.to.frontend.session.deleted';
     private const QUEUE         = 'frontend.planning.session.deleted';
-    private const DLQ       = 'frontend.planning.session.deleted.dlq';
-    private const DLX       = 'frontend.planning.dlx';
-    private const NAMESPACE = 'urn:integration:planning:v1';
+    private const DLQ           = 'frontend.planning.session.deleted.dlq';
+    private const DLX           = 'frontend.planning.dlx';
 
     public function __construct(private readonly RabbitMQClient $client) {}
 
@@ -58,7 +57,9 @@ class SessionDeletedReceiver
             'x-dead-letter-routing-key' => self::DLQ,
         ]);
 
+        $channel->exchange_declare(self::EXCHANGE, self::EXCHANGE_TYPE, false, true, false);
         $channel->queue_declare(self::QUEUE, false, true, false, false, false, $args);
+        $channel->queue_bind(self::QUEUE, self::EXCHANGE, self::ROUTING_KEY);
 
         $channel->basic_consume(
             self::QUEUE,

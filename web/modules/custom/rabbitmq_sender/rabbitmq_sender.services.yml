@@ -16,6 +16,6 @@ services:
 
   rabbitmq_sender.session_view_request_sender:
     class: Drupal\rabbitmq_sender\SessionViewRequestSender
- 
+
   rabbitmq_sender.event_ended_sender:
     class: Drupal\rabbitmq_sender\EventEndedSender
