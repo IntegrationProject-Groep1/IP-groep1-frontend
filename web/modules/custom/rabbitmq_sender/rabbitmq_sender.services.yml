@@ -1,16 +1,4 @@
 services:
-  rabbitmq_sender.client:
-    class: Drupal\rabbitmq_sender\RabbitMQClient
-    arguments:
-      - '%env(RABBITMQ_HOST)%'
-      - '%env(int:RABBITMQ_PORT)%'
-      - '%env(RABBITMQ_USER)%'
-      - '%env(RABBITMQ_PASS)%'
-      - '%env(RABBITMQ_VHOST)%'
-
-  rabbitmq_sender.session_create_request_sender:
-    class: Drupal\rabbitmq_sender\SessionCreateRequestSender
-
   rabbitmq_sender.session_update_request_sender:
     class: Drupal\rabbitmq_sender\SessionUpdateRequestSender
 

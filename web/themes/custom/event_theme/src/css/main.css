@@ -141,3 +141,248 @@
     padding-right: 2.5rem;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   Drupal native form element styles
+   Targets the classes Drupal outputs for all forms that have no
+   custom Twig override (e.g. user login, user register, etc.)
+   ══════════════════════════════════════════════════════════════ */
+
+/* Wrapper per field */
+.form-item,
+.js-form-item {
+  margin-bottom: 1.25rem;
+}
+
+/* Labels */
+.form-item label,
+.js-form-item label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.375rem;
+  color: var(--color-text);
+}
+
+/* Required asterisk */
+.form-required::after {
+  content: ' *';
+  color: var(--color-error);
+}
+
+/* All text-like inputs */
+input.form-text,
+input.form-email,
+input.form-tel,
+input.form-number,
+input.form-url,
+input.form-search,
+input.form-date,
+input[type="password"].form-text,
+input[type="password"],
+textarea.form-textarea,
+select.form-select {
+  display: block;
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+input.form-text:focus,
+input.form-email:focus,
+input.form-tel:focus,
+input.form-number:focus,
+input.form-url:focus,
+input.form-search:focus,
+input.form-date:focus,
+input[type="password"]:focus,
+textarea.form-textarea:focus,
+select.form-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+/* Select arrow */
+select.form-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.5rem;
+}
+
+/* Textarea */
+textarea.form-textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+/* Description / help text */
+.form-item__description,
+.description {
+  margin-top: 0.375rem;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}
+
+/* Inline error message */
+.form-item--error-message,
+.form-item .error {
+  margin-top: 0.375rem;
+  font-size: 0.8125rem;
+  color: var(--color-error);
+}
+
+input.error,
+select.error,
+textarea.error {
+  border-color: var(--color-error) !important;
+}
+
+/* Checkboxes & radios */
+.form-item--type-checkbox,
+.form-type-checkbox,
+.form-type-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.form-item--type-checkbox label,
+.form-type-checkbox label,
+.form-type-radio label {
+  margin-bottom: 0;
+  cursor: pointer;
+  font-weight: 400;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+/* Fieldset */
+fieldset.form-composite,
+fieldset {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  background-color: var(--color-bg);
+}
+
+fieldset legend,
+fieldset .fieldset-legend {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  padding: 0 0.5rem;
+}
+
+/* Submit / action buttons */
+input[type="submit"].button,
+input[type="submit"].form-submit,
+.button,
+.button--primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: var(--color-primary);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  text-decoration: none;
+  line-height: 1.5;
+}
+
+input[type="submit"].button:hover,
+input[type="submit"].form-submit:hover,
+.button:hover,
+.button--primary:hover {
+  background-color: var(--color-primary-dark);
+  text-decoration: none;
+}
+
+input[type="submit"].button:focus,
+input[type="submit"].form-submit:focus,
+.button:focus,
+.button--primary:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+/* Secondary / danger buttons */
+.button--danger {
+  background-color: var(--color-error);
+}
+
+.button--danger:hover {
+  background-color: #b91c1c;
+}
+
+/* Form actions wrapper */
+.form-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Drupal messages */
+.messages-list {
+  padding: 0;
+  list-style: none;
+}
+
+.messages {
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius);
+  margin-bottom: 1.25rem;
+  font-size: 0.9375rem;
+  border: 1px solid transparent;
+}
+
+.messages--status {
+  background-color: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+.messages--error {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+  color: var(--color-error);
+}
+
+.messages--warning {
+  background-color: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+/* Page title */
+h1.page-title,
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+  margin-bottom: 1.5rem;
+}
