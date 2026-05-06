@@ -122,4 +122,38 @@ class SessionCreatedReceiver
 
         return $xml;
     }
+
+    /**
+     * Poll the session_created queue once (non-blocking) and process any waiting message.
+     *
+     * Returns true when a message was processed, false when the queue was empty.
+     */
+    public function pollOnce(): bool
+    {
+        $channel = $this->client->getChannel();
+
+        $args = new AMQPTable([
+            'x-dead-letter-exchange'    => self::DLX,
+            'x-dead-letter-routing-key' => self::DLQ,
+        ]);
+
+        $channel->exchange_declare(self::EXCHANGE, self::EXCHANGE_TYPE, false, true, false);
+        $channel->queue_declare(self::QUEUE, false, true, false, false, false, $args);
+        $channel->queue_bind(self::QUEUE, self::EXCHANGE, self::ROUTING_KEY);
+
+        $msg = $channel->basic_get(self::QUEUE);
+
+        if ($msg === null) {
+            return false;
+        }
+
+        try {
+            $this->processMessageFromXml($msg->body);
+            $msg->ack();
+        } catch (\Throwable $e) {
+            $msg->nack(false, false);
+        }
+
+        return true;
+    }
 }
