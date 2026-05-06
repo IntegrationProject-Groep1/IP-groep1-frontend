@@ -73,6 +73,7 @@ class SessionEnrollmentService
             // Notify CRM: new_registration (one per session per the XSD contract)
             try {
                 $this->newRegistrationSender->send([
+                    'identity_uuid' => $userData['master_uuid'] ?? $userData['user_id'],
                     'email'         => $userData['email'],
                     'user_id'       => $userData['user_id'],
                     'first_name'    => $userData['first_name'],
@@ -128,14 +129,16 @@ class SessionEnrollmentService
             }
             try {
                 $this->userRegisteredSender->send([
-                    'user_id'      => $userData['user_id'],
-                    'email'        => $userData['email'],
-                    'first_name'   => $userData['first_name'] ?? '',
-                    'last_name'    => $userData['last_name'] ?? '',
-                    'is_company'   => (bool) ($userData['is_company'] ?? false),
-                    'vat_number'   => $userData['vat_number'] ?? '',
-                    'session_id'   => $sessionId,
-                    'session_name' => $session['title'],
+                    'identity_uuid' => $userData['master_uuid'] ?? $userData['user_id'],
+                    'user_id'       => $userData['user_id'],
+                    'email'         => $userData['email'],
+                    'first_name'    => $userData['first_name'] ?? '',
+                    'last_name'     => $userData['last_name'] ?? '',
+                    'is_company'    => (bool) ($userData['is_company'] ?? false),
+                    'company_name'  => $userData['company_name'] ?? '',
+                    'vat_number'    => $userData['vat_number'] ?? '',
+                    'session_id'    => $sessionId,
+                    'session_title' => $session['title'],
                 ]);
                 $logger->info('user_registered verstuurd naar CRM voor @email / sessie @id.', [
                     '@email' => $userData['email'],

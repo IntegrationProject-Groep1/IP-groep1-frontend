@@ -48,16 +48,26 @@ class RegistrationService
 
         $user = $this->createLocalUser($data);
 
+        // Retrieve the master UUID from the Identity Service FIRST — contract §5.4 says
+        // user_created must be published AFTER the Identity RPC so we can include identity_uuid.
+        $masterUuid = $this->resolveMasterUuid((string) $data['email'], $logger);
+        if ($masterUuid !== '') {
+            $this->storeMasterUuidOnUser((int) $user->id(), $masterUuid);
+            $data['master_uuid'] = $masterUuid;
+        }
+
         // Notify CRM that a new user account was created (non-fatal).
         if ($this->userCreatedSender !== null) {
             try {
                 $this->userCreatedSender->send([
+                    'identity_uuid' => $masterUuid !== '' ? $masterUuid : (string) $user->id(),
                     'user_id'       => (string) $user->id(),
                     'email'         => (string) $data['email'],
                     'first_name'    => (string) ($data['first_name'] ?? ''),
                     'last_name'     => (string) ($data['last_name'] ?? ''),
                     'date_of_birth' => (string) ($data['date_of_birth'] ?? ''),
                     'is_company'    => (bool) ($data['is_company'] ?? false),
+                    'company_name'  => (string) ($data['company_name'] ?? ''),
                     'vat_number'    => (string) ($data['vat_number'] ?? ''),
                 ]);
                 $logger->info('user_created verstuurd naar CRM voor @email.', ['@email' => $data['email']]);
@@ -67,15 +77,6 @@ class RegistrationService
                     '@message' => $e->getMessage(),
                 ]);
             }
-        }
-
-        // Retrieve the master UUID from the Identity Service so CRM can correlate
-        // this user across all downstream systems. Non-fatal: if Identity Service
-        // is unavailable the registration still succeeds locally.
-        $masterUuid = $this->resolveMasterUuid((string) $data['email'], $logger);
-        if ($masterUuid !== '') {
-            $this->storeMasterUuidOnUser((int) $user->id(), $masterUuid);
-            $data['master_uuid'] = $masterUuid;
         }
 
         $payloadBuilder = $this->crmPayloadBuilder ?? new RegistrationCrmPayloadBuilder();

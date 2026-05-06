@@ -5,8 +5,10 @@
   Sender    : UserRegisteredSender
   Version   : 2.0
 
-  <type> replaces the old <is_company> boolean.
-  correlation_id is required as the second header field.
+  Header order: message_id → timestamp → source → type → version → correlation_id (optional, last)
+  Body: <customer> contains identity_uuid, email, contact, type, company_name?, vat_number?, session_id
+        <session_title> (optional, outside customer)
+        <payment_status> required (pending/paid)
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
@@ -18,11 +20,11 @@
           <xs:complexType>
             <xs:sequence>
               <xs:element name="message_id"     type="xs:string"/>
-              <xs:element name="correlation_id" type="xs:string"/>
               <xs:element name="timestamp"      type="xs:dateTime"/>
               <xs:element name="source"         type="xs:string" fixed="frontend"/>
               <xs:element name="type"           type="xs:string" fixed="user_registered"/>
               <xs:element name="version"        type="xs:string" fixed="2.0"/>
+              <xs:element name="correlation_id" type="xs:string" minOccurs="0"/>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
@@ -30,11 +32,11 @@
         <xs:element name="body">
           <xs:complexType>
             <xs:sequence>
-              <xs:element name="user">
+              <xs:element name="customer">
                 <xs:complexType>
                   <xs:sequence>
-                    <xs:element name="user_id" type="xs:string"/>
-                    <xs:element name="email"   type="xs:string"/>
+                    <xs:element name="identity_uuid" type="xs:string"/>
+                    <xs:element name="email"         type="xs:string"/>
                     <xs:element name="contact">
                       <xs:complexType>
                         <xs:sequence>
@@ -51,28 +53,20 @@
                         </xs:restriction>
                       </xs:simpleType>
                     </xs:element>
-                    <xs:element name="company" minOccurs="0">
-                      <xs:complexType>
-                        <xs:sequence>
-                          <xs:element name="name"       type="xs:string"/>
-                          <xs:element name="vat_number" type="xs:string"/>
-                        </xs:sequence>
-                      </xs:complexType>
-                    </xs:element>
+                    <xs:element name="company_name" type="xs:string" minOccurs="0"/>
+                    <xs:element name="vat_number"   type="xs:string" minOccurs="0"/>
+                    <xs:element name="session_id"   type="xs:string"/>
                   </xs:sequence>
                 </xs:complexType>
               </xs:element>
 
-              <xs:element name="session">
-                <xs:complexType>
-                  <xs:sequence>
-                    <xs:element name="session_id" type="xs:string"/>
-                    <xs:element name="name"       type="xs:string"/>
-                  </xs:sequence>
-                </xs:complexType>
+              <xs:element name="session_title"  type="xs:string" minOccurs="0"/>
+              <xs:element name="payment_status">
+                <xs:simpleType><xs:restriction base="xs:string">
+                  <xs:enumeration value="pending"/>
+                  <xs:enumeration value="paid"/>
+                </xs:restriction></xs:simpleType>
               </xs:element>
-
-              <xs:element name="payment_status" type="xs:string" fixed="pending"/>
             </xs:sequence>
           </xs:complexType>
         </xs:element>

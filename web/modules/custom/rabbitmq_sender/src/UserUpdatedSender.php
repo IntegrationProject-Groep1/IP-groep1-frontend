@@ -77,7 +77,9 @@ class UserUpdatedSender
         $body     = $dom->createElement('body');
         $customer = $dom->createElement('customer');
 
-        $customer->appendChild($dom->createElement('user_id', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
+        // identity_uuid: master UUID from Identity Service (falls back to Drupal user_id)
+        $identityUuid = (string) ($data['identity_uuid'] ?? $data['user_id'] ?? '');
+        $customer->appendChild($dom->createElement('identity_uuid', htmlspecialchars($identityUuid, ENT_XML1, 'UTF-8')));
         $customer->appendChild($dom->createElement('email', htmlspecialchars((string) $data['email'], ENT_XML1, 'UTF-8')));
 
         if (!empty($data['date_of_birth'])) {
@@ -89,6 +91,16 @@ class UserUpdatedSender
         $contact->appendChild($dom->createElement('last_name', htmlspecialchars((string) $data['last_name'], ENT_XML1, 'UTF-8')));
         $customer->appendChild($contact);
 
+        // type: private or company per contract §5.2
+        $type = !empty($data['is_company']) ? 'company' : 'private';
+        $customer->appendChild($dom->createElement('type', $type));
+
+        if (!empty($data['company_name'])) {
+            $customer->appendChild($dom->createElement('company_name', htmlspecialchars((string) $data['company_name'], ENT_XML1, 'UTF-8')));
+        }
+        if (!empty($data['vat_number'])) {
+            $customer->appendChild($dom->createElement('vat_number', htmlspecialchars((string) $data['vat_number'], ENT_XML1, 'UTF-8')));
+        }
         if (!empty($data['company_id'])) {
             $customer->appendChild($dom->createElement('company_id', htmlspecialchars((string) $data['company_id'], ENT_XML1, 'UTF-8')));
         }

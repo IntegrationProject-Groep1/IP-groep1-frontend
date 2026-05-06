@@ -80,56 +80,51 @@ class NewRegistrationSender
         $message = $xml->createElement('message');
         $xml->appendChild($message);
 
-        // Header order per contract: message_id, correlation_id, timestamp, source, type, version
+        // Header order per contract §5.1: message_id, timestamp, source, type, version, correlation_id
         $header = $xml->createElement('header');
         $header->appendChild($xml->createElement('message_id', $messageId));
-        $header->appendChild($xml->createElement('correlation_id', $messageId));
         $header->appendChild($xml->createElement('timestamp', $timestamp));
         $header->appendChild($xml->createElement('source', $this->resolveSource()));
         $header->appendChild($xml->createElement('type', self::MESSAGE_TYPE));
         $header->appendChild($xml->createElement('version', self::MESSAGE_VERSION));
+        $header->appendChild($xml->createElement('correlation_id', $messageId));
         $message->appendChild($header);
 
-        $body = $xml->createElement('body');
-
-        // session_id is first in body per contract
-        if (!empty($data['session_id'])) {
-            $body->appendChild($xml->createElement('session_id', (string) $data['session_id']));
-        }
-
+        $body     = $xml->createElement('body');
         $customer = $xml->createElement('customer');
 
-        // Field order per contract: user_id, email, type, is_company_linked, vat_number, date_of_birth, contact, address, company_id, registration_fee
-        $customer->appendChild($xml->createElement('user_id', (string) ($data['user_id'] ?? '')));
-        $customer->appendChild($xml->createElement('email', (string) $data['email']));
+        // identity_uuid: master UUID from Identity Service (falls back to Drupal user_id)
+        $identityUuid = (string) ($data['identity_uuid'] ?? $data['user_id'] ?? '');
+        $customer->appendChild($xml->createElement('identity_uuid', htmlspecialchars($identityUuid, ENT_XML1, 'UTF-8')));
+        $customer->appendChild($xml->createElement('email', htmlspecialchars((string) $data['email'], ENT_XML1, 'UTF-8')));
 
+        // type: private or company
+        $type = !empty($data['is_company']) ? 'company' : 'private';
         if (!empty($data['type'])) {
-            $customer->appendChild($xml->createElement('type', (string) $data['type']));
-        } elseif (array_key_exists('is_company', $data)) {
-            $customer->appendChild($xml->createElement('type', !empty($data['is_company']) ? 'company' : 'private'));
+            $type = (string) $data['type'];
         }
+        $customer->appendChild($xml->createElement('type', $type));
 
-        if (array_key_exists('is_company_linked', $data)) {
-            $customer->appendChild($xml->createElement('is_company_linked', !empty($data['is_company_linked']) ? 'true' : 'false'));
-        } elseif (array_key_exists('is_company', $data)) {
-            $customer->appendChild($xml->createElement('is_company_linked', !empty($data['is_company']) ? 'true' : 'false'));
-        }
+        // is_company_linked: xs:boolean → true/false
+        $isCompanyLinked = (!empty($data['is_company_linked']) || !empty($data['is_company'])) ? 'true' : 'false';
+        $customer->appendChild($xml->createElement('is_company_linked', $isCompanyLinked));
 
         if (!empty($data['vat_number'])) {
-            $customer->appendChild($xml->createElement('vat_number', (string) $data['vat_number']));
+            $customer->appendChild($xml->createElement('vat_number', htmlspecialchars((string) $data['vat_number'], ENT_XML1, 'UTF-8')));
         }
 
-        $customer->appendChild($xml->createElement('date_of_birth', (string) ($data['date_of_birth'] ?? '')));
+        $customer->appendChild($xml->createElement('date_of_birth', htmlspecialchars((string) ($data['date_of_birth'] ?? ''), ENT_XML1, 'UTF-8')));
 
         $contact = $xml->createElement('contact');
-        $contact->appendChild($xml->createElement('first_name', (string) $data['first_name']));
-        $contact->appendChild($xml->createElement('last_name', (string) $data['last_name']));
+        $contact->appendChild($xml->createElement('first_name', htmlspecialchars((string) ($data['first_name'] ?? ''), ENT_XML1, 'UTF-8')));
+        $contact->appendChild($xml->createElement('last_name', htmlspecialchars((string) ($data['last_name'] ?? ''), ENT_XML1, 'UTF-8')));
         $customer->appendChild($contact);
 
-        // address as xs:string per contract
+        // address is required per contract; send empty string if not provided
+        $addressStr = '';
         if (!empty($data['address'])) {
             if (is_array($data['address'])) {
-                $parts = [];
+                $parts  = [];
                 $street = trim(($data['address']['street'] ?? '') . ' ' . ($data['address']['number'] ?? ''));
                 if ($street !== '') {
                     $parts[] = $street;
@@ -145,24 +140,27 @@ class NewRegistrationSender
             } else {
                 $addressStr = (string) $data['address'];
             }
-            $customer->appendChild($xml->createElement('address', htmlspecialchars($addressStr, ENT_XML1, 'UTF-8')));
         }
+        $customer->appendChild($xml->createElement('address', htmlspecialchars($addressStr, ENT_XML1, 'UTF-8')));
 
         if (!empty($data['company_id'])) {
-            $customer->appendChild($xml->createElement('company_id', (string) $data['company_id']));
+            $customer->appendChild($xml->createElement('company_id', htmlspecialchars((string) $data['company_id'], ENT_XML1, 'UTF-8')));
         }
 
-        // registration_fee with status=unpaid per contract (replaces paid boolean)
-        if (!empty($data['registration_fee']) && is_array($data['registration_fee'])) {
-            $registrationFee = $xml->createElement('registration_fee');
-            if (!empty($data['registration_fee']['amount'])) {
-                $amount = $xml->createElement('amount', (string) $data['registration_fee']['amount']);
-                $amount->setAttribute('currency', 'eur');
-                $registrationFee->appendChild($amount);
-            }
-            $registrationFee->appendChild($xml->createElement('status', 'unpaid'));
-            $customer->appendChild($registrationFee);
+        // session_id inside <customer> per contract §5.1
+        $customer->appendChild($xml->createElement('session_id', htmlspecialchars((string) ($data['session_id'] ?? ''), ENT_XML1, 'UTF-8')));
+
+        // payment_due is required per contract; always send with amount 0.00 eur / unpaid
+        $paymentDue = $xml->createElement('payment_due');
+        $amountValue = '0.00';
+        if (!empty($data['registration_fee']['amount'])) {
+            $amountValue = number_format((float) $data['registration_fee']['amount'], 2, '.', '');
         }
+        $amountEl = $xml->createElement('amount', $amountValue);
+        $amountEl->setAttribute('currency', 'eur');
+        $paymentDue->appendChild($amountEl);
+        $paymentDue->appendChild($xml->createElement('status', 'unpaid'));
+        $customer->appendChild($paymentDue);
 
         $body->appendChild($customer);
         $message->appendChild($body);

@@ -25,6 +25,27 @@ function registration_form_theme(): array
 }
 
 /**
+ * Implements hook_user_presave().
+ *
+ * Keeps the Drupal username (name) in sync with the email address.
+ * Because this project uses email as the login identifier and never shows
+ * the username to end users, name and mail must always be identical.
+ */
+function registration_form_user_presave(\Drupal\user\UserInterface $account): void
+{
+    // Skip anonymous and during initial registration (id = NULL means new user
+    // — RegistrationService sets name = mail itself before save).
+    if ($account->isAnonymous() || $account->id() === null) {
+        return;
+    }
+
+    $newMail = (string) $account->getEmail();
+    if ($newMail !== '' && $account->getAccountName() !== $newMail) {
+        $account->setUsername($newMail);
+    }
+}
+
+/**
  * Implements hook_user_update().
  *
  * Notifies CRM when a Drupal user account is updated.
@@ -51,15 +72,21 @@ function registration_form_user_update(\Drupal\user\UserInterface $account): voi
     }
 
     try {
+        // Retrieve the master UUID stored during registration.
+        $masterUuid = \Drupal::service('user.data')->get('registration_form', (int) $account->id(), 'master_uuid') ?? '';
+
         /** @var \Drupal\rabbitmq_sender\UserUpdatedSender $sender */
         $sender = \Drupal::service('rabbitmq_sender.user_updated_sender');
         $sender->send([
-            'user_id'    => (string) $account->id(),
-            'email'      => (string) $account->getEmail(),
-            'first_name' => $firstName,
-            'last_name'  => $lastName,
-            'is_company' => (bool) ($account->hasField('field_is_company') ? $account->get('field_is_company')->value : false),
-            'vat_number' => (string) ($account->hasField('field_vat_number') ? $account->get('field_vat_number')->value : ''),
+            'identity_uuid' => $masterUuid !== '' ? $masterUuid : (string) $account->id(),
+            'user_id'       => (string) $account->id(),
+            'email'         => (string) $account->getEmail(),
+            'first_name'    => $firstName,
+            'last_name'     => $lastName,
+            'is_company'    => (bool) ($account->hasField('field_is_company') ? $account->get('field_is_company')->value : false),
+            'company_name'  => (string) ($account->hasField('field_company_name') ? $account->get('field_company_name')->value : ''),
+            'vat_number'    => (string) ($account->hasField('field_vat_number') ? $account->get('field_vat_number')->value : ''),
+            'company_id'    => (string) ($account->hasField('field_company_id') ? $account->get('field_company_id')->value : ''),
         ]);
     } catch (\Throwable $e) {
         \Drupal::logger('registration_form')->error(
@@ -81,11 +108,15 @@ function registration_form_user_delete(\Drupal\user\UserInterface $account): voi
     }
 
     try {
+        // Retrieve the master UUID stored during registration.
+        $masterUuid = \Drupal::service('user.data')->get('registration_form', (int) $account->id(), 'master_uuid') ?? '';
+
         /** @var \Drupal\rabbitmq_sender\UserUnregisteredSender $sender */
         $sender = \Drupal::service('rabbitmq_sender.user_unregistered_sender');
         $sender->send([
-            'user_id' => (string) $account->id(),
-            'email'   => (string) $account->getEmail(),
+            'identity_uuid' => $masterUuid !== '' ? $masterUuid : (string) $account->id(),
+            'user_id'       => (string) $account->id(),
+            'email'         => (string) $account->getEmail(),
         ]);
     } catch (\Throwable $e) {
         \Drupal::logger('registration_form')->error(

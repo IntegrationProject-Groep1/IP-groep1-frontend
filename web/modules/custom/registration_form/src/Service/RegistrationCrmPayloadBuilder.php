@@ -20,22 +20,27 @@ class RegistrationCrmPayloadBuilder
         }
 
         return [
-            'email' => (string) ($data['email'] ?? ''),
-            'first_name' => (string) ($data['first_name'] ?? ''),
-            'last_name' => (string) ($data['last_name'] ?? ''),
-            'date_of_birth' => (string) ($data['date_of_birth'] ?? ''),
+            'email'          => (string) ($data['email'] ?? ''),
+            'first_name'     => (string) ($data['first_name'] ?? ''),
+            'last_name'      => (string) ($data['last_name'] ?? ''),
+            'date_of_birth'  => (string) ($data['date_of_birth'] ?? ''),
             'registration_date' => $registrationDate,
-            'session_id' => is_array($data['session_ids'] ?? null)
+            'session_id'     => is_array($data['session_ids'] ?? null)
                 ? implode(',', $data['session_ids'])
                 : (string) ($data['session_id'] ?? ''),
-            'user_id' => $userId,
-            'type' => !empty($data['is_company']) ? 'company' : 'private',
+            // identity_uuid preferred; fall back to local Drupal ID
+            'identity_uuid'  => (string) ($data['master_uuid'] ?? $userId),
+            'user_id'        => $userId,
+            'type'           => !empty($data['is_company']) ? 'company' : 'private',
             'is_company_linked' => !empty($data['is_company']),
-            'company_name' => (string) ($data['company_name'] ?? ''),
-            'vat_number' => (string) ($data['vat_number'] ?? ''),
-            'address' => is_array($data['address'] ?? null) ? $data['address'] : [],
-            'registration_fee' => is_array($data['registration_fee'] ?? null) ? $data['registration_fee'] : [],
-            'badge_id' => (string) ($data['badge_id'] ?? ''),
+            'company_name'   => (string) ($data['company_name'] ?? ''),
+            'vat_number'     => (string) ($data['vat_number'] ?? ''),
+            'address'        => is_array($data['address'] ?? null) ? $data['address'] : [],
+            // payment_due: always send; default 0.00 eur / unpaid
+            'registration_fee' => is_array($data['registration_fee'] ?? null)
+                ? $data['registration_fee']
+                : ['amount' => '0.00', 'status' => 'unpaid'],
+            'badge_id'       => (string) ($data['badge_id'] ?? ''),
         ];
     }
 }
