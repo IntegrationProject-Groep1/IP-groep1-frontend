@@ -40,7 +40,7 @@ class SessionEnrollForm extends FormBase
 
         if (empty($options)) {
             $form['notice'] = [
-                '#markup' => '<p>' . $this->t('No sessions are currently available. Please check back later.') . '</p>',
+                '#markup' => '<p>' . $this->t('Could not load sessions: no connection to the Planning service. Please try again later.') . '</p>',
             ];
             return $form;
         }
@@ -108,37 +108,25 @@ class SessionEnrollForm extends FormBase
 
     /**
      * Builds session option list from Drupal State (populated by SessionViewResponseReceiver).
-     * Falls back to hardcoded sessions if no live data is available yet.
+     * Returns an empty array when no live data is available.
      */
     private function getSessionOptions(): array
     {
         $sessions = \Drupal::state()->get('planning.sessions', []);
+        $options  = [];
 
-        if (!empty($sessions)) {
-            $options = [];
-            foreach ($sessions as $session) {
-                if (empty($session['session_id']) || empty($session['title'])) {
-                    continue;
-                }
-                $label = $session['title'];
-                if (!empty($session['start_datetime'])) {
-                    $label .= ' — ' . $session['start_datetime'];
-                }
-                $options[$session['session_id']] = $label;
+        foreach ($sessions as $session) {
+            if (empty($session['session_id']) || empty($session['title'])) {
+                continue;
             }
-            if (!empty($options)) {
-                return $options;
+            $label = $session['title'];
+            if (!empty($session['start_datetime'])) {
+                $label .= ' — ' . $session['start_datetime'];
             }
+            $options[$session['session_id']] = $label;
         }
 
-        return [
-            '550e8400-e29b-41d4-a716-446655440001' => 'Keynote: Toekomst van Tech — 23 april 2026 (14:00)',
-            '550e8400-e29b-41d4-a716-446655440002' => 'Workshop AI & Machine Learning — 23 april 2026 (15:00)',
-            '550e8400-e29b-41d4-a716-446655440003' => 'Workshop Cloud & DevOps — 23 april 2026 (15:00)',
-            '550e8400-e29b-41d4-a716-446655440004' => 'Workshop Cybersecurity — 23 april 2026 (15:00)',
-            '550e8400-e29b-41d4-a716-446655440005' => 'Prijsuitreiking Beste Eindwerken — 23 april 2026 (16:30)',
-            '550e8400-e29b-41d4-a716-446655440006' => 'Netwerkreceptie & Drinks — 23 april 2026 (18:00)',
-        ];
+        return $options;
     }
 
     /**
