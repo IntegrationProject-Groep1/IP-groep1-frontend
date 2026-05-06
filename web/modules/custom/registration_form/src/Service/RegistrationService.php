@@ -82,6 +82,14 @@ class RegistrationService
 
         $rabbitSent = false;
 
+        if ($this->registrationSender === null) {
+            $logger->error('RabbitMQ new_registration kon niet verstuurd worden: rabbitmq_sender module is niet ingeschakeld of service ontbreekt.');
+            if ($this->mustRequireRabbitMqSync()) {
+                $user->delete();
+                throw new \InvalidArgumentException('Registration could not be synchronized to CRM: rabbitmq_sender service unavailable.');
+            }
+        }
+
         try {
             if ($this->registrationSender !== null) {
                 $this->registrationSender->send($payload);
