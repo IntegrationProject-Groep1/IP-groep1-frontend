@@ -1,0 +1,158 @@
+<?php
+
+declare(strict_types=1);
+
+use Drupal\Component\Utility\Html;
+use Drupal\Core\Render\Markup;
+
+/**
+ * Implements hook_preprocess_html().
+ *
+ * Injects admin-configured CSS variables into <head> so the compiled
+ * Tailwind stylesheet can reference them at runtime.
+ * Also loads the correct Google Font based on the admin setting.
+ */
+function event_theme_preprocess_html(array &$variables): void {
+  $radiusMap = [
+    'sharp'   => '0px',
+    'default' => '0.5rem',
+    'large'   => '1rem',
+    'pill'    => '9999px',
+  ];
+
+  $primary  = theme_get_setting('event_theme_color_primary')  ?: '#2563eb';
+  $accent   = theme_get_setting('event_theme_color_accent')   ?: '#7c3aed';
+  $bg       = theme_get_setting('event_theme_color_bg')       ?: '#f8fafc';
+  $surface  = theme_get_setting('event_theme_color_surface')  ?: '#ffffff';
+  $navBg    = theme_get_setting('event_theme_color_nav_bg')   ?: '#ffffff';
+  $heroBg   = theme_get_setting('event_theme_color_hero_bg')  ?: '#1e3a8a';
+  $text     = theme_get_setting('event_theme_color_text')     ?: '#1e293b';
+  $radiusKey = theme_get_setting('event_theme_border_radius') ?: 'default';
+  $radius   = $radiusMap[$radiusKey] ?? '0.5rem';
+  $font     = theme_get_setting('event_theme_font')           ?: 'Inter';
+
+  // Derive a slightly darker shade for hover states.
+  $primaryDark = _event_theme_darken_hex($primary, 12);
+
+  // All values come from trusted admin input; sanitise as hex colour strings.
+  $css = sprintf(
+    ':root{--color-primary:%s;--color-primary-dark:%s;--color-accent:%s;--color-bg:%s;--color-surface:%s;--color-border:#e2e8f0;--color-text:%s;--color-muted:#64748b;--color-error:#dc2626;--color-success:#16a34a;--color-warning:#d97706;--color-nav-bg:%s;--color-hero-bg:%s;--radius:%s;--font-family:\'%s\',system-ui,sans-serif;}',
+    _event_theme_safe_hex($primary),
+    _event_theme_safe_hex($primaryDark),
+    _event_theme_safe_hex($accent),
+    _event_theme_safe_hex($bg),
+    _event_theme_safe_hex($surface),
+    _event_theme_safe_hex($text),
+    _event_theme_safe_hex($navBg),
+    _event_theme_safe_hex($heroBg),
+    Html::escape($radius),
+    Html::escape($font)
+  );
+
+  $variables['#attached']['html_head'][] = [
+    [
+      '#type'       => 'html_tag',
+      '#tag'        => 'style',
+      '#value'      => Markup::create($css),
+      '#attributes' => ['id' => 'event-theme-vars'],
+    ],
+    'event_theme_css_vars',
+  ];
+
+  // Google Fonts.
+  $googleFonts = [
+    'Inter'       => 'Inter:wght@300;400;500;600;700',
+    'Roboto'      => 'Roboto:wght@300;400;500;700',
+    'Poppins'     => 'Poppins:wght@300;400;500;600;700',
+    'Open Sans'   => 'Open+Sans:wght@300;400;500;600;700',
+    'Lato'        => 'Lato:wght@300;400;700',
+    'Nunito'      => 'Nunito:wght@300;400;500;600;700',
+    'Montserrat'  => 'Montserrat:wght@300;400;500;600;700',
+  ];
+  $fontQuery = $googleFonts[$font] ?? 'Inter:wght@300;400;500;600;700';
+
+  $variables['#attached']['html_head'][] = [
+    ['#type' => 'html_tag', '#tag' => 'link', '#attributes' => ['rel' => 'preconnect', 'href' => 'https://fonts.googleapis.com']],
+    'gf_preconnect_1',
+  ];
+  $variables['#attached']['html_head'][] = [
+    ['#type' => 'html_tag', '#tag' => 'link', '#attributes' => ['rel' => 'preconnect', 'href' => 'https://fonts.gstatic.com', 'crossorigin' => '']],
+    'gf_preconnect_2',
+  ];
+  $variables['#attached']['html_head'][] = [
+    ['#type' => 'html_tag', '#tag' => 'link', '#attributes' => ['rel' => 'stylesheet', 'href' => 'https://fonts.googleapis.com/css2?family=' . $fontQuery . '&display=swap']],
+    'gf_stylesheet',
+  ];
+}
+
+/**
+ * Implements hook_preprocess_page().
+ *
+ * Passes theme settings to page.html.twig as template variables.
+ */
+function event_theme_preprocess_page(array &$variables): void {
+  $siteName = theme_get_setting('event_theme_site_name');
+  if (empty($siteName)) {
+    $siteName = \Drupal::config('system.site')->get('name');
+  }
+
+  $footerRaw = theme_get_setting('event_theme_footer_text')
+    ?: '© Desideriushogeschool Event Platform. All rights reserved.';
+
+  $variables['site_name']            = $siteName;
+  $variables['tagline']              = theme_get_setting('event_theme_tagline') ?? '';
+  $variables['nav_show_register']    = (bool) (theme_get_setting('event_theme_nav_show_register') ?? 1);
+  $variables['nav_show_enroll']      = (bool) (theme_get_setting('event_theme_nav_show_enroll') ?? 1);
+  $variables['footer_text']          = Markup::create(strip_tags($footerRaw, '<a><strong><em><br>'));
+  $variables['social_facebook']      = theme_get_setting('event_theme_social_facebook') ?: '';
+  $variables['social_instagram']     = theme_get_setting('event_theme_social_instagram') ?: '';
+  $variables['social_linkedin']      = theme_get_setting('event_theme_social_linkedin') ?: '';
+  $variables['social_twitter']       = theme_get_setting('event_theme_social_twitter') ?: '';
+  $variables['current_route']        = \Drupal::routeMatch()->getRouteName() ?? '';
+}
+
+/**
+ * Implements hook_preprocess_page__front().
+ *
+ * Adds hero section variables for the front page template.
+ */
+function event_theme_preprocess_page__front(array &$variables): void {
+  // event_theme_preprocess_page() is already called automatically by Drupal
+  // before this suggestion hook runs — no need to call it again.
+
+  $variables['hero_enabled']   = (bool) (theme_get_setting('event_theme_hero_enabled') ?? 1);
+  $variables['hero_title']     = theme_get_setting('event_theme_hero_title')     ?: 'Desideriushogeschool Event Platform';
+  $variables['hero_subtitle']  = theme_get_setting('event_theme_hero_subtitle')  ?: 'Discover, register and manage your sessions.';
+  $variables['hero_cta_label'] = theme_get_setting('event_theme_hero_cta_label') ?: 'Register now';
+  $variables['hero_cta_url']   = theme_get_setting('event_theme_hero_cta_url')   ?: '/register';
+}
+
+/* ── Private helpers ─────────────────────────────────────── */
+
+/**
+ * Darkens a hex colour by a given percentage (0–100).
+ */
+function _event_theme_darken_hex(string $hex, int $percent): string {
+  $hex = ltrim($hex, '#');
+  if (strlen($hex) === 3) {
+    $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+  }
+  if (strlen($hex) !== 6) {
+    return '#1d4ed8'; // Safe fallback.
+  }
+  $factor = 1 - ($percent / 100);
+  $r = (int) round(hexdec(substr($hex, 0, 2)) * $factor);
+  $g = (int) round(hexdec(substr($hex, 2, 2)) * $factor);
+  $b = (int) round(hexdec(substr($hex, 4, 2)) * $factor);
+  return sprintf('#%02x%02x%02x', max(0, $r), max(0, $g), max(0, $b));
+}
+
+/**
+ * Returns a sanitised hex colour string (#rrggbb) or a safe fallback.
+ */
+function _event_theme_safe_hex(string $hex): string {
+  if (preg_match('/^#[0-9a-fA-F]{6}$/', $hex)) {
+    return $hex;
+  }
+  return '#000000';
+}
