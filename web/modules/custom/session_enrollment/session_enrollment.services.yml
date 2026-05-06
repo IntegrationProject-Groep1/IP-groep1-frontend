@@ -3,6 +3,6 @@ services:
     class: Drupal\session_enrollment\Service\SessionEnrollmentService
     arguments:
       - '@logger.factory'
-      - '@rabbitmq_sender.new_registration_sender'
-      - '@rabbitmq_sender.calendar_invite_sender'
-      - '@rabbitmq_sender.user_registered_sender'
+      - '@?rabbitmq_sender.new_registration_sender'
+      - '@?rabbitmq_sender.calendar_invite_sender'
+      - '@?rabbitmq_sender.user_registered_sender'

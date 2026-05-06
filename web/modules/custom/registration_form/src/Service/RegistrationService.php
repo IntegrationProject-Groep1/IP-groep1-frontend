@@ -23,7 +23,7 @@ class RegistrationService
     public function __construct(
         private readonly LoggerChannelFactoryInterface $loggerFactory,
         private readonly EntityTypeManagerInterface $entityTypeManager,
-        private readonly NewRegistrationSender $registrationSender,
+        private readonly ?NewRegistrationSender $registrationSender = null,
         private readonly ?RegistrationCrmPayloadBuilder $crmPayloadBuilder = null,
         private readonly ?IdentityServiceClient $identityClient = null,
         private readonly ?UserCreatedSender $userCreatedSender = null,
@@ -83,8 +83,10 @@ class RegistrationService
         $rabbitSent = false;
 
         try {
-            $this->registrationSender->send($payload);
-            $rabbitSent = true;
+            if ($this->registrationSender !== null) {
+                $this->registrationSender->send($payload);
+                $rabbitSent = true;
+            }
         } catch (\Throwable $e) {
             $logger->error('RabbitMQ publish failed to host @host: @message', [
                 '@host' => $this->resolveRabbitMqHost(),
