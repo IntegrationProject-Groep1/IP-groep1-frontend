@@ -23,7 +23,7 @@ class RegistrationService
     public function __construct(
         private readonly LoggerChannelFactoryInterface $loggerFactory,
         private readonly EntityTypeManagerInterface $entityTypeManager,
-        private readonly ?NewRegistrationSender $registrationSender = null,
+        private readonly NewRegistrationSender $registrationSender,
         private readonly ?RegistrationCrmPayloadBuilder $crmPayloadBuilder = null,
         private readonly ?IdentityServiceClient $identityClient = null,
         private readonly ?UserCreatedSender $userCreatedSender = null,
@@ -81,14 +81,6 @@ class RegistrationService
         $payload = $payloadBuilder->build($data, (string) $user->id());
 
         $rabbitSent = false;
-
-        if ($this->registrationSender === null) {
-            $logger->error('RabbitMQ new_registration kon niet verstuurd worden: rabbitmq_sender module is niet ingeschakeld of service ontbreekt.');
-            if ($this->mustRequireRabbitMqSync()) {
-                $user->delete();
-                throw new \InvalidArgumentException('Registration could not be synchronized to CRM: rabbitmq_sender service unavailable.');
-            }
-        }
 
         try {
             if ($this->registrationSender !== null) {

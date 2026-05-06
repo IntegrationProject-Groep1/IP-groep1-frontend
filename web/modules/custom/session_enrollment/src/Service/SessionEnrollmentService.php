@@ -16,8 +16,8 @@ class SessionEnrollmentService
 {
     public function __construct(
         private readonly LoggerChannelFactoryInterface $loggerFactory,
-        private readonly ?NewRegistrationSender $newRegistrationSender = null,
-        private readonly ?CalendarInviteSender $calendarInviteSender = null,
+        private readonly NewRegistrationSender $newRegistrationSender,
+        private readonly CalendarInviteSender $calendarInviteSender,
         private readonly ?UserRegisteredSender $userRegisteredSender = null,
     ) {}
 
@@ -71,7 +71,6 @@ class SessionEnrollmentService
             $session = $sessionMap[$sessionId];
 
             // Notify CRM: new_registration (one per session per the XSD contract)
-            if ($this->newRegistrationSender !== null) {
             try {
                 $this->newRegistrationSender->send([
                     'email'         => $userData['email'],
@@ -94,37 +93,34 @@ class SessionEnrollmentService
                 ]);
                 throw new \RuntimeException('Enrollment notification to CRM failed for session ' . $sessionId . ': ' . $e->getMessage(), 0, $e);
             }
-            }
 
             // Notify Planning: calendar.invite
-            if ($this->calendarInviteSender !== null) {
             if (empty($session['start_datetime']) || empty($session['end_datetime']) || empty($session['title'])) {
                 $logger->warning('calendar.invite overgeslagen voor sessie @id: start_datetime/end_datetime/title ontbreekt.', [
                     '@id' => $sessionId,
                 ]);
             } else {
-            try {
-                $this->calendarInviteSender->send([
-                    'user_id'        => $userData['user_id'],
-                    'attendee_email' => $userData['email'],
-                    'session_id'     => $sessionId,
-                    'title'          => $session['title'],
-                    'start_datetime' => $session['start_datetime'],
-                    'end_datetime'   => $session['end_datetime'],
-                    'location'       => $session['location'] ?? '',
-                ]);
-                $logger->info('calendar.invite verstuurd naar Planning voor sessie @id.', [
-                    '@id' => $sessionId,
-                ]);
-            } catch (\Throwable $e) {
-                // Non-fatal: CRM is already notified; log and continue.
-                $logger->error('calendar.invite mislukt voor sessie @id: @message', [
-                    '@id'      => $sessionId,
-                    '@message' => $e->getMessage(),
-                ]);
+                try {
+                    $this->calendarInviteSender->send([
+                        'user_id'        => $userData['user_id'],
+                        'attendee_email' => $userData['email'],
+                        'session_id'     => $sessionId,
+                        'title'          => $session['title'],
+                        'start_datetime' => $session['start_datetime'],
+                        'end_datetime'   => $session['end_datetime'],
+                        'location'       => $session['location'] ?? '',
+                    ]);
+                    $logger->info('calendar.invite verstuurd naar Planning voor sessie @id.', [
+                        '@id' => $sessionId,
+                    ]);
+                } catch (\Throwable $e) {
+                    // Non-fatal: CRM is already notified; log and continue.
+                    $logger->error('calendar.invite mislukt voor sessie @id: @message', [
+                        '@id'      => $sessionId,
+                        '@message' => $e->getMessage(),
+                    ]);
+                }
             }
-            } // end empty check
-            } // end calendarInviteSender null check
 
             // Notify CRM: user_registered (one per session)
             if ($this->userRegisteredSender === null) {
