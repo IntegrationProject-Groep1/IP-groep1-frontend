@@ -39,12 +39,12 @@ class UserUnregisteredSenderTest extends TestCase
     public function test_valid_data_builds_correct_xml(): void
     {
         $xml = $this->sender->buildXml([
-            'user_id' => 'uuid-v4-hier',
-            'email'   => 'jan@test.be',
+            'identity_uuid' => 'uuid-v4-hier',
+            'email'         => 'jan@test.be',
         ]);
 
         $this->assertStringContainsString('<type>user_deleted</type>', $xml);
-        $this->assertStringContainsString('<user_id>uuid-v4-hier</user_id>', $xml);
+        $this->assertStringContainsString('<identity_uuid>uuid-v4-hier</identity_uuid>', $xml);
         $this->assertStringContainsString('<email>jan@test.be</email>', $xml);
     }
 }
