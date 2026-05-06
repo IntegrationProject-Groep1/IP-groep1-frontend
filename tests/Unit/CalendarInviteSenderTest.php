@@ -73,18 +73,18 @@ class CalendarInviteSenderTest extends TestCase
 
     // ─── buildXml: correct XML structure ─────────────────────────────────────
 
-    public function test_buildXml_contains_correct_namespace(): void
+    public function test_buildXml_does_not_contain_namespace(): void
     {
         $xml = $this->sender->buildXml($this->validData());
 
-        $this->assertStringContainsString('xmlns="urn:integration:planning:v1"', $xml);
+        $this->assertStringNotContainsString('xmlns=', $xml);
     }
 
     public function test_buildXml_contains_type_calendar_invite(): void
     {
         $xml = $this->sender->buildXml($this->validData());
 
-        $this->assertStringContainsString('<type>calendar.invite</type>', $xml);
+        $this->assertStringContainsString('<type>calendar_invite</type>', $xml);
     }
 
     public function test_buildXml_contains_source_frontend(): void
@@ -131,21 +131,24 @@ class CalendarInviteSenderTest extends TestCase
         $this->assertStringContainsString('<user_id>user-uuid-001</user_id>', $xml);
     }
 
-    public function test_buildXml_omits_user_id_when_not_provided(): void
+    public function test_buildXml_throws_when_user_id_missing(): void
     {
-        $xml = $this->sender->buildXml($this->validData());
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('user_id is required');
 
-        $this->assertStringNotContainsString('<user_id>', $xml);
+        $data = $this->validData();
+        unset($data['user_id']);
+        $this->sender->buildXml($data);
     }
 
-    public function test_buildXml_omits_user_id_when_empty(): void
+    public function test_buildXml_throws_when_user_id_empty(): void
     {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('user_id is required');
+
         $data = $this->validData();
         $data['user_id'] = '';
-
-        $xml = $this->sender->buildXml($data);
-
-        $this->assertStringNotContainsString('<user_id>', $xml);
+        $this->sender->buildXml($data);
     }
 
     public function test_buildXml_escapes_special_chars_in_user_id(): void
@@ -330,6 +333,8 @@ class CalendarInviteSenderTest extends TestCase
             'title'          => 'Keynote: AI in de zorgsector',
             'start_datetime' => '2026-05-15T14:00:00Z',
             'end_datetime'   => '2026-05-15T15:00:00Z',
+            'user_id'        => 'user-uuid-001',
+            'attendee_email' => 'jan@test.be',
         ];
     }
 }

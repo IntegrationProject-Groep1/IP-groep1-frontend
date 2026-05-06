@@ -70,7 +70,7 @@ class UserUnregisteredSender
 
         $body = $dom->createElement('body');
         $body->appendChild($dom->createElement('user_id', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
-        $body->appendChild($dom->createElement('email', htmlspecialchars((string) $data['email'], ENT_XML1, 'UTF-8')));
+        $body->appendChild($dom->createElement('email', htmlspecialchars((string) ($data['email'] ?? ''), ENT_XML1, 'UTF-8')));
 
         if (!empty($data['reason'])) {
             $body->appendChild($dom->createElement('reason', htmlspecialchars((string) $data['reason'], ENT_XML1, 'UTF-8')));

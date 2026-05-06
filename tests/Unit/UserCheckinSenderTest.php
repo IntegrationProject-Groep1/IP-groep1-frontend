@@ -41,7 +41,7 @@ class UserCheckinSenderTest extends TestCase
             'badge_id' => 'nfc-badge-abc123',
         ]);
 
-        $this->assertStringContainsString('<type>user.checkin</type>', $xml);
+        $this->assertStringContainsString('<type>user_checkin</type>', $xml);
         $this->assertStringContainsString('<user_id>uuid-v4-hier</user_id>', $xml);
         $this->assertStringContainsString('<badge_id>nfc-badge-abc123</badge_id>', $xml);
     }

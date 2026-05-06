@@ -54,11 +54,11 @@ class SessionUpdateRequestSenderTest extends TestCase
 
     // ─── buildXml: XML structure ──────────────────────────────────────────────
 
-    public function test_buildXml_contains_planning_namespace(): void
+    public function test_buildXml_does_not_contain_namespace(): void
     {
         $xml = $this->sender->buildXml($this->validData());
 
-        $this->assertStringContainsString('xmlns="urn:integration:planning:v1"', $xml);
+        $this->assertStringNotContainsString('xmlns=', $xml);
     }
 
     public function test_buildXml_contains_correct_type(): void
@@ -72,7 +72,7 @@ class SessionUpdateRequestSenderTest extends TestCase
     {
         $xml = $this->sender->buildXml($this->validData());
 
-        $this->assertStringContainsString('<version>1.0</version>', $xml);
+        $this->assertStringContainsString('<version>2.0</version>', $xml);
     }
 
     public function test_buildXml_contains_source_frontend(): void

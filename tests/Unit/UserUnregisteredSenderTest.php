@@ -27,7 +27,7 @@ class UserUnregisteredSenderTest extends TestCase
         ]);
     }
 
-    public function test_throws_exception_when_session_id_is_missing(): void
+    public function test_throws_exception_when_email_is_missing(): void
     {
         $this->expectException(\InvalidArgumentException::class);
 
@@ -40,11 +40,11 @@ class UserUnregisteredSenderTest extends TestCase
     {
         $xml = $this->sender->buildXml([
             'user_id' => 'uuid-v4-hier',
-            'session_id' => 'session-uuid-001',
+            'email'   => 'jan@test.be',
         ]);
 
-        $this->assertStringContainsString('<type>user.unregistered</type>', $xml);
+        $this->assertStringContainsString('<type>user_deleted</type>', $xml);
         $this->assertStringContainsString('<user_id>uuid-v4-hier</user_id>', $xml);
-        $this->assertStringContainsString('<session_id>session-uuid-001</session_id>', $xml);
+        $this->assertStringContainsString('<email>jan@test.be</email>', $xml);
     }
 }
