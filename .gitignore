@@ -3,3 +3,4 @@ vendor/
 .docker-compose.yml
 web/sites/default/files/
 project.md
+web/themes/custom/event_theme/node_modules/

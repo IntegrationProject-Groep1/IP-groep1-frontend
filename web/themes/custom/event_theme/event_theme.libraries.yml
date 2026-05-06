@@ -1,5 +1,9 @@
-# Global frontend assets loaded by the event theme.
+# Global frontend assets loaded on every page.
 global:
   css:
     theme:
       css/style.css: {}
+  js:
+    js/menu.js: { minified: false }
+  dependencies:
+    - core/drupal

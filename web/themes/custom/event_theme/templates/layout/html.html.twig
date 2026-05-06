@@ -1,0 +1,20 @@
+{#
+  html.html.twig — Full HTML document wrapper.
+  Drupal injects head tags, CSS, and JS via placeholders.
+  Body classes include Tailwind utilities for the flex column layout.
+#}
+<!DOCTYPE html>
+<html{{ html_attributes }}>
+  <head>
+    <head-placeholder token="{{ placeholder_token }}">
+    <title>{{ head_title|safe_join(' | ') }}</title>
+    <css-placeholder token="{{ placeholder_token }}">
+    <js-placeholder token="{{ placeholder_token }}">
+  </head>
+  <body{{ attributes.addClass('flex flex-col min-h-screen') }}>
+    {{ page_top }}
+    {{ page }}
+    {{ page_bottom }}
+    <js-bottom-placeholder token="{{ placeholder_token }}">
+  </body>
+</html>
