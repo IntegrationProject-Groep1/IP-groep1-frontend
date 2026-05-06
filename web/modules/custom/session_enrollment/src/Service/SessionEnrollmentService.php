@@ -7,6 +7,7 @@ namespace Drupal\session_enrollment\Service;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\rabbitmq_sender\CalendarInviteSender;
 use Drupal\rabbitmq_sender\NewRegistrationSender;
+use Drupal\rabbitmq_sender\UserRegisteredSender;
 
 /**
  * Handles session enrollment: notifies CRM (new_registration) and Planning (calendar.invite).
@@ -17,6 +18,7 @@ class SessionEnrollmentService
         private readonly LoggerChannelFactoryInterface $loggerFactory,
         private readonly NewRegistrationSender $newRegistrationSender,
         private readonly CalendarInviteSender $calendarInviteSender,
+        private readonly ?UserRegisteredSender $userRegisteredSender = null,
     ) {}
 
     /**
@@ -97,25 +99,51 @@ class SessionEnrollmentService
                 $logger->warning('calendar.invite overgeslagen voor sessie @id: start_datetime/end_datetime/title ontbreekt.', [
                     '@id' => $sessionId,
                 ]);
-                continue;
+            } else {
+                try {
+                    $this->calendarInviteSender->send([
+                        'user_id'        => $userData['user_id'],
+                        'attendee_email' => $userData['email'],
+                        'session_id'     => $sessionId,
+                        'title'          => $session['title'],
+                        'start_datetime' => $session['start_datetime'],
+                        'end_datetime'   => $session['end_datetime'],
+                        'location'       => $session['location'] ?? '',
+                    ]);
+                    $logger->info('calendar.invite verstuurd naar Planning voor sessie @id.', [
+                        '@id' => $sessionId,
+                    ]);
+                } catch (\Throwable $e) {
+                    // Non-fatal: CRM is already notified; log and continue.
+                    $logger->error('calendar.invite mislukt voor sessie @id: @message', [
+                        '@id'      => $sessionId,
+                        '@message' => $e->getMessage(),
+                    ]);
+                }
             }
 
+            // Notify CRM: user_registered (one per session)
+            if ($this->userRegisteredSender === null) {
+                continue;
+            }
             try {
-                $this->calendarInviteSender->send([
-                    'user_id'        => $userData['user_id'],
-                    'attendee_email' => $userData['email'],
-                    'session_id'     => $sessionId,
-                    'title'          => $session['title'],
-                    'start_datetime' => $session['start_datetime'],
-                    'end_datetime'   => $session['end_datetime'],
-                    'location'       => $session['location'] ?? '',
+                $this->userRegisteredSender->send([
+                    'user_id'      => $userData['user_id'],
+                    'email'        => $userData['email'],
+                    'first_name'   => $userData['first_name'] ?? '',
+                    'last_name'    => $userData['last_name'] ?? '',
+                    'is_company'   => (bool) ($userData['is_company'] ?? false),
+                    'vat_number'   => $userData['vat_number'] ?? '',
+                    'session_id'   => $sessionId,
+                    'session_name' => $session['title'],
                 ]);
-                $logger->info('calendar.invite verstuurd naar Planning voor sessie @id.', [
-                    '@id' => $sessionId,
+                $logger->info('user_registered verstuurd naar CRM voor @email / sessie @id.', [
+                    '@email' => $userData['email'],
+                    '@id'    => $sessionId,
                 ]);
             } catch (\Throwable $e) {
-                // Non-fatal: CRM is already notified; log and continue.
-                $logger->error('calendar.invite mislukt voor sessie @id: @message', [
+                // Non-fatal: log and continue.
+                $logger->error('user_registered mislukt voor sessie @id: @message', [
                     '@id'      => $sessionId,
                     '@message' => $e->getMessage(),
                 ]);

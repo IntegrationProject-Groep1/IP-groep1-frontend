@@ -21,3 +21,74 @@ function session_enrollment_theme(): array
         ],
     ];
 }
+
+/**
+ * Implements hook_cron().
+ *
+ * Polls RabbitMQ queues each cron run to keep the Planning session state in sync
+ * and to forward badge check-ins to CRM.
+ *
+ * Strategy:
+ *  1. Drain any pending session_view_response messages (from a previous request).
+ *  2. Drain session_created and session_updated push events from Planning.
+ *  3. Drain badge_scanned messages and forward as user_checkin to CRM.
+ *  4. Send a fresh session_view_request so the response is ready for the next cron run.
+ */
+function session_enrollment_cron(): void
+{
+    $logger = \Drupal::logger('session_enrollment');
+
+    try {
+        $client = new \Drupal\rabbitmq_sender\RabbitMQClient(
+            getenv('RABBITMQ_HOST') ?: 'rabbitmq_broker',
+            (int) (getenv('RABBITMQ_PORT') ?: '5672'),
+            getenv('RABBITMQ_USER') ?: 'guest',
+            getenv('RABBITMQ_PASS') ?: 'guest',
+            getenv('RABBITMQ_VHOST') ?: '/'
+        );
+
+        // 1. Process any pending session_view_response messages (up to 5 per cron run).
+        $viewReceiver = new \Drupal\rabbitmq_receiver\SessionViewResponseReceiver($client);
+        for ($i = 0; $i < 5; $i++) {
+            if (!$viewReceiver->pollOnce()) {
+                break;
+            }
+        }
+
+        // 2. Process session_created push events from Planning (up to 20 per cron run).
+        $createdReceiver = new \Drupal\rabbitmq_receiver\SessionCreatedReceiver($client);
+        for ($i = 0; $i < 20; $i++) {
+            if (!$createdReceiver->pollOnce()) {
+                break;
+            }
+        }
+
+        // 3. Process session_updated push events from Planning (up to 20 per cron run).
+        $updateReceiver = new \Drupal\rabbitmq_receiver\SessionUpdateReceiver($client);
+        for ($i = 0; $i < 20; $i++) {
+            if (!$updateReceiver->pollOnce()) {
+                break;
+            }
+        }
+
+        // 4. Process badge_scanned messages and forward as user_checkin to CRM (up to 50 per cron run).
+        /** @var \Drupal\rabbitmq_sender\UserCheckinSender $checkinSender */
+        $checkinSender = \Drupal::service('rabbitmq_sender.user_checkin_sender');
+        $badgeReceiver = new \Drupal\rabbitmq_receiver\BadgeScannedReceiver($client, $checkinSender);
+        for ($i = 0; $i < 50; $i++) {
+            if (!$badgeReceiver->pollOnce()) {
+                break;
+            }
+        }
+
+        // 5. Request a fresh session list from Planning — the response will be processed next cron run.
+        $viewSender = new \Drupal\rabbitmq_sender\SessionViewRequestSender($client);
+        $viewSender->send();
+
+        $logger->info('RabbitMQ queue polling completed.');
+    } catch (\Throwable $e) {
+        $logger->error('Cron: RabbitMQ queue polling mislukt: @message', [
+            '@message' => $e->getMessage(),
+        ]);
+    }
+}

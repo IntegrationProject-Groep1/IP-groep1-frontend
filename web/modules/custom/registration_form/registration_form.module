@@ -23,3 +23,74 @@ function registration_form_theme(): array
         ],
     ];
 }
+
+/**
+ * Implements hook_user_update().
+ *
+ * Notifies CRM when a Drupal user account is updated.
+ */
+function registration_form_user_update(\Drupal\user\UserInterface $account): void
+{
+    $firstName = '';
+    $lastName  = '';
+
+    if ($account->hasField('field_first_name')) {
+        $firstName = (string) $account->get('field_first_name')->value;
+    }
+    if ($account->hasField('field_last_name')) {
+        $lastName = (string) $account->get('field_last_name')->value;
+    }
+
+    // Only send if the user has enough data for the contract (all required fields).
+    if ($firstName === '' || $lastName === '') {
+        return;
+    }
+
+    if (!\Drupal::hasService('rabbitmq_sender.user_updated_sender')) {
+        return;
+    }
+
+    try {
+        /** @var \Drupal\rabbitmq_sender\UserUpdatedSender $sender */
+        $sender = \Drupal::service('rabbitmq_sender.user_updated_sender');
+        $sender->send([
+            'user_id'    => (string) $account->id(),
+            'email'      => (string) $account->getEmail(),
+            'first_name' => $firstName,
+            'last_name'  => $lastName,
+            'is_company' => (bool) ($account->hasField('field_is_company') ? $account->get('field_is_company')->value : false),
+            'vat_number' => (string) ($account->hasField('field_vat_number') ? $account->get('field_vat_number')->value : ''),
+        ]);
+    } catch (\Throwable $e) {
+        \Drupal::logger('registration_form')->error(
+            'user_updated mislukt voor user @id: @message',
+            ['@id' => $account->id(), '@message' => $e->getMessage()]
+        );
+    }
+}
+
+/**
+ * Implements hook_user_delete().
+ *
+ * Notifies CRM when a Drupal user account is deleted.
+ */
+function registration_form_user_delete(\Drupal\user\UserInterface $account): void
+{
+    if (!\Drupal::hasService('rabbitmq_sender.user_unregistered_sender')) {
+        return;
+    }
+
+    try {
+        /** @var \Drupal\rabbitmq_sender\UserUnregisteredSender $sender */
+        $sender = \Drupal::service('rabbitmq_sender.user_unregistered_sender');
+        $sender->send([
+            'user_id' => (string) $account->id(),
+            'email'   => (string) $account->getEmail(),
+        ]);
+    } catch (\Throwable $e) {
+        \Drupal::logger('registration_form')->error(
+            'user_deleted mislukt voor user @id: @message',
+            ['@id' => $account->id(), '@message' => $e->getMessage()]
+        );
+    }
+}
