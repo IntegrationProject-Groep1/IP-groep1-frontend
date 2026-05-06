@@ -46,6 +46,10 @@ function registration_form_user_update(\Drupal\user\UserInterface $account): voi
         return;
     }
 
+    if (!\Drupal::hasService('rabbitmq_sender.user_updated_sender')) {
+        return;
+    }
+
     try {
         /** @var \Drupal\rabbitmq_sender\UserUpdatedSender $sender */
         $sender = \Drupal::service('rabbitmq_sender.user_updated_sender');
@@ -72,6 +76,10 @@ function registration_form_user_update(\Drupal\user\UserInterface $account): voi
  */
 function registration_form_user_delete(\Drupal\user\UserInterface $account): void
 {
+    if (!\Drupal::hasService('rabbitmq_sender.user_unregistered_sender')) {
+        return;
+    }
+
     try {
         /** @var \Drupal\rabbitmq_sender\UserUnregisteredSender $sender */
         $sender = \Drupal::service('rabbitmq_sender.user_unregistered_sender');
