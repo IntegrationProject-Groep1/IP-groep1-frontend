@@ -4,6 +4,8 @@
   Direction : Frontend → CRM (queue: crm.incoming)
   Sender    : UserCreatedSender
   Version   : 2.0
+
+  Company fields are flat siblings in <customer> (no nested <company> wrapper).
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
@@ -29,8 +31,9 @@
               <xs:element name="customer">
                 <xs:complexType>
                   <xs:sequence>
-                    <xs:element name="user_id" type="xs:string"/>
-                    <xs:element name="email"   type="xs:string"/>
+                    <xs:element name="user_id"       type="xs:string"/>
+                    <xs:element name="email"         type="xs:string"/>
+                    <xs:element name="date_of_birth" type="xs:string"/>
                     <xs:element name="contact">
                       <xs:complexType>
                         <xs:sequence>
@@ -47,14 +50,9 @@
                         </xs:restriction>
                       </xs:simpleType>
                     </xs:element>
-                    <xs:element name="company" minOccurs="0">
-                      <xs:complexType>
-                        <xs:sequence>
-                          <xs:element name="name"       type="xs:string"/>
-                          <xs:element name="vat_number" type="xs:string"/>
-                        </xs:sequence>
-                      </xs:complexType>
-                    </xs:element>
+                    <xs:element name="company_name" type="xs:string" minOccurs="0"/>
+                    <xs:element name="vat_number"   type="xs:string" minOccurs="0"/>
+                    <xs:element name="company_id"   type="xs:string" minOccurs="0"/>
                   </xs:sequence>
                 </xs:complexType>
               </xs:element>

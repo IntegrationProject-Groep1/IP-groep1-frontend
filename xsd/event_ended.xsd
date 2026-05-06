@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   XSD: event_ended
-  Direction : Frontend → Facturatie (queue: event.ended)
+  Direction : Frontend → CRM (queue: event.ended)
   Sender    : EventEndedSender
   Version   : 2.0
-  Namespace : none (v2.0 standard — geen xmlns op <message>)
+
+  Header order matches EventEndedSender.php output:
+  message_id → timestamp → source → type → version
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
@@ -14,12 +16,11 @@
         <xs:element name="header">
           <xs:complexType>
             <xs:sequence>
-              <xs:element name="message_id"     type="xs:string"/>
-              <xs:element name="version"        type="xs:string" fixed="2.0"/>
-              <xs:element name="type"           type="xs:string" fixed="event_ended"/>
-              <xs:element name="timestamp"      type="xs:dateTime"/>
-              <xs:element name="source"         type="xs:string"/>
-              <xs:element name="correlation_id" type="xs:string" minOccurs="0"/>
+              <xs:element name="message_id" type="xs:string"/>
+              <xs:element name="timestamp"  type="xs:dateTime"/>
+              <xs:element name="source"     type="xs:string" fixed="frontend"/>
+              <xs:element name="type"       type="xs:string" fixed="event_ended"/>
+              <xs:element name="version"    type="xs:string" fixed="2.0"/>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
