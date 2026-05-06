@@ -5,8 +5,10 @@
   Sender    : NewRegistrationSender
   Version   : 2.0
 
-  NOTE: correlation_id appears before version in the header —
-  this matches the exact element order NewRegistrationSender.php produces.
+  Header order matches NewRegistrationSender.php output:
+  message_id → correlation_id → timestamp → source → type → version
+
+  Body order: session_id (optional) first, then customer wrapper.
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
@@ -19,10 +21,10 @@
             <xs:sequence>
               <xs:element name="message_id"     type="xs:string"/>
               <xs:element name="correlation_id" type="xs:string"/>
-              <xs:element name="version"        type="xs:string" fixed="2.0"/>
-              <xs:element name="type"           type="xs:string" fixed="new_registration"/>
               <xs:element name="timestamp"      type="xs:dateTime"/>
               <xs:element name="source"         type="xs:string"/>
+              <xs:element name="type"           type="xs:string" fixed="new_registration"/>
+              <xs:element name="version"        type="xs:string" fixed="2.0"/>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
@@ -30,11 +32,13 @@
         <xs:element name="body">
           <xs:complexType>
             <xs:sequence>
+              <xs:element name="session_id" type="xs:string" minOccurs="0"/>
+
               <xs:element name="customer">
                 <xs:complexType>
                   <xs:sequence>
-                    <xs:element name="email"   type="xs:string"/>
                     <xs:element name="user_id" type="xs:string"/>
+                    <xs:element name="email"   type="xs:string"/>
                     <xs:element name="type" minOccurs="0">
                       <xs:simpleType>
                         <xs:restriction base="xs:string">
@@ -51,6 +55,8 @@
                         </xs:restriction>
                       </xs:simpleType>
                     </xs:element>
+                    <xs:element name="vat_number"    type="xs:string" minOccurs="0"/>
+                    <xs:element name="date_of_birth" type="xs:string"/>
                     <xs:element name="contact">
                       <xs:complexType>
                         <xs:sequence>
@@ -59,30 +65,8 @@
                         </xs:sequence>
                       </xs:complexType>
                     </xs:element>
-                    <xs:element name="date_of_birth"     type="xs:string"/>
-                    <xs:element name="registration_date" type="xs:string" minOccurs="0"/>
-                    <xs:element name="badge_id"          type="xs:string" minOccurs="0"/>
-                    <xs:element name="company_name"      type="xs:string" minOccurs="0"/>
-                    <xs:element name="vat_number"        type="xs:string" minOccurs="0"/>
-
-                    <xs:element name="address" minOccurs="0">
-                      <xs:complexType>
-                        <xs:sequence>
-                          <xs:element name="street"      type="xs:string" minOccurs="0"/>
-                          <xs:element name="number"      type="xs:string" minOccurs="0"/>
-                          <xs:element name="postal_code" type="xs:string" minOccurs="0"/>
-                          <xs:element name="city"        type="xs:string" minOccurs="0"/>
-                          <xs:element name="country" minOccurs="0">
-                            <xs:simpleType>
-                              <xs:restriction base="xs:string">
-                                <xs:pattern value="[A-Z]{2}"/>
-                              </xs:restriction>
-                            </xs:simpleType>
-                          </xs:element>
-                        </xs:sequence>
-                      </xs:complexType>
-                    </xs:element>
-
+                    <xs:element name="address"    type="xs:string" minOccurs="0"/>
+                    <xs:element name="company_id" type="xs:string" minOccurs="0"/>
                     <xs:element name="registration_fee" minOccurs="0">
                       <xs:complexType>
                         <xs:sequence>
@@ -95,11 +79,11 @@
                               </xs:simpleContent>
                             </xs:complexType>
                           </xs:element>
-                          <xs:element name="paid" minOccurs="0">
+                          <xs:element name="status" minOccurs="0">
                             <xs:simpleType>
                               <xs:restriction base="xs:string">
-                                <xs:enumeration value="true"/>
-                                <xs:enumeration value="false"/>
+                                <xs:enumeration value="unpaid"/>
+                                <xs:enumeration value="paid"/>
                               </xs:restriction>
                             </xs:simpleType>
                           </xs:element>
@@ -109,8 +93,6 @@
                   </xs:sequence>
                 </xs:complexType>
               </xs:element>
-
-              <xs:element name="session_id" type="xs:string" minOccurs="0"/>
             </xs:sequence>
           </xs:complexType>
         </xs:element>

@@ -40,7 +40,6 @@
                         </xs:sequence>
                       </xs:complexType>
                     </xs:element>
-                    <xs:element name="phone"      type="xs:string" minOccurs="0"/>
                     <xs:element name="company_id" type="xs:string" minOccurs="0"/>
                   </xs:sequence>
                 </xs:complexType>
