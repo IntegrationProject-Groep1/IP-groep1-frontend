@@ -44,6 +44,8 @@ services:
       RABBITMQ_VHOST: ${RABBITMQ_VHOST:-/}
       RABBITMQ_PREFIX: ${RABBITMQ_PREFIX:-frontend.}
       REGISTRATION_REQUIRE_RABBITMQ_SYNC: ${REGISTRATION_REQUIRE_RABBITMQ_SYNC:-1}
+      DRUPAL_REVERSE_PROXY: ${DRUPAL_REVERSE_PROXY:-false}
+      DRUPAL_BASE_URL: ${DRUPAL_BASE_URL:-}
     volumes:
       - ./web/modules/custom:/var/www/html/modules/custom
       - ./web/themes/custom:/var/www/html/themes/custom
