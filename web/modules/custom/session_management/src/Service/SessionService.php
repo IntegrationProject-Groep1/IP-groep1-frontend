@@ -16,7 +16,7 @@ class SessionService
     public function __construct(
         private readonly LoggerChannelFactoryInterface $loggerFactory,
         private readonly UuidInterface $uuid,
-        private readonly ?SessionCreateRequestSender $sessionCreateRequestSender = null,
+        private readonly SessionCreateRequestSender $sessionCreateRequestSender,
     ) {}
 
     /**
@@ -53,11 +53,6 @@ class SessionService
             '@title' => $payload['title'],
             '@id'    => $correlationId,
         ]);
-
-        if ($this->sessionCreateRequestSender === null) {
-            $logger->warning('session_create_request kon niet verstuurd worden: rabbitmq_sender module is niet ingeschakeld.');
-            return $correlationId;
-        }
 
         try {
             $this->sessionCreateRequestSender->send($payload);
