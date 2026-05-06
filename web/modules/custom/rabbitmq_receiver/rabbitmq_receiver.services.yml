@@ -2,7 +2,7 @@ services:
   rabbitmq_receiver.badge_scanned_receiver:
     class: Drupal\rabbitmq_receiver\BadgeScannedReceiver
     calls:
-      - [setUserCheckinSender, ['@rabbitmq_sender.user_checkin_sender']]
+      - [setUserCheckinSender, ['@?rabbitmq_sender.user_checkin_sender']]
 
   rabbitmq_receiver.calendar_invite_confirmed_receiver:
     class: Drupal\rabbitmq_receiver\CalendarInviteConfirmedReceiver
