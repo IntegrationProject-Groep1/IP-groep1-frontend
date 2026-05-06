@@ -31,16 +31,26 @@
            class="nav-link {{ is_front ? 'is-active' : '' }}">
           {{ 'Home'|t }}
         </a>
-        {% if nav_show_register %}
+        {% if not logged_in and nav_show_register %}
           <a href="{{ path('registration_form.register') }}"
              class="nav-link {{ current_route starts with 'registration_form' ? 'is-active' : '' }}">
             {{ 'Register'|t }}
           </a>
         {% endif %}
-        {% if nav_show_enroll %}
+        {% if logged_in and nav_show_enroll %}
           <a href="{{ path('session_enrollment.enroll') }}"
              class="nav-link {{ current_route starts with 'session_enrollment' ? 'is-active' : '' }}">
             {{ 'Enroll'|t }}
+          </a>
+        {% endif %}
+        {% if is_admin %}
+          <a href="{{ path('session_management.create') }}"
+             class="nav-link {{ current_route == 'session_management.create' ? 'is-active' : '' }}">
+            {{ 'Create session'|t }}
+          </a>
+          <a href="{{ path('session_management.end') }}"
+             class="nav-link {{ current_route == 'session_management.end' ? 'is-active' : '' }}">
+            {{ 'End session'|t }}
           </a>
         {% endif %}
         {% if logged_in %}
@@ -79,16 +89,26 @@
       <a href="{{ path('<front>') }}" class="nav-link {{ is_front ? 'is-active' : '' }}">
         {{ 'Home'|t }}
       </a>
-      {% if nav_show_register %}
+      {% if not logged_in and nav_show_register %}
         <a href="{{ path('registration_form.register') }}"
            class="nav-link {{ current_route starts with 'registration_form' ? 'is-active' : '' }}">
           {{ 'Register'|t }}
         </a>
       {% endif %}
-      {% if nav_show_enroll %}
+      {% if logged_in and nav_show_enroll %}
         <a href="{{ path('session_enrollment.enroll') }}"
            class="nav-link {{ current_route starts with 'session_enrollment' ? 'is-active' : '' }}">
           {{ 'Enroll'|t }}
+        </a>
+      {% endif %}
+      {% if is_admin %}
+        <a href="{{ path('session_management.create') }}"
+           class="nav-link {{ current_route == 'session_management.create' ? 'is-active' : '' }}">
+          {{ 'Create session'|t }}
+        </a>
+        <a href="{{ path('session_management.end') }}"
+           class="nav-link {{ current_route == 'session_management.end' ? 'is-active' : '' }}">
+          {{ 'End session'|t }}
         </a>
       {% endif %}
       {% if logged_in %}
