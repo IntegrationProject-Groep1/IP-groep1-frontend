@@ -4,3 +4,9 @@ registration_form.register:
   route_name: registration_form.register
   menu_name: main
   weight: 10
+
+registration_form.company_dashboard:
+  title: 'Company dashboard'
+  route_name: registration_form.company_dashboard
+  menu_name: main
+  weight: 11

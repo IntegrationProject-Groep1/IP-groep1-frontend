@@ -15,3 +15,10 @@ services:
       - '@registration_form.crm_payload_builder'
       - '@rabbitmq_sender.identity_service_client'
       - '@rabbitmq_sender.user_created_sender'
+
+  registration_form.company_invitation_service:
+    class: Drupal\registration_form\Service\CompanyInvitationService
+    arguments:
+      - '@entity_type.manager'
+      - '@current_user'
+      - '@rabbitmq_sender.company_invitation_sender'

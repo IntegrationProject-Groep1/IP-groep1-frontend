@@ -14,3 +14,11 @@ registration_form.confirmation:
     _title: 'Registration confirmed'
   requirements:
     _access: 'TRUE'
+
+registration_form.company_dashboard:
+  path: '/company/dashboard'
+  defaults:
+    _form: '\Drupal\registration_form\Form\CompanyDashboardForm'
+    _title: 'Company dashboard'
+  requirements:
+    _custom_access: '\Drupal\registration_form\Access\CompanyDashboardAccess::access'

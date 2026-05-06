@@ -34,3 +34,6 @@ services:
 
   rabbitmq_sender.user_unregistered_sender:
     class: Drupal\rabbitmq_sender\UserUnregisteredSender
+
+  rabbitmq_sender.company_invitation_sender:
+    class: Drupal\rabbitmq_sender\CompanyInvitationSender

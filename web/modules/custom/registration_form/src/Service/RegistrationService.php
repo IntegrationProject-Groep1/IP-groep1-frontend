@@ -19,6 +19,9 @@ class RegistrationService
     private const DEFAULT_FIRST_NAME_FIELD = 'field_first_name';
     private const DEFAULT_LAST_NAME_FIELD = 'field_last_name';
     private const DEFAULT_DATE_OF_BIRTH_FIELD = 'field_date_of_birth';
+    private const DEFAULT_IS_COMPANY_FIELD = 'field_is_company';
+    private const DEFAULT_COMPANY_NAME_FIELD = 'field_company_name';
+    private const DEFAULT_VAT_NUMBER_FIELD = 'field_vat_number';
 
     public function __construct(
         private readonly LoggerChannelFactoryInterface $loggerFactory,
@@ -166,6 +169,12 @@ class RegistrationService
         $this->setIfFieldExists($user, $this->resolveUserFieldName('DRUPAL_USER_FIELD_FIRST_NAME', self::DEFAULT_FIRST_NAME_FIELD), (string) $data['first_name']);
         $this->setIfFieldExists($user, $this->resolveUserFieldName('DRUPAL_USER_FIELD_LAST_NAME', self::DEFAULT_LAST_NAME_FIELD), (string) $data['last_name']);
         $this->setIfFieldExists($user, $this->resolveUserFieldName('DRUPAL_USER_FIELD_DATE_OF_BIRTH', self::DEFAULT_DATE_OF_BIRTH_FIELD), (string) $data['date_of_birth']);
+
+        if (!empty($data['is_company'])) {
+            $this->setIfFieldExists($user, $this->resolveUserFieldName('DRUPAL_USER_FIELD_IS_COMPANY', self::DEFAULT_IS_COMPANY_FIELD), '1');
+            $this->setIfFieldExists($user, $this->resolveUserFieldName('DRUPAL_USER_FIELD_COMPANY_NAME', self::DEFAULT_COMPANY_NAME_FIELD), (string) ($data['company_name'] ?? ''));
+            $this->setIfFieldExists($user, $this->resolveUserFieldName('DRUPAL_USER_FIELD_VAT_NUMBER', self::DEFAULT_VAT_NUMBER_FIELD), (string) ($data['vat_number'] ?? ''));
+        }
 
         $user->save();
 
