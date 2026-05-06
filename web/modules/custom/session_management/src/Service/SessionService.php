@@ -32,6 +32,7 @@ class SessionService
         $correlationId = $this->uuid->generate();
 
         $payload = [
+            'session_id'     => $correlationId,
             'title'          => $data['title'] ?? '',
             'start_datetime' => $data['start_datetime'] ?? '',
             'end_datetime'   => $data['end_datetime'] ?? '',

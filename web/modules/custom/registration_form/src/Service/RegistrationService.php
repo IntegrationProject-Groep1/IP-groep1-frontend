@@ -52,12 +52,13 @@ class RegistrationService
         if ($this->userCreatedSender !== null) {
             try {
                 $this->userCreatedSender->send([
-                    'user_id'    => (string) $user->id(),
-                    'email'      => (string) $data['email'],
-                    'first_name' => (string) ($data['first_name'] ?? ''),
-                    'last_name'  => (string) ($data['last_name'] ?? ''),
-                    'is_company' => (bool) ($data['is_company'] ?? false),
-                    'vat_number' => (string) ($data['vat_number'] ?? ''),
+                    'user_id'       => (string) $user->id(),
+                    'email'         => (string) $data['email'],
+                    'first_name'    => (string) ($data['first_name'] ?? ''),
+                    'last_name'     => (string) ($data['last_name'] ?? ''),
+                    'date_of_birth' => (string) ($data['date_of_birth'] ?? ''),
+                    'is_company'    => (bool) ($data['is_company'] ?? false),
+                    'vat_number'    => (string) ($data['vat_number'] ?? ''),
                 ]);
                 $logger->info('user_created verstuurd naar CRM voor @email.', ['@email' => $data['email']]);
             } catch (\Throwable $e) {
