@@ -22,7 +22,9 @@ $settings['hash_salt'] = 'local-dev-hash-salt-event-platform-desideriushogeschoo
 
 $settings['update_free_access'] = FALSE;
 
-$settings['container_yamls'][] = $app_root . '/sites/development.services.yml';
+if (file_exists($app_root . '/sites/development.services.yml')) {
+  $settings['container_yamls'][] = $app_root . '/sites/development.services.yml';
+}
 
 $settings['file_scan_ignore_directories'] = [
   'node_modules',
