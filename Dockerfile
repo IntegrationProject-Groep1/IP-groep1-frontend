@@ -15,7 +15,7 @@ RUN docker-php-ext-install sockets
 # Add php-amqplib to Drupal's project root vendor.
 # Drupal's runtime autoload resolves through /opt/drupal/autoload.php.
 WORKDIR /opt/drupal
-RUN composer require php-amqplib/php-amqplib:^3.7 --no-interaction --optimize-autoloader
+RUN composer require php-amqplib/php-amqplib:^3.7 drush/drush --no-interaction --optimize-autoloader
 
 # Copy custom modules and themes into the Drupal web root
 COPY web/modules/custom /var/www/html/modules/custom
@@ -23,6 +23,10 @@ COPY web/themes/custom  /var/www/html/themes/custom
 
 # Copy settings.php — uses getenv() so credentials come from environment variables
 COPY web/sites/default/settings.php /var/www/html/sites/default/settings.php
+
+# Copy startup script
+COPY scripts/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Create the public files directory and set correct ownership
 RUN mkdir -p /var/www/html/sites/default/files \
@@ -32,3 +36,5 @@ RUN mkdir -p /var/www/html/sites/default/files \
         /var/www/html/sites/default/settings.php \
         /var/www/html/sites/default/files \
     && chmod -R 775 /var/www/html/sites/default/files
+
+CMD ["/entrypoint.sh"]
