@@ -1,5 +1,8 @@
 FROM drupal:10-apache
 
+# Suppress Apache "Could not reliably determine the server's fully qualified domain name" warning
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
