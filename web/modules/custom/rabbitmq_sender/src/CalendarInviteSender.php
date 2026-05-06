@@ -14,8 +14,8 @@ class CalendarInviteSender
     private const ROUTING_KEY   = 'frontend.to.planning.calendar.invite';
     private const EXCHANGE_TYPE = 'topic';
     private const SOURCE        = 'frontend';
-    private const TYPE          = 'calendar.invite';
-    private const NAMESPACE     = 'urn:integration:planning:v1';
+    private const TYPE          = 'calendar_invite';
+    private const VERSION       = '2.0';
 
     private ?RabbitMQClient $client;
 
@@ -37,6 +37,12 @@ class CalendarInviteSender
         }
         if (empty($data['end_datetime'])) {
             throw new \InvalidArgumentException('end_datetime is required');
+        }
+        if (empty($data['user_id'])) {
+            throw new \InvalidArgumentException('user_id is required');
+        }
+        if (empty($data['attendee_email'])) {
+            throw new \InvalidArgumentException('attendee_email is required');
         }
 
         // ✅ FIX: safe logging
@@ -66,6 +72,12 @@ class CalendarInviteSender
         if (empty($data['end_datetime'])) {
             throw new \InvalidArgumentException('end_datetime is required');
         }
+        if (empty($data['user_id'])) {
+            throw new \InvalidArgumentException('user_id is required');
+        }
+        if (empty($data['attendee_email'])) {
+            throw new \InvalidArgumentException('attendee_email is required');
+        }
 
         $messageId = $this->generateUuidV4();
         $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
@@ -73,7 +85,7 @@ class CalendarInviteSender
         $dom = new \DOMDocument('1.0', 'UTF-8');
         $dom->formatOutput = false;
 
-        $message = $dom->createElementNS(self::NAMESPACE, 'message');
+        $message = $dom->createElement('message');
         $dom->appendChild($message);
 
         $header = $dom->createElement('header');
@@ -81,9 +93,11 @@ class CalendarInviteSender
         $header->appendChild($dom->createElement('timestamp', $timestamp));
         $header->appendChild($dom->createElement('source', self::SOURCE));
         $header->appendChild($dom->createElement('type', self::TYPE));
+        $header->appendChild($dom->createElement('version', self::VERSION));
         $message->appendChild($header);
 
         $body = $dom->createElement('body');
+        $body->appendChild($dom->createElement('user_id', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('title', htmlspecialchars((string) $data['title'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('start_datetime', htmlspecialchars((string) $data['start_datetime'], ENT_XML1, 'UTF-8')));
@@ -93,10 +107,7 @@ class CalendarInviteSender
             $body->appendChild($dom->createElement('location', htmlspecialchars((string) $data['location'], ENT_XML1, 'UTF-8')));
         }
 
-        if (!empty($data['user_id'])) {
-            $body->appendChild($dom->createElement('user_id', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
-        }
-
+        $body->appendChild($dom->createElement('attendee_email', htmlspecialchars((string) $data['attendee_email'], ENT_XML1, 'UTF-8')));
         $message->appendChild($body);
 
         return $dom->saveXML() ?: '';

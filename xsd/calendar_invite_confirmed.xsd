@@ -1,19 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  XSD: calendar_invite_confirmed
+  XSD: calendar_invite_confirmed  (received by Frontend from Planning)
   Direction : Planning → Frontend
               (exchange: planning.exchange, routing key: planning.calendar.invite.confirmed,
                queue:    frontend.planning.calendar.invite.confirmed)
   Receiver  : CalendarInviteConfirmedReceiver
-  Version   : 1.0
-  Namespace : urn:integration:planning:v1
+  Version   : 2.0
 -->
-<xs:schema
-    xmlns:xs="http://www.w3.org/2001/XMLSchema"
-    xmlns:tns="urn:integration:planning:v1"
-    targetNamespace="urn:integration:planning:v1"
-    elementFormDefault="qualified"
-    attributeFormDefault="unqualified">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
   <xs:element name="message">
     <xs:complexType>
@@ -24,8 +18,8 @@
               <xs:element name="message_id"     type="xs:string"/>
               <xs:element name="timestamp"      type="xs:dateTime"/>
               <xs:element name="source"         type="xs:string"/>
-              <xs:element name="type"           type="xs:string" fixed="calendar.invite.confirmed"/>
-              <xs:element name="version"        type="xs:string" minOccurs="0"/>
+              <xs:element name="type"           type="xs:string" fixed="calendar_invite_confirmed"/>
+              <xs:element name="version"        type="xs:string" fixed="2.0"/>
               <xs:element name="correlation_id" type="xs:string" minOccurs="0"/>
             </xs:sequence>
           </xs:complexType>

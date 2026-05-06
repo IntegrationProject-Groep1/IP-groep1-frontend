@@ -2,9 +2,9 @@
 <!--
   XSD: session_delete_request  (sent by Frontend to Planning)
   Direction : Frontend → Planning
-              (exchange: planning.exchange, routing key: planning.session.delete.request)
+              (exchange: planning.exchange, routing key: frontend.to.planning.session.delete)
   Sender    : SessionDeleteRequestSender
-  Namespace : urn:integration:planning:v1
+  Version   : 2.0
 
   Frontend sends this when an admin deletes a session.
   Planning processes the request and responds with a session_deleted event.
@@ -12,12 +12,7 @@
   Required body fields: session_id
   Optional body fields: reason
 -->
-<xs:schema
-    xmlns:xs="http://www.w3.org/2001/XMLSchema"
-    xmlns:tns="urn:integration:planning:v1"
-    targetNamespace="urn:integration:planning:v1"
-    elementFormDefault="qualified"
-    attributeFormDefault="unqualified">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
   <xs:element name="message">
     <xs:complexType>
@@ -29,7 +24,7 @@
               <xs:element name="timestamp"      type="xs:dateTime"/>
               <xs:element name="source"         type="xs:string"/>
               <xs:element name="type"           type="xs:string" fixed="session_delete_request"/>
-              <xs:element name="version"        type="xs:string" minOccurs="0"/>
+              <xs:element name="version"        type="xs:string" fixed="2.0"/>
               <xs:element name="correlation_id" type="xs:string" minOccurs="0"/>
             </xs:sequence>
           </xs:complexType>

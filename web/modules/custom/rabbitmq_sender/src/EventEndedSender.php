@@ -55,10 +55,10 @@ class EventEndedSender
         $xml .= '<message>';
         $xml .= '<header>';
         $xml .= "<message_id>{$messageId}</message_id>";
-        $xml .= '<version>' . self::VERSION . '</version>';
-        $xml .= '<type>' . self::TYPE . '</type>';
         $xml .= "<timestamp>{$timestamp}</timestamp>";
         $xml .= '<source>' . self::SOURCE . '</source>';
+        $xml .= '<type>' . self::TYPE . '</type>';
+        $xml .= '<version>' . self::VERSION . '</version>';
         $xml .= '</header>';
         $xml .= '<body>';
         $xml .= '<session_id>' . htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8') . '</session_id>';

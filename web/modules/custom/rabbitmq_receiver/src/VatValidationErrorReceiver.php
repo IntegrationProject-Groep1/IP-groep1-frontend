@@ -27,6 +27,7 @@ class VatValidationErrorReceiver
      */
     public function processMessageFromXml(string $xmlString): mixed
     {
+        $xmlString = preg_replace('/ xmlns="[^"]*"/', '', $xmlString) ?? $xmlString;
         libxml_use_internal_errors(true);
         $xml = simplexml_load_string($xmlString);
         libxml_clear_errors();

@@ -5,28 +5,22 @@
               (exchange: planning.exchange, routing key: planning.session.view.response,
                queue:    frontend.planning.session.view.response)
   Receiver  : SessionViewResponseReceiver
-  Namespace : urn:integration:planning:v1
+  Version   : 2.0
 
   The body carries a request_message_id, status, session_count and an optional <sessions> list.
   When status = "not_found", <sessions> is absent.
 -->
-<xs:schema
-    xmlns:xs="http://www.w3.org/2001/XMLSchema"
-    xmlns:tns="urn:integration:planning:v1"
-    targetNamespace="urn:integration:planning:v1"
-    elementFormDefault="qualified"
-    attributeFormDefault="unqualified">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
-  <!-- Reusable session entry type -->
   <xs:complexType name="SessionType">
     <xs:sequence>
       <xs:element name="session_id"        type="xs:string"/>
-      <xs:element name="title"             type="xs:string" minOccurs="0"/>
-      <xs:element name="start_datetime"    type="xs:string" minOccurs="0"/>
-      <xs:element name="end_datetime"      type="xs:string" minOccurs="0"/>
-      <xs:element name="location"          type="xs:string" minOccurs="0"/>
-      <xs:element name="session_type"      type="xs:string" minOccurs="0"/>
-      <xs:element name="status"            type="xs:string" minOccurs="0"/>
+      <xs:element name="title"             type="xs:string"            minOccurs="0"/>
+      <xs:element name="start_datetime"    type="xs:string"            minOccurs="0"/>
+      <xs:element name="end_datetime"      type="xs:string"            minOccurs="0"/>
+      <xs:element name="location"          type="xs:string"            minOccurs="0"/>
+      <xs:element name="session_type"      type="xs:string"            minOccurs="0"/>
+      <xs:element name="status"            type="xs:string"            minOccurs="0"/>
       <xs:element name="max_attendees"     type="xs:nonNegativeInteger" minOccurs="0"/>
       <xs:element name="current_attendees" type="xs:nonNegativeInteger" minOccurs="0"/>
     </xs:sequence>
@@ -42,7 +36,7 @@
               <xs:element name="timestamp"      type="xs:dateTime"/>
               <xs:element name="source"         type="xs:string"/>
               <xs:element name="type"           type="xs:string" fixed="session_view_response"/>
-              <xs:element name="version"        type="xs:string" minOccurs="0"/>
+              <xs:element name="version"        type="xs:string" fixed="2.0"/>
               <xs:element name="correlation_id" type="xs:string" minOccurs="0"/>
             </xs:sequence>
           </xs:complexType>
@@ -51,15 +45,14 @@
         <xs:element name="body">
           <xs:complexType>
             <xs:sequence>
-              <xs:element name="request_message_id"   type="xs:string" minOccurs="0"/>
-              <xs:element name="requested_session_id" type="xs:string" minOccurs="0"/>
-              <!-- "not_found" | "ok" -->
-              <xs:element name="status" type="xs:string"/>
-              <xs:element name="session_count" type="xs:nonNegativeInteger" minOccurs="0"/>
+              <xs:element name="request_message_id"   type="xs:string"            minOccurs="0"/>
+              <xs:element name="requested_session_id" type="xs:string"            minOccurs="0"/>
+              <xs:element name="status"               type="xs:string"/>
+              <xs:element name="session_count"        type="xs:nonNegativeInteger" minOccurs="0"/>
               <xs:element name="sessions" minOccurs="0">
                 <xs:complexType>
                   <xs:sequence>
-                    <xs:element name="session" type="tns:SessionType"
+                    <xs:element name="session" type="SessionType"
                                 minOccurs="0" maxOccurs="unbounded"/>
                   </xs:sequence>
                 </xs:complexType>

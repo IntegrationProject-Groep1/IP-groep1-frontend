@@ -22,8 +22,7 @@ class SessionUpdateRequestSender
     private const EXCHANGE_TYPE = 'topic';
     private const SOURCE        = 'frontend';
     private const TYPE          = 'session_update_request';
-    private const NAMESPACE     = 'urn:integration:planning:v1';
-    private const VERSION       = '1.0';
+    private const VERSION       = '2.0';
 
     private ?RabbitMQClient $client;
 
@@ -63,7 +62,7 @@ class SessionUpdateRequestSender
         $dom = new \DOMDocument('1.0', 'UTF-8');
         $dom->formatOutput = false;
 
-        $message = $dom->createElementNS(self::NAMESPACE, 'message');
+        $message = $dom->createElement('message');
         $dom->appendChild($message);
 
         $header = $dom->createElement('header');

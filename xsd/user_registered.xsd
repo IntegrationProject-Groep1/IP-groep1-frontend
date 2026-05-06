@@ -1,31 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  XSD: user.registered
-  Direction : Frontend → CRM / Planning / Mailing (queue: frontend.user.registered)
+  XSD: user_registered
+  Direction : Frontend → CRM (queue: crm.incoming)
   Sender    : UserRegisteredSender
-  Version   : 1.0
-  Namespace : urn:integration:planning:v1
+  Version   : 2.0
 -->
-<xs:schema
-    xmlns:xs="http://www.w3.org/2001/XMLSchema"
-    xmlns:tns="urn:integration:planning:v1"
-    targetNamespace="urn:integration:planning:v1"
-    elementFormDefault="qualified"
-    attributeFormDefault="unqualified">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
   <xs:element name="message">
     <xs:complexType>
       <xs:sequence>
+
         <xs:element name="header">
           <xs:complexType>
             <xs:sequence>
-              <xs:element name="message_id"     type="xs:string"/>
-              <xs:element name="timestamp"      type="xs:dateTime"/>
-              <xs:element name="source"         type="xs:string"/>
-              <xs:element name="receiver"       type="xs:string"/>
-              <xs:element name="type"           type="xs:string" fixed="user.registered"/>
-              <xs:element name="version"        type="xs:string" fixed="1.0"/>
-              <xs:element name="correlation_id" type="xs:string"/>
+              <xs:element name="message_id" type="xs:string"/>
+              <xs:element name="timestamp"  type="xs:dateTime"/>
+              <xs:element name="source"     type="xs:string" fixed="frontend"/>
+              <xs:element name="type"       type="xs:string" fixed="user_registered"/>
+              <xs:element name="version"    type="xs:string" fixed="2.0"/>
+              <xs:element name="correlation_id" type="xs:string" minOccurs="0"/>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
@@ -36,9 +30,16 @@
               <xs:element name="user">
                 <xs:complexType>
                   <xs:sequence>
-                    <xs:element name="first_name"  type="xs:string"/>
-                    <xs:element name="last_name"   type="xs:string"/>
-                    <xs:element name="email"       type="xs:string"/>
+                    <xs:element name="user_id" type="xs:string"/>
+                    <xs:element name="email"   type="xs:string"/>
+                    <xs:element name="contact">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="first_name" type="xs:string"/>
+                          <xs:element name="last_name"  type="xs:string"/>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
                     <xs:element name="is_company">
                       <xs:simpleType>
                         <xs:restriction base="xs:string">
@@ -47,7 +48,6 @@
                         </xs:restriction>
                       </xs:simpleType>
                     </xs:element>
-                    <!-- company block is present only when is_company = true -->
                     <xs:element name="company" minOccurs="0">
                       <xs:complexType>
                         <xs:sequence>
@@ -69,11 +69,11 @@
                 </xs:complexType>
               </xs:element>
 
-              <!-- Always "pending" at the time of registration -->
               <xs:element name="payment_status" type="xs:string" fixed="pending"/>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+
       </xs:sequence>
     </xs:complexType>
   </xs:element>

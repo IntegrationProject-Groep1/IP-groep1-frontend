@@ -1,31 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  XSD: user.checkin
-  Direction : Frontend → Monitoring (queue: user.checkin)
+  XSD: user_checkin
+  Direction : Frontend → CRM (queue: crm.incoming)
   Sender    : UserCheckinSender
-  Version   : 1.0
-  Namespace : urn:integration:planning:v1
+  Version   : 2.0
 -->
-<xs:schema
-    xmlns:xs="http://www.w3.org/2001/XMLSchema"
-    xmlns:tns="urn:integration:planning:v1"
-    targetNamespace="urn:integration:planning:v1"
-    elementFormDefault="qualified"
-    attributeFormDefault="unqualified">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
   <xs:element name="message">
     <xs:complexType>
       <xs:sequence>
+
         <xs:element name="header">
           <xs:complexType>
             <xs:sequence>
-              <xs:element name="message_id"     type="xs:string"/>
-              <xs:element name="timestamp"      type="xs:dateTime"/>
-              <xs:element name="source"         type="xs:string"/>
-              <xs:element name="receiver"       type="xs:string"/>
-              <xs:element name="type"           type="xs:string" fixed="user.checkin"/>
-              <xs:element name="version"        type="xs:string" fixed="1.0"/>
-              <xs:element name="correlation_id" type="xs:string"/>
+              <xs:element name="message_id" type="xs:string"/>
+              <xs:element name="timestamp"  type="xs:dateTime"/>
+              <xs:element name="source">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:enumeration value="frontend"/>
+                    <xs:enumeration value="kassa"/>
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="type">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:enumeration value="user_checkin"/>
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="version">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:enumeration value="2.0"/>
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="correlation_id" type="xs:string" minOccurs="0"/>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
@@ -33,13 +46,14 @@
         <xs:element name="body">
           <xs:complexType>
             <xs:sequence>
-              <xs:element name="user_id"   type="xs:string"/>
-              <xs:element name="badge_id"  type="xs:string"/>
-              <!-- body-level timestamp mirrors header timestamp for downstream audit -->
-              <xs:element name="timestamp" type="xs:dateTime"/>
+              <xs:element name="user_id"    type="xs:string"/>
+              <xs:element name="badge_id"   type="xs:string"/>
+              <xs:element name="session_id" type="xs:string" minOccurs="0"/>
+              <xs:element name="checkin_at" type="xs:dateTime"/>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+
       </xs:sequence>
     </xs:complexType>
   </xs:element>

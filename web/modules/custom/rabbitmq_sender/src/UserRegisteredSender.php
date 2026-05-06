@@ -6,9 +6,9 @@ namespace Drupal\rabbitmq_sender;
 use PhpAmqpLib\Message\AMQPMessage;
 
 /**
- * Publishes user_checkin events to RabbitMQ (v2.0 contract, section 19.1).
+ * Publishes user_registered events to RabbitMQ (v2.0 contract).
  */
-class UserCheckinSender
+class UserRegisteredSender
 {
     use RetryTrait;
 
@@ -16,7 +16,7 @@ class UserCheckinSender
 
     private const QUEUE_NAME = 'crm.incoming';
     private const SOURCE     = 'frontend';
-    private const TYPE       = 'user_checkin';
+    private const TYPE       = 'user_registered';
     private const VERSION    = '2.0';
 
     public function __construct(?RabbitMQClient $client = null)
@@ -29,13 +29,19 @@ class UserCheckinSender
         if (empty($data['user_id'])) {
             throw new \InvalidArgumentException('user_id is required');
         }
-        if (empty($data['badge_id'])) {
-            throw new \InvalidArgumentException('badge_id is required');
+        if (empty($data['email'])) {
+            throw new \InvalidArgumentException('email is required');
+        }
+        if (empty($data['session_id'])) {
+            throw new \InvalidArgumentException('session_id is required');
+        }
+        if (empty($data['session_name'])) {
+            throw new \InvalidArgumentException('session_name is required');
         }
 
-        \Drupal::logger('rabbitmq_sender')->info('Sending user check-in', [
-            'user_id'  => $data['user_id'],
-            'badge_id' => $data['badge_id'],
+        \Drupal::logger('rabbitmq_sender')->info('Sending user registered event', [
+            'user_id'    => $data['user_id'],
+            'session_id' => $data['session_id'],
         ]);
 
         $xml = $this->buildXml($data);
@@ -52,9 +58,8 @@ class UserCheckinSender
 
     public function buildXml(array $data): string
     {
-        $messageId  = $this->generateUuidV4();
-        $timestamp  = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
-        $checkinAt  = !empty($data['checkin_at']) ? (string) $data['checkin_at'] : $timestamp;
+        $messageId = $this->generateUuidV4();
+        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
 
         $dom = new \DOMDocument('1.0', 'UTF-8');
 
@@ -70,14 +75,33 @@ class UserCheckinSender
         $message->appendChild($header);
 
         $body = $dom->createElement('body');
-        $body->appendChild($dom->createElement('user_id', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
-        $body->appendChild($dom->createElement('badge_id', htmlspecialchars((string) $data['badge_id'], ENT_XML1, 'UTF-8')));
+        $user = $dom->createElement('user');
 
-        if (!empty($data['session_id'])) {
-            $body->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
+        $user->appendChild($dom->createElement('user_id', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
+        $user->appendChild($dom->createElement('email', htmlspecialchars((string) $data['email'], ENT_XML1, 'UTF-8')));
+
+        $contact = $dom->createElement('contact');
+        $contact->appendChild($dom->createElement('first_name', htmlspecialchars($data['first_name'] ?? '', ENT_XML1, 'UTF-8')));
+        $contact->appendChild($dom->createElement('last_name', htmlspecialchars($data['last_name'] ?? '', ENT_XML1, 'UTF-8')));
+        $user->appendChild($contact);
+
+        $user->appendChild($dom->createElement('is_company', !empty($data['is_company']) ? 'true' : 'false'));
+
+        if (!empty($data['is_company'])) {
+            $company = $dom->createElement('company');
+            $company->appendChild($dom->createElement('name', htmlspecialchars($data['company_name'] ?? '', ENT_XML1, 'UTF-8')));
+            $company->appendChild($dom->createElement('vat_number', htmlspecialchars($data['vat_number'] ?? '', ENT_XML1, 'UTF-8')));
+            $user->appendChild($company);
         }
 
-        $body->appendChild($dom->createElement('checkin_at', htmlspecialchars($checkinAt, ENT_XML1, 'UTF-8')));
+        $body->appendChild($user);
+
+        $session = $dom->createElement('session');
+        $session->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
+        $session->appendChild($dom->createElement('name', htmlspecialchars((string) $data['session_name'], ENT_XML1, 'UTF-8')));
+        $body->appendChild($session);
+
+        $body->appendChild($dom->createElement('payment_status', 'pending'));
         $message->appendChild($body);
 
         return $dom->saveXML() ?: '';

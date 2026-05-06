@@ -6,86 +6,104 @@ namespace Drupal\rabbitmq_sender;
 use PhpAmqpLib\Message\AMQPMessage;
 
 /**
- * Publishes user unregistration events to downstream queues.
+ * Publishes user_deleted events to RabbitMQ (v2.0 contract, section 5.3).
  */
 class UserUnregisteredSender
 {
     use RetryTrait;
 
-    private RabbitMQClient $client;
+    private ?RabbitMQClient $client;
 
-    private const QUEUES = [
-        'crm.salesforce',
-        'planning.outlook',
-        'mailing.sendgrid',
-    ];
+    private const QUEUE_NAME = 'crm.incoming';
+    private const SOURCE     = 'frontend';
+    private const TYPE       = 'user_deleted';
+    private const VERSION    = '2.0';
 
-    public function __construct(RabbitMQClient $client)
+    public function __construct(?RabbitMQClient $client = null)
     {
         $this->client = $client;
     }
 
     public function send(array $data): void
     {
-        // Validate mandatory identifiers before broadcasting the unregistration event.
         if (empty($data['user_id'])) {
             throw new \InvalidArgumentException('user_id is required');
         }
-        if (empty($data['session_id'])) {
-            throw new \InvalidArgumentException('session_id is required');
+        if (empty($data['email'])) {
+            throw new \InvalidArgumentException('email is required');
         }
 
-        // ✅ Logging (business event)
-        \Drupal::logger('rabbitmq_sender')->info('Sending user unregistered event', [
+        \Drupal::logger('rabbitmq_sender')->info('Sending user deleted event', [
             'user_id' => $data['user_id'],
-            'session_id' => $data['session_id'],
-            'queues' => self::QUEUES,
+            'email'   => $data['email'],
         ]);
 
         $xml = $this->buildXml($data);
 
-        // Fan out to all subscribed integration queues.
-        foreach (self::QUEUES as $queue) {
-            $this->sendWithRetry(function () use ($xml, $queue): void {
-                $msg = new AMQPMessage($xml, ['delivery_mode' => 2]);
-                $this->client->getChannel()->basic_publish($msg, '', $queue);
-            });
-        }
+        $this->sendWithRetry(function () use ($xml): void {
+            $this->resolveClient()->declareQueue(self::QUEUE_NAME);
+            $msg = new AMQPMessage($xml, [
+                'delivery_mode' => 2,
+                'content_type'  => 'application/xml',
+            ]);
+            $this->resolveClient()->getChannel()->basic_publish($msg, '', self::QUEUE_NAME);
+        });
     }
 
     public function buildXml(array $data): string
     {
-        // Generate an event-scoped identifier for traceability in downstream systems.
-        $messageId = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
-            mt_rand(0, 0xffff),
-            mt_rand(0, 0x0fff) | 0x4000,
-            mt_rand(0, 0x3fff) | 0x8000,
-            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+        $messageId = $this->generateUuidV4();
+        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
+
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+
+        $message = $dom->createElement('message');
+        $dom->appendChild($message);
+
+        $header = $dom->createElement('header');
+        $header->appendChild($dom->createElement('message_id', $messageId));
+        $header->appendChild($dom->createElement('timestamp', $timestamp));
+        $header->appendChild($dom->createElement('source', self::SOURCE));
+        $header->appendChild($dom->createElement('type', self::TYPE));
+        $header->appendChild($dom->createElement('version', self::VERSION));
+        $message->appendChild($header);
+
+        $body = $dom->createElement('body');
+        $body->appendChild($dom->createElement('user_id', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
+        $body->appendChild($dom->createElement('email', htmlspecialchars((string) $data['email'], ENT_XML1, 'UTF-8')));
+
+        if (!empty($data['reason'])) {
+            $body->appendChild($dom->createElement('reason', htmlspecialchars((string) $data['reason'], ENT_XML1, 'UTF-8')));
+        }
+
+        $message->appendChild($body);
+
+        return $dom->saveXML() ?: '';
+    }
+
+    private function resolveClient(): RabbitMQClient
+    {
+        if ($this->client !== null) {
+            return $this->client;
+        }
+
+        $this->client = new RabbitMQClient(
+            getenv('RABBITMQ_HOST') ?: 'rabbitmq_broker',
+            (int) (getenv('RABBITMQ_PORT') ?: '5672'),
+            getenv('RABBITMQ_USER') ?: 'guest',
+            getenv('RABBITMQ_PASS') ?: 'guest',
+            getenv('RABBITMQ_VHOST') ?: '/'
         );
 
-        $timestamp = (new \DateTime())->format('c');
+        return $this->client;
+    }
 
-        $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message xmlns="urn:integration:planning:v1">';
-        $xml .= '<header>';
-        $xml .= "<message_id>{$messageId}</message_id>";
-        $xml .= "<timestamp>{$timestamp}</timestamp>";
-        $xml .= '<source>frontend.drupal</source>';
-        $xml .= '<receiver>crm.salesforce planning.outlook mailing.sendgrid</receiver>';
-        $xml .= '<type>user.unregistered</type>';
-        $xml .= '<version>1.0</version>';
-        $xml .= '<correlation_id></correlation_id>';
-        $xml .= '</header>';
+    private function generateUuidV4(): string
+    {
+        $bytes    = random_bytes(16);
+        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
 
-        $xml .= '<body>';
-        $xml .= '<user_id>' . htmlspecialchars($data['user_id'], ENT_XML1, 'UTF-8') . '</user_id>';
-        $xml .= '<session_id>' . htmlspecialchars($data['session_id'], ENT_XML1, 'UTF-8') . '</session_id>';
-        $xml .= "<timestamp>{$timestamp}</timestamp>";
-        $xml .= '</body>';
-
-        $xml .= '</message>';
-
-        return $xml;
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
     }
 }

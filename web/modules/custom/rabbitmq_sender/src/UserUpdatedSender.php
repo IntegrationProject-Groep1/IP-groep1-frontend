@@ -6,9 +6,9 @@ namespace Drupal\rabbitmq_sender;
 use PhpAmqpLib\Message\AMQPMessage;
 
 /**
- * Publishes user_checkin events to RabbitMQ (v2.0 contract, section 19.1).
+ * Publishes user_updated events to RabbitMQ (v2.0 contract, section 5.2).
  */
-class UserCheckinSender
+class UserUpdatedSender
 {
     use RetryTrait;
 
@@ -16,7 +16,7 @@ class UserCheckinSender
 
     private const QUEUE_NAME = 'crm.incoming';
     private const SOURCE     = 'frontend';
-    private const TYPE       = 'user_checkin';
+    private const TYPE       = 'user_updated';
     private const VERSION    = '2.0';
 
     public function __construct(?RabbitMQClient $client = null)
@@ -29,13 +29,19 @@ class UserCheckinSender
         if (empty($data['user_id'])) {
             throw new \InvalidArgumentException('user_id is required');
         }
-        if (empty($data['badge_id'])) {
-            throw new \InvalidArgumentException('badge_id is required');
+        if (empty($data['email'])) {
+            throw new \InvalidArgumentException('email is required');
+        }
+        if (empty($data['first_name'])) {
+            throw new \InvalidArgumentException('first_name is required');
+        }
+        if (empty($data['last_name'])) {
+            throw new \InvalidArgumentException('last_name is required');
         }
 
-        \Drupal::logger('rabbitmq_sender')->info('Sending user check-in', [
-            'user_id'  => $data['user_id'],
-            'badge_id' => $data['badge_id'],
+        \Drupal::logger('rabbitmq_sender')->info('Sending user updated event', [
+            'user_id' => $data['user_id'],
+            'email'   => $data['email'],
         ]);
 
         $xml = $this->buildXml($data);
@@ -52,9 +58,8 @@ class UserCheckinSender
 
     public function buildXml(array $data): string
     {
-        $messageId  = $this->generateUuidV4();
-        $timestamp  = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
-        $checkinAt  = !empty($data['checkin_at']) ? (string) $data['checkin_at'] : $timestamp;
+        $messageId = $this->generateUuidV4();
+        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
 
         $dom = new \DOMDocument('1.0', 'UTF-8');
 
@@ -69,15 +74,30 @@ class UserCheckinSender
         $header->appendChild($dom->createElement('version', self::VERSION));
         $message->appendChild($header);
 
-        $body = $dom->createElement('body');
-        $body->appendChild($dom->createElement('user_id', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
-        $body->appendChild($dom->createElement('badge_id', htmlspecialchars((string) $data['badge_id'], ENT_XML1, 'UTF-8')));
+        $body     = $dom->createElement('body');
+        $customer = $dom->createElement('customer');
 
-        if (!empty($data['session_id'])) {
-            $body->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
+        $customer->appendChild($dom->createElement('user_id', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
+        $customer->appendChild($dom->createElement('email', htmlspecialchars((string) $data['email'], ENT_XML1, 'UTF-8')));
+
+        if (!empty($data['date_of_birth'])) {
+            $customer->appendChild($dom->createElement('date_of_birth', htmlspecialchars((string) $data['date_of_birth'], ENT_XML1, 'UTF-8')));
         }
 
-        $body->appendChild($dom->createElement('checkin_at', htmlspecialchars($checkinAt, ENT_XML1, 'UTF-8')));
+        $contact = $dom->createElement('contact');
+        $contact->appendChild($dom->createElement('first_name', htmlspecialchars((string) $data['first_name'], ENT_XML1, 'UTF-8')));
+        $contact->appendChild($dom->createElement('last_name', htmlspecialchars((string) $data['last_name'], ENT_XML1, 'UTF-8')));
+        $customer->appendChild($contact);
+
+        if (!empty($data['phone'])) {
+            $customer->appendChild($dom->createElement('phone', htmlspecialchars((string) $data['phone'], ENT_XML1, 'UTF-8')));
+        }
+
+        if (!empty($data['company_id'])) {
+            $customer->appendChild($dom->createElement('company_id', htmlspecialchars((string) $data['company_id'], ENT_XML1, 'UTF-8')));
+        }
+
+        $body->appendChild($customer);
         $message->appendChild($body);
 
         return $dom->saveXML() ?: '';

@@ -36,7 +36,6 @@ class RegistrationCrmPayloadBuilder
             'address' => is_array($data['address'] ?? null) ? $data['address'] : [],
             'registration_fee' => is_array($data['registration_fee'] ?? null) ? $data['registration_fee'] : [],
             'badge_id' => (string) ($data['badge_id'] ?? ''),
-            'master_uuid' => (string) ($data['master_uuid'] ?? ''),
         ];
     }
 }

@@ -102,6 +102,8 @@ class SessionEnrollmentService
 
             try {
                 $this->calendarInviteSender->send([
+                    'user_id'        => $userData['user_id'],
+                    'attendee_email' => $userData['email'],
                     'session_id'     => $sessionId,
                     'title'          => $session['title'],
                     'start_datetime' => $session['start_datetime'],

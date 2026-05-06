@@ -88,10 +88,6 @@ class NewRegistrationSender
         $header->appendChild($xml->createElement('timestamp', $timestamp));
         $header->appendChild($xml->createElement('source', $this->resolveSource()));
 
-        if (!empty($data['master_uuid'])) {
-            $header->appendChild($xml->createElement('master_uuid', (string) $data['master_uuid']));
-        }
-
         $message->appendChild($header);
 
         $body = $xml->createElement('body');
@@ -114,8 +110,10 @@ class NewRegistrationSender
             $customer->appendChild($xml->createElement('is_company_linked', !empty($data['is_company']) ? 'true' : 'false'));
         }
 
-        $customer->appendChild($xml->createElement('first_name', (string) $data['first_name']));
-        $customer->appendChild($xml->createElement('last_name', (string) $data['last_name']));
+        $contact = $xml->createElement('contact');
+        $contact->appendChild($xml->createElement('first_name', (string) $data['first_name']));
+        $contact->appendChild($xml->createElement('last_name', (string) $data['last_name']));
+        $customer->appendChild($contact);
         $customer->appendChild($xml->createElement('date_of_birth', (string) $data['date_of_birth']));
 
         if (!empty($data['vat_number'])) {
