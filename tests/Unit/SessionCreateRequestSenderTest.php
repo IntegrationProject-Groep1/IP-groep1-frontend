@@ -20,6 +20,21 @@ class SessionCreateRequestSenderTest extends TestCase
 
     // ─── buildXml: required field validation ─────────────────────────────────
 
+    public function test_buildXml_throws_when_session_id_missing(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('session_id is required');
+
+        $this->sender->buildXml($this->validData(['session_id' => '']));
+    }
+
+    public function test_buildXml_contains_session_id(): void
+    {
+        $xml = $this->sender->buildXml($this->validData());
+
+        $this->assertStringContainsString('<session_id>sess-uuid-001</session_id>', $xml);
+    }
+
     public function test_buildXml_throws_when_title_missing(): void
     {
         $this->expectException(\InvalidArgumentException::class);
@@ -224,6 +239,7 @@ class SessionCreateRequestSenderTest extends TestCase
     private function validData(array $overrides = []): array
     {
         return array_merge([
+            'session_id'     => 'sess-uuid-001',
             'title'          => 'Keynote: AI',
             'start_datetime' => '2026-05-15T14:00:00Z',
             'end_datetime'   => '2026-05-15T15:00:00Z',
