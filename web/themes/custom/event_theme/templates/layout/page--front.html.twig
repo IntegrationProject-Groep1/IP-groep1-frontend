@@ -1,8 +1,8 @@
 {#
-  page.html.twig — Page-level layout (nav + main + footer).
-  Variables injected by event_theme_preprocess_page():
-    site_name, tagline, nav_show_register, nav_show_enroll,
-    footer_text, social_*, current_route, logo, logged_in.
+  page--front.html.twig — Front page layout with configurable hero section.
+  Variables injected by event_theme_preprocess_page__front():
+    hero_enabled, hero_title, hero_subtitle, hero_cta_label, hero_cta_url,
+    plus all variables from event_theme_preprocess_page().
 #}
 
 {# ════════════════════════════════════════════════════════════ HEADER #}
@@ -10,7 +10,6 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between h-16">
 
-      {# Logo / site name #}
       <a href="{{ path('<front>') }}"
          class="flex items-center gap-2.5 font-bold text-lg no-underline hover:opacity-80 transition-opacity"
          style="color:var(--color-primary);">
@@ -25,36 +24,21 @@
         <span>{{ site_name }}</span>
       </a>
 
-      {# Desktop navigation #}
       <nav class="hidden md:flex items-center gap-1" aria-label="{{ 'Main navigation'|t }}">
-        <a href="{{ path('<front>') }}"
-           class="nav-link {{ is_front ? 'is-active' : '' }}">
-          {{ 'Home'|t }}
-        </a>
+        <a href="{{ path('<front>') }}" class="nav-link is-active">{{ 'Home'|t }}</a>
         {% if nav_show_register %}
-          <a href="{{ path('registration_form.register') }}"
-             class="nav-link {{ current_route starts with 'registration_form' ? 'is-active' : '' }}">
-            {{ 'Register'|t }}
-          </a>
+          <a href="{{ path('registration_form.register') }}" class="nav-link">{{ 'Register'|t }}</a>
         {% endif %}
         {% if nav_show_enroll %}
-          <a href="{{ path('session_enrollment.enroll') }}"
-             class="nav-link {{ current_route starts with 'session_enrollment' ? 'is-active' : '' }}">
-            {{ 'Enroll'|t }}
-          </a>
+          <a href="{{ path('session_enrollment.enroll') }}" class="nav-link">{{ 'Enroll'|t }}</a>
         {% endif %}
         {% if logged_in %}
-          <a href="{{ path('user.logout') }}" class="btn-primary ml-2">
-            {{ 'Log out'|t }}
-          </a>
+          <a href="{{ path('user.logout') }}" class="btn-primary ml-2">{{ 'Log out'|t }}</a>
         {% else %}
-          <a href="{{ path('user.login') }}" class="btn-primary ml-2">
-            {{ 'Log in'|t }}
-          </a>
+          <a href="{{ path('user.login') }}" class="btn-primary ml-2">{{ 'Log in'|t }}</a>
         {% endif %}
       </nav>
 
-      {# Mobile hamburger button #}
       <button id="menu-toggle"
               class="md:hidden p-2 rounded-lg transition-colors"
               style="color:var(--color-muted);"
@@ -71,25 +55,16 @@
     </div>
   </div>
 
-  {# Mobile menu panel #}
   <div id="mobile-menu"
        class="md:hidden hidden border-t"
        style="background-color:var(--color-nav-bg);border-color:var(--color-border);">
     <nav class="px-4 pt-2 pb-4 flex flex-col gap-1">
-      <a href="{{ path('<front>') }}" class="nav-link {{ is_front ? 'is-active' : '' }}">
-        {{ 'Home'|t }}
-      </a>
+      <a href="{{ path('<front>') }}" class="nav-link is-active">{{ 'Home'|t }}</a>
       {% if nav_show_register %}
-        <a href="{{ path('registration_form.register') }}"
-           class="nav-link {{ current_route starts with 'registration_form' ? 'is-active' : '' }}">
-          {{ 'Register'|t }}
-        </a>
+        <a href="{{ path('registration_form.register') }}" class="nav-link">{{ 'Register'|t }}</a>
       {% endif %}
       {% if nav_show_enroll %}
-        <a href="{{ path('session_enrollment.enroll') }}"
-           class="nav-link {{ current_route starts with 'session_enrollment' ? 'is-active' : '' }}">
-          {{ 'Enroll'|t }}
-        </a>
+        <a href="{{ path('session_enrollment.enroll') }}" class="nav-link">{{ 'Enroll'|t }}</a>
       {% endif %}
       {% if logged_in %}
         <a href="{{ path('user.logout') }}" class="btn-primary mt-2 text-center">{{ 'Log out'|t }}</a>
@@ -99,6 +74,46 @@
     </nav>
   </div>
 </header>
+
+{# ════════════════════════════════════════════════════════════ HERO #}
+{% if hero_enabled %}
+  <section class="relative overflow-hidden py-24 sm:py-32" style="background-color:var(--color-hero-bg);">
+    {# Decorative circles #}
+    <div class="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+      <div class="absolute -top-40 -right-32 w-96 h-96 rounded-full opacity-10 bg-white"></div>
+      <div class="absolute -bottom-20 -left-20 w-72 h-72 rounded-full opacity-10 bg-white"></div>
+    </div>
+
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight mb-6">
+        {{ hero_title }}
+      </h1>
+      {% if hero_subtitle %}
+        <p class="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto mb-10">
+          {{ hero_subtitle }}
+        </p>
+      {% endif %}
+      {% if hero_cta_label and hero_cta_url %}
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <a href="{{ hero_cta_url }}"
+             class="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-white font-semibold text-sm transition-all hover:bg-white/90 no-underline shadow-lg"
+             style="color:var(--color-hero-bg);">
+            {{ hero_cta_label }}
+            <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+            </svg>
+          </a>
+          {% if nav_show_enroll %}
+            <a href="{{ path('session_enrollment.enroll') }}"
+               class="inline-flex items-center justify-center px-8 py-3.5 rounded-full font-semibold text-sm text-white border-2 border-white/50 hover:border-white transition-colors no-underline">
+              {{ 'View sessions'|t }}
+            </a>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </section>
+{% endif %}
 
 {# ════════════════════════════════════════════════════════════ MAIN #}
 <main role="main" class="flex-1 py-10">
@@ -114,7 +129,6 @@
 
       <p class="text-sm" style="color:var(--color-muted);">{{ footer_text }}</p>
 
-      {# Social icons #}
       {% if social_facebook or social_instagram or social_linkedin or social_twitter %}
         <div class="flex items-center gap-3">
           {% if social_facebook %}
