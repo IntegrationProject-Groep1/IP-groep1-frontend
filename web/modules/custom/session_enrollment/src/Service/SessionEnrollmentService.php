@@ -18,7 +18,7 @@ class SessionEnrollmentService
         private readonly LoggerChannelFactoryInterface $loggerFactory,
         private readonly NewRegistrationSender $newRegistrationSender,
         private readonly CalendarInviteSender $calendarInviteSender,
-        private readonly UserRegisteredSender $userRegisteredSender,
+        private readonly ?UserRegisteredSender $userRegisteredSender = null,
     ) {}
 
     /**
@@ -124,6 +124,9 @@ class SessionEnrollmentService
             }
 
             // Notify CRM: user_registered (one per session)
+            if ($this->userRegisteredSender === null) {
+                continue;
+            }
             try {
                 $this->userRegisteredSender->send([
                     'user_id'      => $userData['user_id'],

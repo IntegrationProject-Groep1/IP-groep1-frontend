@@ -74,7 +74,7 @@ function session_enrollment_cron(): void
         // 4. Process badge_scanned messages and forward as user_checkin to CRM (up to 50 per cron run).
         /** @var \Drupal\rabbitmq_sender\UserCheckinSender $checkinSender */
         $checkinSender = \Drupal::service('rabbitmq_sender.user_checkin_sender');
-        $badgeReceiver = new \Drupal\rabbitmq_receiver\BadgeScannedReceiver($checkinSender, $client);
+        $badgeReceiver = new \Drupal\rabbitmq_receiver\BadgeScannedReceiver($client, $checkinSender);
         for ($i = 0; $i < 50; $i++) {
             if (!$badgeReceiver->pollOnce()) {
                 break;

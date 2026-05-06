@@ -19,12 +19,19 @@ class BadgeScannedReceiver
     private const DLX   = 'frontend.crm.dlx';
 
     private ?RabbitMQClient $client;
+    private ?UserCheckinSender $userCheckinSender;
 
     public function __construct(
-        private readonly ?UserCheckinSender $userCheckinSender = null,
         ?RabbitMQClient $client = null,
+        ?UserCheckinSender $userCheckinSender = null,
     ) {
         $this->client = $client;
+        $this->userCheckinSender = $userCheckinSender;
+    }
+
+    public function setUserCheckinSender(UserCheckinSender $sender): void
+    {
+        $this->userCheckinSender = $sender;
     }
 
     /**
