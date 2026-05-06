@@ -89,10 +89,6 @@ class UserUpdatedSender
         $contact->appendChild($dom->createElement('last_name', htmlspecialchars((string) $data['last_name'], ENT_XML1, 'UTF-8')));
         $customer->appendChild($contact);
 
-        if (!empty($data['phone'])) {
-            $customer->appendChild($dom->createElement('phone', htmlspecialchars((string) $data['phone'], ENT_XML1, 'UTF-8')));
-        }
-
         if (!empty($data['company_id'])) {
             $customer->appendChild($dom->createElement('company_id', htmlspecialchars((string) $data['company_id'], ENT_XML1, 'UTF-8')));
         }

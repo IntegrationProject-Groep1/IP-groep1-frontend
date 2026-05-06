@@ -68,6 +68,7 @@ class UserRegisteredSender
 
         $header = $dom->createElement('header');
         $header->appendChild($dom->createElement('message_id', $messageId));
+        $header->appendChild($dom->createElement('correlation_id', $messageId));
         $header->appendChild($dom->createElement('timestamp', $timestamp));
         $header->appendChild($dom->createElement('source', self::SOURCE));
         $header->appendChild($dom->createElement('type', self::TYPE));
@@ -85,7 +86,7 @@ class UserRegisteredSender
         $contact->appendChild($dom->createElement('last_name', htmlspecialchars($data['last_name'] ?? '', ENT_XML1, 'UTF-8')));
         $user->appendChild($contact);
 
-        $user->appendChild($dom->createElement('is_company', !empty($data['is_company']) ? 'true' : 'false'));
+        $user->appendChild($dom->createElement('type', !empty($data['is_company']) ? 'company' : 'private'));
 
         if (!empty($data['is_company'])) {
             $company = $dom->createElement('company');

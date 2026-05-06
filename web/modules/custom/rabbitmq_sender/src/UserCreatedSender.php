@@ -71,8 +71,10 @@ class UserCreatedSender
         $body     = $dom->createElement('body');
         $customer = $dom->createElement('customer');
 
-        $customer->appendChild($dom->createElement('user_id', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
+        // Field order per contract: user_id, email, date_of_birth, contact, is_company, company_name, vat_number, company_id
+        $customer->appendChild($dom->createElement('user_id', htmlspecialchars((string) ($data['user_id'] ?? ''), ENT_XML1, 'UTF-8')));
         $customer->appendChild($dom->createElement('email', htmlspecialchars((string) $data['email'], ENT_XML1, 'UTF-8')));
+        $customer->appendChild($dom->createElement('date_of_birth', htmlspecialchars((string) ($data['date_of_birth'] ?? ''), ENT_XML1, 'UTF-8')));
 
         $contact = $dom->createElement('contact');
         $contact->appendChild($dom->createElement('first_name', htmlspecialchars($data['first_name'] ?? '', ENT_XML1, 'UTF-8')));
@@ -82,10 +84,15 @@ class UserCreatedSender
         $customer->appendChild($dom->createElement('is_company', !empty($data['is_company']) ? 'true' : 'false'));
 
         if (!empty($data['is_company'])) {
-            $company = $dom->createElement('company');
-            $company->appendChild($dom->createElement('name', htmlspecialchars($data['company_name'] ?? '', ENT_XML1, 'UTF-8')));
-            $company->appendChild($dom->createElement('vat_number', htmlspecialchars($data['vat_number'] ?? '', ENT_XML1, 'UTF-8')));
-            $customer->appendChild($company);
+            if (!empty($data['company_name'])) {
+                $customer->appendChild($dom->createElement('company_name', htmlspecialchars((string) $data['company_name'], ENT_XML1, 'UTF-8')));
+            }
+            if (!empty($data['vat_number'])) {
+                $customer->appendChild($dom->createElement('vat_number', htmlspecialchars((string) $data['vat_number'], ENT_XML1, 'UTF-8')));
+            }
+            if (!empty($data['company_id'])) {
+                $customer->appendChild($dom->createElement('company_id', htmlspecialchars((string) $data['company_id'], ENT_XML1, 'UTF-8')));
+            }
         }
 
         $body->appendChild($customer);

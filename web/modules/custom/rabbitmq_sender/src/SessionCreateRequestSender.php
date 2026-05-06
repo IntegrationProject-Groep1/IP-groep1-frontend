@@ -33,6 +33,9 @@ class SessionCreateRequestSender
 
     public function send(array $data): void
     {
+        if (empty($data['session_id'])) {
+            throw new \InvalidArgumentException('session_id is required');
+        }
         $xml = $this->buildXml($data);
 
         $this->sendWithRetry(function () use ($xml): void {
@@ -43,6 +46,9 @@ class SessionCreateRequestSender
 
     public function buildXml(array $data): string
     {
+        if (empty($data['session_id'])) {
+            throw new \InvalidArgumentException('session_id is required');
+        }
         if (empty($data['title'])) {
             throw new \InvalidArgumentException('title is required');
         }
@@ -71,6 +77,7 @@ class SessionCreateRequestSender
         $message->appendChild($header);
 
         $body = $dom->createElement('body');
+        $body->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('title', htmlspecialchars((string) $data['title'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('start_datetime', htmlspecialchars((string) $data['start_datetime'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('end_datetime', htmlspecialchars((string) $data['end_datetime'], ENT_XML1, 'UTF-8')));
