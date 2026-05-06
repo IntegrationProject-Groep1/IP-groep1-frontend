@@ -1,7 +1,7 @@
 # Theme metadata for the event frontend presentation layer.
 name: Event Theme
 type: theme
-description: 'Clean custom theme for the Desideriushogeschool Event Platform.'
+description: 'Fully customisable theme for the Desideriushogeschool Event Platform. Built with Tailwind CSS. All colours, fonts and content blocks are configurable by the admin.'
 core_version_requirement: ^10
 base theme: false
 package: Custom
@@ -9,8 +9,17 @@ package: Custom
 libraries:
   - event_theme/global
 
+features:
+  - logo
+  - favicon
+  - name
+  - slogan
+
 regions:
   header: Header
   primary_menu: Primary menu
   content: Content
+  sidebar_first: Sidebar (left)
+  sidebar_second: Sidebar (right)
   footer: Footer
+  breadcrumb: Breadcrumb
