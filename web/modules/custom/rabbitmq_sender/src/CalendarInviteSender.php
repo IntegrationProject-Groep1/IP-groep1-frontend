@@ -38,7 +38,7 @@ class CalendarInviteSender
         if (empty($data['end_datetime'])) {
             throw new \InvalidArgumentException('end_datetime is required');
         }
-        if (empty($data['user_id'])) {
+        if (empty($data['identity_uuid']) && empty($data['user_id'])) {
             throw new \InvalidArgumentException('user_id is required');
         }
         if (empty($data['attendee_email'])) {
@@ -72,7 +72,7 @@ class CalendarInviteSender
         if (empty($data['end_datetime'])) {
             throw new \InvalidArgumentException('end_datetime is required');
         }
-        if (empty($data['user_id'])) {
+        if (empty($data['identity_uuid']) && empty($data['user_id'])) {
             throw new \InvalidArgumentException('user_id is required');
         }
         if (empty($data['attendee_email'])) {
@@ -97,7 +97,8 @@ class CalendarInviteSender
         $message->appendChild($header);
 
         $body = $dom->createElement('body');
-        $body->appendChild($dom->createElement('user_id', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
+        $identityUuid = (string) ($data['identity_uuid'] ?? $data['user_id'] ?? '');
+        $body->appendChild($dom->createElement('identity_uuid', htmlspecialchars($identityUuid, ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('title', htmlspecialchars((string) $data['title'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('start_datetime', htmlspecialchars((string) $data['start_datetime'], ENT_XML1, 'UTF-8')));

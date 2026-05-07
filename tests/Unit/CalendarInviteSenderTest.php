@@ -128,7 +128,7 @@ class CalendarInviteSenderTest extends TestCase
 
         $xml = $this->sender->buildXml($data);
 
-        $this->assertStringContainsString('<user_id>user-uuid-001</user_id>', $xml);
+        $this->assertStringContainsString('<identity_uuid>user-uuid-001</identity_uuid>', $xml);
     }
 
     public function test_buildXml_throws_when_user_id_missing(): void
@@ -158,7 +158,7 @@ class CalendarInviteSenderTest extends TestCase
 
         $xml = $this->sender->buildXml($data);
 
-        $this->assertStringContainsString('<user_id>id&lt;with&gt;&amp;special</user_id>', $xml);
+        $this->assertStringContainsString('<identity_uuid>id&lt;with&gt;&amp;special</identity_uuid>', $xml);
     }
 
     public function test_buildXml_includes_empty_location_when_key_present_but_empty(): void
