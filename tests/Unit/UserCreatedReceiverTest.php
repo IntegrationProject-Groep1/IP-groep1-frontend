@@ -23,12 +23,13 @@ class UserCreatedReceiverTest extends TestCase
     public function test_returns_expected_data_from_valid_event(): void
     {
         $xml = <<<XML
+<?xml version="1.0" encoding="UTF-8"?>
 <user_event>
   <event>UserCreated</event>
   <master_uuid>01890a5d-ac96-7ab2-80e2-4536629c90de</master_uuid>
   <email>user@example.com</email>
   <source_system>crm</source_system>
-  <timestamp>2026-04-05T12:00:00+00:00</timestamp>
+  <timestamp>2026-04-05T12:00:00Z</timestamp>
 </user_event>
 XML;
 
@@ -38,7 +39,7 @@ XML;
         $this->assertSame('01890a5d-ac96-7ab2-80e2-4536629c90de', $data['master_uuid']);
         $this->assertSame('user@example.com', $data['email']);
         $this->assertSame('crm', $data['source_system']);
-        $this->assertSame('2026-04-05T12:00:00+00:00', $data['timestamp']);
+        $this->assertSame('2026-04-05T12:00:00Z', $data['timestamp']);
     }
 
     public function test_normalizes_email_to_lowercase(): void

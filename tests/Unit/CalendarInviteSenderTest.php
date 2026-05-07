@@ -124,11 +124,11 @@ class CalendarInviteSenderTest extends TestCase
     public function test_buildXml_includes_user_id_when_provided(): void
     {
         $data = $this->validData();
-        $data['user_id'] = 'user-uuid-001';
+        $data['user_id'] = '550e8400-e29b-41d4-a716-446655440000';
 
         $xml = $this->sender->buildXml($data);
 
-        $this->assertStringContainsString('<user_id>user-uuid-001</user_id>', $xml);
+        $this->assertStringContainsString('<identity_uuid>550e8400-e29b-41d4-a716-446655440000</identity_uuid>', $xml);
     }
 
     public function test_buildXml_throws_when_user_id_missing(): void
@@ -158,7 +158,7 @@ class CalendarInviteSenderTest extends TestCase
 
         $xml = $this->sender->buildXml($data);
 
-        $this->assertStringContainsString('<user_id>id&lt;with&gt;&amp;special</user_id>', $xml);
+        $this->assertStringContainsString('<identity_uuid>id&lt;with&gt;&amp;special</identity_uuid>', $xml);
     }
 
     public function test_buildXml_includes_empty_location_when_key_present_but_empty(): void
@@ -333,7 +333,7 @@ class CalendarInviteSenderTest extends TestCase
             'title'          => 'Keynote: AI in de zorgsector',
             'start_datetime' => '2026-05-15T14:00:00Z',
             'end_datetime'   => '2026-05-15T15:00:00Z',
-            'user_id'        => 'user-uuid-001',
+            'user_id'        => '550e8400-e29b-41d4-a716-446655440000',
             'attendee_email' => 'jan@test.be',
         ];
     }

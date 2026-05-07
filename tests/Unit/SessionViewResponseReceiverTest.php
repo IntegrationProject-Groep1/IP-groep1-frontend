@@ -229,9 +229,16 @@ class SessionViewResponseReceiverTest extends TestCase
         }
 
         return '<?xml version="1.0" encoding="UTF-8"?>'
-            . '<message xmlns="urn:integration:planning:v1">'
-            . '<header><type>session_view_response</type></header>'
+            . '<message>'
+            . '<header>'
+            . '<message_id>01890a5d-ac96-7ab2-80e2-4536629c90de</message_id>'
+            . '<timestamp>2026-04-05T12:00:00Z</timestamp>'
+            . '<source>planning</source>'
+            . '<type>session_view_response</type>'
+            . '<version>2.0</version>'
+            . '</header>'
             . '<body>'
+            . '<request_message_id>01890a5d-ac96-7ab2-80e2-4536629c90de</request_message_id>'
             . '<status>' . $status . '</status>'
             . '<session_count>' . count($sessions) . '</session_count>'
             . '<sessions>' . $sessionsXml . '</sessions>'

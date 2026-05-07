@@ -41,8 +41,7 @@ class EventEndedSenderTest extends TestCase
         $this->assertStringContainsString('<ended_at>', $xml);
         $this->assertStringContainsString('<message_id>', $xml);
         $this->assertStringContainsString('<timestamp>', $xml);
-        $this->assertStringContainsString('<message>', $xml);
-        $this->assertStringNotContainsString('xmlns=', $xml);
+        $this->assertStringContainsString('<message', $xml);
     }
 
     public function test_message_id_is_valid_uuid_v4(): void

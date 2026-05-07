@@ -28,7 +28,7 @@ class BadgeScannedReceiverTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message><body>';
+        $xml .= '<message><header><message_id>550e8400-e29b-41d4-a716-446655440001</message_id><timestamp>2026-05-07T00:00:00Z</timestamp><source>iot_gateway</source><type>badge_scanned</type><version>2.0</version></header><body>';
         $xml .= '<badge_id>nfc-badge-abc123</badge_id>';
         $xml .= '</body></message>';
 
@@ -39,8 +39,8 @@ class BadgeScannedReceiverTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message><body>';
-        $xml .= '<user_id>uuid-v4-hier</user_id>';
+        $xml .= '<message><header><message_id>550e8400-e29b-41d4-a716-446655440001</message_id><timestamp>2026-05-07T00:00:00Z</timestamp><source>iot_gateway</source><type>badge_scanned</type><version>2.0</version></header><body>';
+        $xml .= '<location>entrance</location><scanned_at>2026-05-07T00:00:00Z</scanned_at>';
         $xml .= '</body></message>';
 
         $this->receiver->processMessageFromXml($xml);
@@ -49,9 +49,8 @@ class BadgeScannedReceiverTest extends TestCase
     public function test_valid_xml_is_processed_correctly(): void
     {
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message><body>';
-        $xml .= '<user_id>uuid-v4-hier</user_id>';
-        $xml .= '<badge_id>nfc-badge-abc123</badge_id>';
+        $xml .= '<message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><header><message_id>550e8400-e29b-41d4-a716-446655440001</message_id><timestamp>2026-05-07T00:00:00Z</timestamp><source>iot_gateway</source><type>badge_scanned</type><version>2.0</version></header><body>';
+        $xml .= '<badge_id>nfc-badge-abc123</badge_id><location>entrance</location><scanned_at>2026-05-07T00:00:00Z</scanned_at>';
         $xml .= '</body></message>';
 
         $result = $this->receiver->processMessageFromXml($xml);

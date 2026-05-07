@@ -11,6 +11,7 @@ use PhpAmqpLib\Message\AMQPMessage;
 class EventEndedSender
 {
     use RetryTrait;
+    use XmlValidationTrait;
 
     private ?RabbitMQClient $client;
 
@@ -18,6 +19,7 @@ class EventEndedSender
     private const TYPE       = 'event_ended';
     private const VERSION    = '2.0';
     private const SOURCE     = 'frontend';
+    private const XSD_PATH   = __DIR__ . '/../../../../../xsd/event_ended.xsd';
 
     public function __construct(?RabbitMQClient $client = null)
     {
@@ -31,6 +33,9 @@ class EventEndedSender
         }
 
         $xml = $this->buildXml($data);
+
+        // Validate XML against XSD
+        $this->validateXml($xml, self::XSD_PATH);
 
         $this->sendWithRetry(function () use ($xml): void {
             $msg = new AMQPMessage($xml, [
@@ -49,10 +54,10 @@ class EventEndedSender
         }
 
         $messageId = $this->generateUuidV4();
-        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
+        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z');
 
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message>';
+        $xml .= '<message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">';
         $xml .= '<header>';
         $xml .= "<message_id>{$messageId}</message_id>";
         $xml .= "<timestamp>{$timestamp}</timestamp>";

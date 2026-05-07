@@ -9,6 +9,7 @@ namespace Drupal\rabbitmq_sender;
 class CalendarInviteSender
 {
     use RetryTrait;
+    use XmlValidationTrait;
 
     private const EXCHANGE      = 'calendar.exchange';
     private const ROUTING_KEY   = 'frontend.to.planning.calendar.invite';
@@ -16,6 +17,7 @@ class CalendarInviteSender
     private const SOURCE        = 'frontend';
     private const TYPE          = 'calendar_invite';
     private const VERSION       = '2.0';
+    private const XSD_PATH      = __DIR__ . '/../../../../../xsd/calendar_invite.xsd';
 
     private ?RabbitMQClient $client;
 
@@ -51,6 +53,7 @@ class CalendarInviteSender
         ]);
 
         $xml = $this->buildXml($data);
+        $this->validateXml($xml, self::XSD_PATH);
 
         $this->sendWithRetry(function () use ($xml): void {
             $this->resolveClient()->declareExchange(self::EXCHANGE, self::EXCHANGE_TYPE);
@@ -80,12 +83,13 @@ class CalendarInviteSender
         }
 
         $messageId = $this->generateUuidV4();
-        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
+        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z');
 
         $dom = new \DOMDocument('1.0', 'UTF-8');
         $dom->formatOutput = false;
 
         $message = $dom->createElement('message');
+        $message->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
         $dom->appendChild($message);
 
         $header = $dom->createElement('header');
@@ -97,7 +101,7 @@ class CalendarInviteSender
         $message->appendChild($header);
 
         $body = $dom->createElement('body');
-        $body->appendChild($dom->createElement('user_id', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
+        $body->appendChild($dom->createElement('identity_uuid', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('title', htmlspecialchars((string) $data['title'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('start_datetime', htmlspecialchars((string) $data['start_datetime'], ENT_XML1, 'UTF-8')));

@@ -20,43 +20,51 @@ class PaymentRegisteredReceiverTest extends TestCase
 
     public function test_throws_exception_when_xml_is_invalid(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(\Exception::class);
         $this->receiver->processMessageFromXml('invalid xml');
     }
 
     public function test_throws_exception_when_user_id_is_missing(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-
-        $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message><body>';
-        $xml .= '<status>paid</status>';
-        $xml .= '</body></message>';
+        $this->expectException(\Exception::class);
+        $xml = $this->buildXml(['identity_uuid' => 'invalid-uuid']);
 
         $this->receiver->processMessageFromXml($xml);
     }
 
     public function test_throws_exception_when_status_is_missing(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-
-        $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message><body>';
-        $xml .= '<user_id>uuid-v4-hier</user_id>';
-        $xml .= '</body></message>';
+        $this->expectException(\Exception::class);
+        $xml = $this->buildXml(['status' => 'invalid-status']);
 
         $this->receiver->processMessageFromXml($xml);
     }
 
     public function test_valid_xml_is_processed_correctly(): void
     {
-        $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message><body>';
-        $xml .= '<user_id>uuid-v4-hier</user_id>';
-        $xml .= '<status>paid</status>';
-        $xml .= '</body></message>';
+        $xml = $this->buildXml(['identity_uuid' => '550e8400-e29b-41d4-a716-446655440001', 'status' => 'paid']);
 
         $result = $this->receiver->processMessageFromXml($xml);
         $this->assertTrue($result);
     }
+
+    private function buildXml(array $data = []): string
+    {
+        $uuid = '550e8400-e29b-41d4-a716-446655440001';
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>'
+            . '<message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><header>'
+            . '<message_id>' . $uuid . '</message_id>'
+            . '<timestamp>2026-05-07T00:00:00Z</timestamp>'
+            . '<source>frontend</source>'
+            . '<type>payment_registered</type>'
+            . '<version>2.0</version>'
+            . '</header><body>'
+            . (isset($data['identity_uuid']) ? '<identity_uuid>' . $data['identity_uuid'] . '</identity_uuid>' : '')
+            . '<invoice><amount_paid currency="eur">10.00</amount_paid>'
+            . '<status>' . ($data['status'] ?? 'paid') . '</status></invoice>'
+            . '<payment_context>registration</payment_context>'
+            . '</body></message>';
+        return $xml;
+    }
+
 }

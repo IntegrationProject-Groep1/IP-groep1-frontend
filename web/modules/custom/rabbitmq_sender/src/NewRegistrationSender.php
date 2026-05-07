@@ -11,12 +11,14 @@ use PhpAmqpLib\Message\AMQPMessage;
 class NewRegistrationSender
 {
     use RetryTrait;
+    use XmlValidationTrait;
 
     private ?RabbitMQClient $client;
     private const QUEUE_NAME = 'crm.incoming';
     private const DEFAULT_SOURCE = 'frontend';
     private const MESSAGE_TYPE = 'new_registration';
     private const MESSAGE_VERSION = '2.0';
+    private const XSD_PATH = __DIR__ . '/../../../../../xsd/new_registration.xsd';
 
     public function __construct(?RabbitMQClient $client = null)
     {
@@ -52,6 +54,7 @@ class NewRegistrationSender
         ]);
 
         $xml = $this->buildXml($data);
+        $this->validateXml($xml, self::XSD_PATH);
 
         try {
             $this->sendWithRetry(function () use ($xml): void {
@@ -73,11 +76,13 @@ class NewRegistrationSender
     public function buildXml(array $data): string
     {
         $messageId = $this->generateUuidV4();
-        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
+        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z');
 
         $xml = new \DOMDocument('1.0', 'UTF-8');
+        $xml->formatOutput = false;
 
         $message = $xml->createElement('message');
+        $message->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
         $xml->appendChild($message);
 
         // Header order per contract §5.1: message_id, timestamp, source, type, version, correlation_id

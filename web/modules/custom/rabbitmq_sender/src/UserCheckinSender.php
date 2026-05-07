@@ -11,6 +11,7 @@ use PhpAmqpLib\Message\AMQPMessage;
 class UserCheckinSender
 {
     use RetryTrait;
+    use XmlValidationTrait;
 
     private ?RabbitMQClient $client;
 
@@ -18,6 +19,7 @@ class UserCheckinSender
     private const SOURCE     = 'frontend';
     private const TYPE       = 'user_checkin';
     private const VERSION    = '2.0';
+    private const XSD_PATH   = __DIR__ . '/../../../../../xsd/user_checkin.xsd';
 
     public function __construct(?RabbitMQClient $client = null)
     {
@@ -39,6 +41,7 @@ class UserCheckinSender
         ]);
 
         $xml = $this->buildXml($data);
+        $this->validateXml($xml, self::XSD_PATH);
 
         $this->sendWithRetry(function () use ($xml): void {
             $this->resolveClient()->declareQueue(self::QUEUE_NAME);
@@ -53,12 +56,14 @@ class UserCheckinSender
     public function buildXml(array $data): string
     {
         $messageId  = $this->generateUuidV4();
-        $timestamp  = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
+        $timestamp  = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z');
         $checkinAt  = !empty($data['checkin_at']) ? (string) $data['checkin_at'] : $timestamp;
 
         $dom = new \DOMDocument('1.0', 'UTF-8');
+        $dom->formatOutput = false;
 
         $message = $dom->createElement('message');
+        $message->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
         $dom->appendChild($message);
 
         $header = $dom->createElement('header');

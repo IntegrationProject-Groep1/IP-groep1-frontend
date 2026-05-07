@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\rabbitmq_receiver;
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
+use Drupal\rabbitmq_sender\XmlValidationTrait;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
 
@@ -13,9 +14,12 @@ use PhpAmqpLib\Wire\AMQPTable;
  */
 class PaymentRegisteredReceiver
 {
+    use XmlValidationTrait;
+
     private const QUEUE = 'frontend.crm.payment.registered';
     private const DLQ   = 'frontend.crm.payment.registered.dlq';
     private const DLX   = 'frontend.crm.dlx';
+    private const XSD_PATH = __DIR__ . '/../../../../../xsd/payment_registered.xsd';
 
     public function __construct(private readonly RabbitMQClient $client) {}
 
@@ -27,6 +31,8 @@ class PaymentRegisteredReceiver
      */
     public function processMessageFromXml(string $xmlString): mixed
     {
+        $this->validateXml($xmlString, self::XSD_PATH);
+        
         $xmlString = preg_replace('/ xmlns="[^"]*"/', '', $xmlString) ?? $xmlString;
         libxml_use_internal_errors(true);
         $xml = simplexml_load_string($xmlString);
@@ -38,12 +44,13 @@ class PaymentRegisteredReceiver
 
         $body = $xml->body;
 
-        $userId = trim((string) $body->user_id);
+        $userId = trim((string) $body->identity_uuid);
         if ($userId === '') {
-            throw new \InvalidArgumentException('user_id is required');
+            throw new \InvalidArgumentException('identity_uuid is required');
         }
 
-        $status = trim((string) $body->status);
+        $invoice = $body->invoice;
+        $status = trim((string) $invoice->status);
         if ($status === '') {
             throw new \InvalidArgumentException('status is required');
         }

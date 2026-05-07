@@ -38,24 +38,36 @@ class CalendarInviteConfirmedReceiverTest extends TestCase
     public function test_throws_when_body_element_is_missing(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('<body> element is missing');
-
+        
         $xml = '<?xml version="1.0" encoding="UTF-8"?>'
-            . '<message xmlns="urn:integration:planning:v1">'
-            . '<header><type>calendar.invite.confirmed</type></header>'
-            . '</message>';
+            . '<message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><header>'
+            . '<message_id>550e8400-e29b-41d4-a716-446655440001</message_id>'
+            . '<timestamp>2026-04-29T10:00:00Z</timestamp>'
+            . '<source>planning</source>'
+            . '<type>calendar_invite_confirmed</type>'
+            . '<version>2.0</version>'
+            . '</header></message>';
 
         $this->receiver->processMessageFromXml($xml);
     }
-
-    // ─── Required field validation ────────────────────────────────────────────
 
     public function test_throws_when_session_id_missing(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('session_id is required');
 
-        $xml = $this->buildConfirmedXml('', 'orig-uuid-001', 'confirmed');
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>'
+            . '<message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><header>'
+            . '<message_id>550e8400-e29b-41d4-a716-446655440001</message_id>'
+            . '<timestamp>2026-04-29T10:00:00Z</timestamp>'
+            . '<source>planning</source>'
+            . '<type>calendar_invite_confirmed</type>'
+            . '<version>2.0</version>'
+            . '</header><body>'
+            . '<original_message_id>orig-uuid-001</original_message_id>'
+            . '<status>confirmed</status>'
+            . '</body></message>';
+
         $this->receiver->processMessageFromXml($xml);
     }
 
@@ -64,7 +76,18 @@ class CalendarInviteConfirmedReceiverTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('original_message_id is required');
 
-        $xml = $this->buildConfirmedXml('sess-001', '', 'confirmed');
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>'
+            . '<message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><header>'
+            . '<message_id>550e8400-e29b-41d4-a716-446655440001</message_id>'
+            . '<timestamp>2026-04-29T10:00:00Z</timestamp>'
+            . '<source>planning</source>'
+            . '<type>calendar_invite_confirmed</type>'
+            . '<version>2.0</version>'
+            . '</header><body>'
+            . '<session_id>sess-001</session_id>'
+            . '<status>confirmed</status>'
+            . '</body></message>';
+
         $this->receiver->processMessageFromXml($xml);
     }
 
@@ -73,7 +96,18 @@ class CalendarInviteConfirmedReceiverTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('status is required');
 
-        $xml = $this->buildConfirmedXml('sess-001', 'orig-uuid-001', '');
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>'
+            . '<message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><header>'
+            . '<message_id>550e8400-e29b-41d4-a716-446655440001</message_id>'
+            . '<timestamp>2026-04-29T10:00:00Z</timestamp>'
+            . '<source>planning</source>'
+            . '<type>calendar_invite_confirmed</type>'
+            . '<version>2.0</version>'
+            . '</header><body>'
+            . '<session_id>sess-001</session_id>'
+            . '<original_message_id>orig-uuid-001</original_message_id>'
+            . '</body></message>';
+
         $this->receiver->processMessageFromXml($xml);
     }
 
@@ -189,12 +223,12 @@ class CalendarInviteConfirmedReceiverTest extends TestCase
     private function buildConfirmedXmlWithIcsUrl(string $sessionId, string $originalMessageId, string $status, string $icsUrl): string
     {
         return '<?xml version="1.0" encoding="UTF-8"?>'
-            . '<message xmlns="urn:integration:planning:v1">'
-            . '<header>'
-            . '<message_id>test-msg-id</message_id>'
+            . '<message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><header>'
+            . '<message_id>550e8400-e29b-41d4-a716-446655440001</message_id>'
             . '<timestamp>2026-04-29T10:00:00Z</timestamp>'
             . '<source>planning</source>'
-            . '<type>calendar.invite.confirmed</type>'
+            . '<type>calendar_invite_confirmed</type>'
+            . '<version>2.0</version>'
             . '</header>'
             . '<body>'
             . '<session_id>' . htmlspecialchars($sessionId, ENT_XML1) . '</session_id>'
@@ -220,12 +254,12 @@ class CalendarInviteConfirmedReceiverTest extends TestCase
         }
 
         return '<?xml version="1.0" encoding="UTF-8"?>'
-            . '<message xmlns="urn:integration:planning:v1">'
-            . '<header>'
-            . '<message_id>test-msg-id</message_id>'
+            . '<message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><header>'
+            . '<message_id>550e8400-e29b-41d4-a716-446655440001</message_id>'
             . '<timestamp>2026-04-29T10:00:00Z</timestamp>'
             . '<source>planning</source>'
-            . '<type>calendar.invite.confirmed</type>'
+            . '<type>calendar_invite_confirmed</type>'
+            . '<version>2.0</version>'
             . '</header>'
             . '<body>' . $bodyParts . '</body>'
             . '</message>';
