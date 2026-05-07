@@ -195,3 +195,4 @@ class ValidationTest extends TestCase
         $this->assertSame('pending', $result['payment_status']);
     }
 }
+

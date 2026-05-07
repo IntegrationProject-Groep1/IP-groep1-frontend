@@ -4,6 +4,7 @@ declare(strict_types=1);
 use Drupal\rabbitmq_receiver\UserCreatedReceiver;
 use Drupal\rabbitmq_sender\RabbitMQClient;
 use PHPUnit\Framework\TestCase;
+use Tests\Unit\XmlTestBuilder;
 
 /**
  * Unit tests for UserCreatedReceiver XML parsing.
@@ -18,19 +19,20 @@ class UserCreatedReceiverTest extends TestCase
         $this->receiver = new UserCreatedReceiver($mockClient);
     }
 
-    // ── processMessageFromXml ────────────────────────────────────────────────
+    private function buildXml(array $fields): string
+    {
+        return XmlTestBuilder::build('UserCreated', [], $fields, 'user_event', false);
+    }
 
     public function test_returns_expected_data_from_valid_event(): void
     {
-        $xml = <<<XML
-<user_event>
-  <event>UserCreated</event>
-  <master_uuid>01890a5d-ac96-7ab2-80e2-4536629c90de</master_uuid>
-  <email>user@example.com</email>
-  <source_system>crm</source_system>
-  <timestamp>2026-04-05T12:00:00+00:00</timestamp>
-</user_event>
-XML;
+        $xml = $this->buildXml([
+            'event' => 'UserCreated',
+            'master_uuid' => '01890a5d-ac96-7ab2-80e2-4536629c90de',
+            'email' => 'user@example.com',
+            'source_system' => 'crm',
+            'timestamp' => '2026-04-05T12:00:00Z'
+        ]);
 
         $data = $this->receiver->processMessageFromXml($xml);
 
@@ -38,20 +40,18 @@ XML;
         $this->assertSame('01890a5d-ac96-7ab2-80e2-4536629c90de', $data['master_uuid']);
         $this->assertSame('user@example.com', $data['email']);
         $this->assertSame('crm', $data['source_system']);
-        $this->assertSame('2026-04-05T12:00:00+00:00', $data['timestamp']);
+        $this->assertSame('2026-04-05T12:00:00Z', $data['timestamp']);
     }
 
     public function test_normalizes_email_to_lowercase(): void
     {
-        $xml = <<<XML
-<user_event>
-  <event>UserCreated</event>
-  <master_uuid>01890a5d-ac96-7ab2-80e2-4536629c90de</master_uuid>
-  <email>USER@EXAMPLE.COM</email>
-  <source_system>frontend</source_system>
-  <timestamp>2026-04-05T12:00:00+00:00</timestamp>
-</user_event>
-XML;
+        $xml = $this->buildXml([
+            'event' => 'UserCreated',
+            'master_uuid' => '01890a5d-ac96-7ab2-80e2-4536629c90de',
+            'email' => 'USER@EXAMPLE.COM',
+            'source_system' => 'frontend',
+            'timestamp' => '2026-04-05T12:00:00Z'
+        ]);
 
         $data = $this->receiver->processMessageFromXml($xml);
 
@@ -60,78 +60,60 @@ XML;
 
     public function test_throws_on_invalid_xml(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid XML received');
-
-        $this->receiver->processMessageFromXml('not valid xml {{}}');
+        $this->expectException(\Exception::class);
+        $this->receiver->processMessageFromXml('not valid xml');
     }
 
     public function test_throws_on_wrong_event_type(): void
     {
-        $xml = <<<XML
-<user_event>
-  <event>UserDeleted</event>
-  <master_uuid>01890a5d-ac96-7ab2-80e2-4536629c90de</master_uuid>
-  <email>user@example.com</email>
-  <source_system>crm</source_system>
-  <timestamp>2026-04-05T12:00:00+00:00</timestamp>
-</user_event>
-XML;
-
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Unexpected event type: UserDeleted');
+        $this->expectException(\Exception::class);
+        $xml = $this->buildXml([
+            'event' => 'UserDeleted',
+            'master_uuid' => '01890a5d-ac96-7ab2-80e2-4536629c90de',
+            'email' => 'user@example.com',
+            'source_system' => 'crm',
+            'timestamp' => '2026-04-05T12:00:00Z'
+        ]);
 
         $this->receiver->processMessageFromXml($xml);
     }
 
     public function test_throws_when_master_uuid_is_missing(): void
     {
-        $xml = <<<XML
-<user_event>
-  <event>UserCreated</event>
-  <email>user@example.com</email>
-  <source_system>crm</source_system>
-  <timestamp>2026-04-05T12:00:00+00:00</timestamp>
-</user_event>
-XML;
-
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('master_uuid is required');
+        $this->expectException(\Exception::class);
+        $xml = $this->buildXml([
+            'event' => 'UserCreated',
+            'email' => 'user@example.com',
+            'source_system' => 'crm',
+            'timestamp' => '2026-04-05T12:00:00Z'
+        ]);
 
         $this->receiver->processMessageFromXml($xml);
     }
 
     public function test_throws_when_email_is_missing(): void
     {
-        $xml = <<<XML
-<user_event>
-  <event>UserCreated</event>
-  <master_uuid>01890a5d-ac96-7ab2-80e2-4536629c90de</master_uuid>
-  <source_system>crm</source_system>
-  <timestamp>2026-04-05T12:00:00+00:00</timestamp>
-</user_event>
-XML;
-
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('email is required');
+        $this->expectException(\Exception::class);
+        $xml = $this->buildXml([
+            'event' => 'UserCreated',
+            'master_uuid' => '01890a5d-ac96-7ab2-80e2-4536629c90de',
+            'source_system' => 'crm',
+            'timestamp' => '2026-04-05T12:00:00Z'
+        ]);
 
         $this->receiver->processMessageFromXml($xml);
     }
 
     public function test_throws_when_master_uuid_is_empty_string(): void
     {
-        $xml = <<<XML
-<user_event>
-  <event>UserCreated</event>
-  <master_uuid>   </master_uuid>
-  <email>user@example.com</email>
-  <source_system>crm</source_system>
-  <timestamp>2026-04-05T12:00:00+00:00</timestamp>
-</user_event>
-XML;
-
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('master_uuid is required');
+        $this->expectException(\Exception::class);
+        $xml = $this->buildXml([
+            'event' => 'UserCreated',
+            'master_uuid' => '   ',
+            'email' => 'user@example.com',
+            'source_system' => 'crm',
+            'timestamp' => '2026-04-05T12:00:00Z'
+        ]);
 
         $this->receiver->processMessageFromXml($xml);
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\rabbitmq_receiver;
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
+use Drupal\rabbitmq_sender\XmlValidationTrait;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
 
@@ -13,12 +14,15 @@ use PhpAmqpLib\Wire\AMQPTable;
  */
 class SessionCreatedReceiver
 {
+    use XmlValidationTrait;
+
     private const EXCHANGE      = 'planning.exchange';
     private const EXCHANGE_TYPE = 'topic';
     private const ROUTING_KEY   = 'planning.to.frontend.session.created';
     private const QUEUE         = 'frontend.planning.session.created';
     private const DLQ           = 'frontend.planning.session.created.dlq';
     private const DLX           = 'frontend.planning.dlx';
+    private const XSD_PATH      = __DIR__ . '/../../../../../xsd/session_created.xsd';
 
     public function __construct(private readonly RabbitMQClient $client) {}
 
@@ -30,6 +34,8 @@ class SessionCreatedReceiver
      */
     public function processMessageFromXml(string $xmlString): array
     {
+        $this->validateXml($xmlString, self::XSD_PATH);
+        
         $xml = $this->parseXml($xmlString);
         $body = $xml->body;
 

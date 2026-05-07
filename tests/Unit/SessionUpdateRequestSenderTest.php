@@ -249,3 +249,4 @@ class SessionUpdateRequestSenderTest extends TestCase
         ], $overrides);
     }
 }
+

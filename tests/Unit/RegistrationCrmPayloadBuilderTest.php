@@ -167,3 +167,4 @@ class RegistrationCrmPayloadBuilderTest extends TestCase
         $this->assertSame('', $payload['session_id']);
     }
 }
+

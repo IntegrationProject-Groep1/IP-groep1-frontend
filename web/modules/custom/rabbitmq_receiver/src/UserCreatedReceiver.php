@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\rabbitmq_receiver;
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
+use Drupal\rabbitmq_sender\XmlValidationTrait;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
 
@@ -13,9 +14,12 @@ use PhpAmqpLib\Wire\AMQPTable;
  */
 class UserCreatedReceiver
 {
-    private const QUEUE = 'frontend.crm.user.created';
-    private const DLQ   = 'frontend.crm.user.created.dlq';
-    private const DLX   = 'frontend.crm.dlx';
+    use XmlValidationTrait;
+
+    private const QUEUE    = 'frontend.crm.user.created';
+    private const DLQ      = 'frontend.crm.user.created.dlq';
+    private const DLX      = 'frontend.crm.dlx';
+    private const XSD_PATH = 'xsd/user_created_receiver.xsd';
 
     public function __construct(private readonly RabbitMQClient $client) {}
 
@@ -29,6 +33,7 @@ class UserCreatedReceiver
      */
     public function processMessageFromXml(string $xmlString): array
     {
+        $this->validateXml($xmlString, self::XSD_PATH);
         libxml_use_internal_errors(true);
         $xml = simplexml_load_string($xmlString);
         libxml_clear_errors();

@@ -11,6 +11,7 @@ use PhpAmqpLib\Message\AMQPMessage;
 class UserCreatedSender
 {
     use RetryTrait;
+    use XmlValidationTrait;
 
     private ?RabbitMQClient $client;
 
@@ -18,6 +19,7 @@ class UserCreatedSender
     private const SOURCE     = 'frontend';
     private const TYPE       = 'user_created';
     private const VERSION    = '2.0';
+    private const XSD_PATH   = __DIR__ . '/../../../../../xsd/user_created_sender.xsd';
 
     public function __construct(?RabbitMQClient $client = null)
     {
@@ -26,19 +28,18 @@ class UserCreatedSender
 
     public function send(array $data): void
     {
+        if (empty($data['identity_uuid'])) {
+            throw new \InvalidArgumentException('identity_uuid is required');
+        }
+        $this->assertValidUuid((string) $data['identity_uuid'], 'identity_uuid');
         if (empty($data['email'])) {
             throw new \InvalidArgumentException('email is required');
         }
-        if (empty($data['identity_uuid']) && empty($data['user_id'])) {
-            throw new \InvalidArgumentException('identity_uuid is required');
-        }
-
-        \Drupal::logger('rabbitmq_sender')->info('Sending user created event', [
-            'email'   => $data['email'],
-            'user_id' => $data['user_id'],
-        ]);
 
         $xml = $this->buildXml($data);
+
+        // Validate XML against XSD
+        $this->validateXml($xml, self::XSD_PATH);
 
         $this->sendWithRetry(function () use ($xml): void {
             $this->resolveClient()->declareQueue(self::QUEUE_NAME);
@@ -53,11 +54,13 @@ class UserCreatedSender
     public function buildXml(array $data): string
     {
         $messageId = $this->generateUuidV4();
-        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
+        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z');
 
         $dom = new \DOMDocument('1.0', 'UTF-8');
+        $dom->formatOutput = true;
 
         $message = $dom->createElement('message');
+        $message->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
         $dom->appendChild($message);
 
         $header = $dom->createElement('header');
@@ -71,8 +74,8 @@ class UserCreatedSender
         $body     = $dom->createElement('body');
         $customer = $dom->createElement('customer');
 
-        // Field order per contract §5.4: identity_uuid, email, date_of_birth, contact, type, company_name, vat_number, company_id
-        $identityUuid = (string) ($data['identity_uuid'] ?? $data['user_id'] ?? '');
+        // Field order per contract §5.4
+        $identityUuid = (string) ($data['identity_uuid'] ?? '');
         $customer->appendChild($dom->createElement('identity_uuid', htmlspecialchars($identityUuid, ENT_XML1, 'UTF-8')));
         $customer->appendChild($dom->createElement('email', htmlspecialchars((string) $data['email'], ENT_XML1, 'UTF-8')));
         $customer->appendChild($dom->createElement('date_of_birth', htmlspecialchars((string) ($data['date_of_birth'] ?? ''), ENT_XML1, 'UTF-8')));
@@ -82,7 +85,6 @@ class UserCreatedSender
         $contact->appendChild($dom->createElement('last_name', htmlspecialchars($data['last_name'] ?? '', ENT_XML1, 'UTF-8')));
         $customer->appendChild($contact);
 
-        // type: private or company (replaces is_company boolean)
         $type = !empty($data['is_company']) ? 'company' : 'private';
         $customer->appendChild($dom->createElement('type', $type));
 

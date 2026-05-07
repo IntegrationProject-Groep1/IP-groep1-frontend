@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\rabbitmq_receiver;
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
+use Drupal\rabbitmq_sender\XmlValidationTrait;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
 
@@ -13,12 +14,15 @@ use PhpAmqpLib\Wire\AMQPTable;
  */
 class CalendarInviteConfirmedReceiver
 {
+    use XmlValidationTrait;
+
     private const EXCHANGE      = 'calendar.exchange';
     private const EXCHANGE_TYPE = 'topic';
     private const ROUTING_KEY   = 'planning.to.frontend.calendar.invite.confirmed';
     private const QUEUE         = 'frontend.planning.calendar.invite.confirmed';
     private const DLQ           = 'frontend.planning.calendar.invite.confirmed.dlq';
     private const DLX           = 'frontend.planning.dlx';
+    private const XSD_PATH      = __DIR__ . '/../../../../../xsd/calendar_invite_confirmed.xsd';
 
     public function __construct(private readonly RabbitMQClient $client) {}
 
@@ -30,6 +34,8 @@ class CalendarInviteConfirmedReceiver
      */
     public function processMessageFromXml(string $xmlString): array
     {
+        $this->validateXml($xmlString, self::XSD_PATH);
+        
         $xml = $this->parseXml($xmlString);
 
         if (count($xml->body) === 0) {

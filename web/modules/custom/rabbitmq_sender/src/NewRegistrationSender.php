@@ -11,12 +11,14 @@ use PhpAmqpLib\Message\AMQPMessage;
 class NewRegistrationSender
 {
     use RetryTrait;
+    use XmlValidationTrait;
 
     private ?RabbitMQClient $client;
     private const QUEUE_NAME = 'crm.incoming';
     private const DEFAULT_SOURCE = 'frontend';
     private const MESSAGE_TYPE = 'new_registration';
     private const MESSAGE_VERSION = '2.0';
+    private const XSD_PATH = __DIR__ . '/../../../../../xsd/new_registration.xsd';
 
     public function __construct(?RabbitMQClient $client = null)
     {
@@ -25,11 +27,12 @@ class NewRegistrationSender
 
     public function send(array $data): void
     {
+        if (empty($data['identity_uuid'])) {
+            throw new \InvalidArgumentException('identity_uuid is required');
+        }
+        $this->assertValidUuid((string) $data['identity_uuid'], 'identity_uuid');
         if (empty($data['email'])) {
             throw new \InvalidArgumentException('email is required');
-        }
-        if (empty($data['user_id'])) {
-            throw new \InvalidArgumentException('user_id is required');
         }
         if (empty($data['first_name'])) {
             throw new \InvalidArgumentException('first_name is required');
@@ -52,6 +55,7 @@ class NewRegistrationSender
         ]);
 
         $xml = $this->buildXml($data);
+        $this->validateXml($xml, self::XSD_PATH);
 
         try {
             $this->sendWithRetry(function () use ($xml): void {
@@ -73,11 +77,13 @@ class NewRegistrationSender
     public function buildXml(array $data): string
     {
         $messageId = $this->generateUuidV4();
-        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
+        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z');
 
         $xml = new \DOMDocument('1.0', 'UTF-8');
+        $xml->formatOutput = false;
 
         $message = $xml->createElement('message');
+        $message->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
         $xml->appendChild($message);
 
         // Header order per contract §5.1: message_id, timestamp, source, type, version, correlation_id
@@ -94,7 +100,7 @@ class NewRegistrationSender
         $customer = $xml->createElement('customer');
 
         // identity_uuid: master UUID from Identity Service (falls back to Drupal user_id)
-        $identityUuid = (string) ($data['identity_uuid'] ?? $data['user_id'] ?? '');
+        $identityUuid = (string) ($data['identity_uuid'] ?? '');
         $customer->appendChild($xml->createElement('identity_uuid', htmlspecialchars($identityUuid, ENT_XML1, 'UTF-8')));
         $customer->appendChild($xml->createElement('email', htmlspecialchars((string) $data['email'], ENT_XML1, 'UTF-8')));
 

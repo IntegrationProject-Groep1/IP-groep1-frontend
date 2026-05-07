@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(\\(Get-Content \"C:\\\\integration frontend\\\\IP-groep1-frontend\\\\XML_XSD_Contract_v2.3_Centralized.md\" | Measure-Object -Line\\).Lines; \\(Get-Content \"C:\\\\integration frontend\\\\IP-groep1-frontend\\\\XML_XSD_Contract_v2.3_Centralized 1 \\(1\\).md\" | Measure-Object -Line\\).Lines)"
+      "PowerShell(\\(Get-Content \"C:\\\\integration frontend\\\\IP-groep1-frontend\\\\XML_XSD_Contract_v2.3_Centralized.md\" | Measure-Object -Line\\).Lines; \\(Get-Content \"C:\\\\integration frontend\\\\IP-groep1-frontend\\\\XML_XSD_Contract_v2.3_Centralized 1 \\(1\\).md\" | Measure-Object -Line\\).Lines)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
     ]
   }
 }

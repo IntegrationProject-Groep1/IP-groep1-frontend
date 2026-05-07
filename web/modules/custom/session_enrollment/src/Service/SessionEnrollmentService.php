@@ -103,7 +103,7 @@ class SessionEnrollmentService
             } else {
                 try {
                     $this->calendarInviteSender->send([
-                        'user_id'        => $userData['user_id'],
+                        'identity_uuid'  => $userData['master_uuid'] ?? $userData['user_id'],
                         'attendee_email' => $userData['email'],
                         'session_id'     => $sessionId,
                         'title'          => $session['title'],

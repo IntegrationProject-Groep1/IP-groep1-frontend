@@ -21,6 +21,7 @@ namespace Drupal\rabbitmq_sender;
 class SessionViewRequestSender
 {
     use RetryTrait;
+    use XmlValidationTrait;
 
     private const EXCHANGE      = 'planning.exchange';
     private const ROUTING_KEY   = 'frontend.to.planning.session.view';
@@ -28,6 +29,7 @@ class SessionViewRequestSender
     private const SOURCE        = 'frontend';
     private const TYPE          = 'session_view_request';
     private const VERSION       = '2.0';
+    private const XSD_PATH      = __DIR__ . '/../../../../../xsd/session_view_request.xsd';
 
     private ?RabbitMQClient $client;
 
@@ -39,6 +41,7 @@ class SessionViewRequestSender
     public function send(array $data = []): void
     {
         $xml = $this->buildXml($data);
+        $this->validateXml($xml, self::XSD_PATH);
 
         $this->sendWithRetry(function () use ($xml): void {
             $this->resolveClient()->declareExchange(self::EXCHANGE, self::EXCHANGE_TYPE);
@@ -49,12 +52,13 @@ class SessionViewRequestSender
     public function buildXml(array $data = []): string
     {
         $messageId = $this->generateUuidV4();
-        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
+        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z');
 
         $dom = new \DOMDocument('1.0', 'UTF-8');
         $dom->formatOutput = false;
 
         $message = $dom->createElement('message');
+        $message->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
         $dom->appendChild($message);
 
         $header = $dom->createElement('header');

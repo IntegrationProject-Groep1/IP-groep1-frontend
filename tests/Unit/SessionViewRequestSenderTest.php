@@ -156,3 +156,4 @@ class SessionViewRequestSenderTest extends TestCase
         (new SessionViewRequestSender($mock))->send(['session_id' => 'sess-001']);
     }
 }
+

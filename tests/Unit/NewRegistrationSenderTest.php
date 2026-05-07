@@ -85,7 +85,7 @@ class NewRegistrationSenderTest extends TestCase
             'is_company' => false,
         ]);
 
-        $this->assertStringContainsString('<message>', $xml);
+        $this->assertStringContainsString('<message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">', $xml);
         $this->assertStringContainsString('<body>', $xml);
         $this->assertStringContainsString('<customer>', $xml);
         $this->assertStringContainsString('<email>jan@test.be</email>', $xml);
