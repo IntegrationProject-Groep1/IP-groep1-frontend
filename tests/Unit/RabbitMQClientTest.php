@@ -40,3 +40,4 @@ class RabbitMQClientTest extends TestCase
         $this->assertInstanceOf(RabbitMQClient::class, $client);
     }
 }
+

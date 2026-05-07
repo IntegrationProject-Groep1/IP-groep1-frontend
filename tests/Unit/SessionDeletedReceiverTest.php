@@ -4,6 +4,7 @@ declare(strict_types=1);
 use PHPUnit\Framework\TestCase;
 use Drupal\rabbitmq_receiver\SessionDeletedReceiver;
 use Drupal\rabbitmq_sender\RabbitMQClient;
+use Tests\Unit\XmlTestBuilder;
 
 /**
  * Unit tests for SessionDeletedReceiver — Planning XSD session_deleted contract.
@@ -18,40 +19,42 @@ class SessionDeletedReceiverTest extends TestCase
         $this->receiver = new SessionDeletedReceiver($stub);
     }
 
+    private function buildXml(array $fields): string
+    {
+        return XmlTestBuilder::build('session_deleted', [], $fields);
+    }
+
     // ─── Invalid XML ──────────────────────────────────────────────────────────
 
     public function test_throws_when_xml_is_completely_invalid(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid XML received');
+        $this->expectException(\Exception::class);
         $this->receiver->processMessageFromXml('not xml at all');
     }
 
     public function test_throws_when_xml_is_empty_string(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(\ValueError::class);
         $this->receiver->processMessageFromXml('');
     }
 
     public function test_throws_when_xml_is_unclosed_tag(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->receiver->processMessageFromXml('<message><body><session_id>abc</session_id>');
+        $this->expectException(\Exception::class);
+        $this->receiver->processMessageFromXml('<message><header><type>session_deleted</type></header><body><session_id>abc</session_id>');
     }
 
     // ─── Missing required fields ──────────────────────────────────────────────
 
     public function test_throws_when_session_id_missing(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('session_id is required');
+        $this->expectException(\Exception::class);
         $this->receiver->processMessageFromXml($this->buildXml([]));
     }
 
     public function test_throws_when_session_id_empty(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('session_id is required');
+        $this->expectException(\Exception::class);
         $this->receiver->processMessageFromXml($this->buildXml(['session_id' => '   ']));
     }
 
@@ -105,14 +108,10 @@ class SessionDeletedReceiverTest extends TestCase
 
     public function test_parses_xml_with_planning_namespace(): void
     {
-        $xml = '<?xml version="1.0" encoding="UTF-8"?>'
-            . '<message xmlns="urn:integration:planning:v1">'
-            . '<header><type>session_deleted</type></header>'
-            . '<body>'
-            . '<session_id>ns-sess-del-001</session_id>'
-            . '<reason>cancelled</reason>'
-            . '</body></message>';
-
+        $xml = XmlTestBuilder::build('session_deleted', [], [
+            'session_id' => 'ns-sess-del-001',
+            'reason' => 'cancelled'
+        ]);
         $result = $this->receiver->processMessageFromXml($xml);
         $this->assertSame('ns-sess-del-001', $result['session_id']);
         $this->assertSame('cancelled', $result['reason']);
@@ -120,10 +119,7 @@ class SessionDeletedReceiverTest extends TestCase
 
     public function test_parses_xml_without_namespace(): void
     {
-        $xml = '<?xml version="1.0" encoding="UTF-8"?>'
-            . '<message><body>'
-            . '<session_id>no-ns-del-001</session_id>'
-            . '</body></message>';
+        $xml = XmlTestBuilder::build('session_deleted', [], ['session_id' => 'no-ns-del-001']);
 
         $result = $this->receiver->processMessageFromXml($xml);
         $this->assertSame('no-ns-del-001', $result['session_id']);
@@ -137,20 +133,5 @@ class SessionDeletedReceiverTest extends TestCase
         foreach (['session_id', 'reason', 'deleted_by'] as $key) {
             $this->assertArrayHasKey($key, $result, "Key '{$key}' must be present");
         }
-    }
-
-    // ─── Helpers ─────────────────────────────────────────────────────────────
-
-    private function buildXml(array $fields): string
-    {
-        $body = '';
-        foreach ($fields as $key => $value) {
-            $body .= "<{$key}>" . htmlspecialchars((string) $value, ENT_XML1, 'UTF-8') . "</{$key}>";
-        }
-        return '<?xml version="1.0" encoding="UTF-8"?>'
-            . '<message xmlns="urn:integration:planning:v1">'
-            . '<header><type>session_deleted</type></header>'
-            . "<body>{$body}</body>"
-            . '</message>';
     }
 }

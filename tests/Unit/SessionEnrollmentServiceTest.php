@@ -190,3 +190,4 @@ class SessionEnrollmentServiceTest extends TestCase
         $service->enroll($this->makeUserData(), ['sess-no-dt'], $sessionMapWithoutDatetime);
     }
 }
+

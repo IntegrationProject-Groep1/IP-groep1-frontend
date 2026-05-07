@@ -102,6 +102,7 @@ class CalendarInviteSenderTest extends TestCase
         $this->assertStringContainsString('<title>Keynote: AI in de zorgsector</title>', $xml);
         $this->assertStringContainsString('<start_datetime>2026-05-15T14:00:00Z</start_datetime>', $xml);
         $this->assertStringContainsString('<end_datetime>2026-05-15T15:00:00Z</end_datetime>', $xml);
+        $this->assertStringContainsString('<attendee_email>jan@test.be</attendee_email>', $xml);
     }
 
     public function test_buildXml_includes_location_when_provided(): void

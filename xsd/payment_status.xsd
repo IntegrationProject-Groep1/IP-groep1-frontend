@@ -40,20 +40,10 @@
               <xs:element name="payment_status">
                 <xs:simpleType>
                   <xs:restriction base="xs:string">
-                    <xs:enumeration value="pending"/>
                     <xs:enumeration value="paid"/>
-                    <xs:enumeration value="failed"/>
+                    <xs:enumeration value="pending"/>
                   </xs:restriction>
                 </xs:simpleType>
-              </xs:element>
-              <xs:element name="amount">
-                <xs:complexType>
-                  <xs:simpleContent>
-                    <xs:extension base="xs:decimal">
-                      <xs:attribute name="currency" type="xs:string" fixed="eur" use="required"/>
-                    </xs:extension>
-                  </xs:simpleContent>
-                </xs:complexType>
               </xs:element>
             </xs:sequence>
           </xs:complexType>
