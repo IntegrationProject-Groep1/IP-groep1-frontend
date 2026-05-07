@@ -24,7 +24,7 @@ class PaymentRegisteredReceiverTest extends TestCase
         $this->receiver->processMessageFromXml('invalid xml');
     }
 
-    public function test_throws_exception_when_user_id_is_missing(): void
+    public function test_throws_exception_when_identity_uuid_is_invalid(): void
     {
         $this->expectException(\Exception::class);
         $xml = $this->buildXml(['identity_uuid' => 'invalid-uuid']);
@@ -32,7 +32,7 @@ class PaymentRegisteredReceiverTest extends TestCase
         $this->receiver->processMessageFromXml($xml);
     }
 
-    public function test_throws_exception_when_status_is_missing(): void
+    public function test_throws_exception_when_status_is_invalid(): void
     {
         $this->expectException(\Exception::class);
         $xml = $this->buildXml(['status' => 'invalid-status']);

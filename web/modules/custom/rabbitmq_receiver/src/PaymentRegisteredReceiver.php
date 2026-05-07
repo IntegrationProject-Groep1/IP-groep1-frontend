@@ -44,11 +44,6 @@ class PaymentRegisteredReceiver
 
         $body = $xml->body;
 
-        $userId = trim((string) $body->identity_uuid);
-        if ($userId === '') {
-            throw new \InvalidArgumentException('identity_uuid is required');
-        }
-
         $invoice = $body->invoice;
         $status = trim((string) $invoice->status);
         if ($status === '') {

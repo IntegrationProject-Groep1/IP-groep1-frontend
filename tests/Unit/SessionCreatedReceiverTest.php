@@ -287,29 +287,12 @@ class SessionCreatedReceiverTest extends TestCase
             . '</header>';
 
         $order = ['session_id', 'title', 'start_datetime', 'end_datetime', 'location', 'session_type', 'status', 'max_attendees', 'current_attendees'];
-        
+
         $body = '<body>';
         foreach ($order as $key) {
             if (array_key_exists($key, $fields)) {
                 $val = htmlspecialchars((string) $fields[$key], ENT_XML1, 'UTF-8');
                 $body .= "<{$key}>{$val}</{$key}>";
-            } else {
-                // If the field is missing but mandatory, we omit it to test schema validation error.
-                if (in_array($key, ['session_id', 'title', 'start_datetime', 'end_datetime'])) {
-                    continue;
-                }
-                
-                // Otherwise (optional), use valid defaults to keep schema valid.
-                $defaults = [
-                    'location' => 'Dummy Location',
-                    'session_type' => 'other',
-                    'status' => 'published',
-                    'max_attendees' => '10',
-                    'current_attendees' => '0'
-                ];
-                if (isset($defaults[$key])) {
-                    $body .= "<{$key}>{$defaults[$key]}</{$key}>";
-                }
             }
         }
         $body .= '</body>';

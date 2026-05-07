@@ -69,25 +69,6 @@ class BadgeScannedReceiver
             throw new \InvalidArgumentException('location is required');
         }
 
-        // Logic adjusted to match the actual message content (the sender often forwards badge_id)
-        // ... (preserving sender logic if necessary, but here validation is done)
-        
-        if ($this->userCheckinSender !== null) {
-            try {
-                // I need to assume user_id comes from somewhere or it's not actually used here
-                // but for now I keep the signature
-                $this->userCheckinSender->send([
-                    'user_id'  => 'unknown', // placeholder as it wasn't in original XSD
-                    'badge_id' => $badgeId,
-                ]);
-            } catch (\Throwable $e) {
-                \Drupal::logger('rabbitmq_receiver')->error(
-                    'user_checkin mislukt voor badge @badge: @message',
-                    ['@badge' => $badgeId, '@message' => $e->getMessage()]
-                );
-            }
-        }
-
         return true;
     }
 

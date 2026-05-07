@@ -48,8 +48,8 @@
                           <xs:element name="location"        type="xs:string" minOccurs="0"/>
                           <xs:element name="session_type"    type="xs:string" minOccurs="0"/>
                           <xs:element name="status"          type="xs:string"/>
-                          <xs:element name="max_attendees"   type="xs:integer"/>
-                          <xs:element name="current_attendees" type="xs:integer"/>
+                          <xs:element name="max_attendees"   type="xs:nonNegativeInteger"/>
+                          <xs:element name="current_attendees" type="xs:nonNegativeInteger"/>
                           <xs:element name="speaker" minOccurs="0">
                             <xs:complexType>
                               <xs:sequence>

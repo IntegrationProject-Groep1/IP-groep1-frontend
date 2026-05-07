@@ -26,7 +26,7 @@
           <xs:element name="location"       type="xs:string" minOccurs="0"/>
           <xs:element name="session_type"   type="xs:string" minOccurs="0"/>
           <xs:element name="status"         type="xs:string" minOccurs="0"/>
-          <xs:element name="max_attendees"  type="xs:integer" minOccurs="0"/>
+          <xs:element name="max_attendees"  type="xs:nonNegativeInteger" minOccurs="0"/>
         </xs:sequence></xs:complexType>
       </xs:element>
     </xs:sequence></xs:complexType>
