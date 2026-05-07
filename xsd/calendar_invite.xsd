@@ -47,7 +47,7 @@
         <xs:element name="body">
           <xs:complexType>
             <xs:sequence>
-              <xs:element name="user_id"        type="xs:string"/>
+              <xs:element name="identity_uuid"  type="xs:string"/>
               <xs:element name="session_id"     type="xs:string"/>
               <xs:element name="title"          type="xs:string"/>
               <xs:element name="start_datetime" type="xs:dateTime"/>

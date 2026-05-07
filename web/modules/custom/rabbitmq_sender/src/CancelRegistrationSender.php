@@ -6,9 +6,9 @@ namespace Drupal\rabbitmq_sender;
 use PhpAmqpLib\Message\AMQPMessage;
 
 /**
- * Publishes user_checkin events to RabbitMQ (v2.0 contract, section 19.1).
+ * Sends cancel_registration messages to CRM via crm.incoming (contract §5.6).
  */
-class UserCheckinSender
+class CancelRegistrationSender
 {
     use RetryTrait;
 
@@ -16,7 +16,7 @@ class UserCheckinSender
 
     private const QUEUE_NAME = 'crm.incoming';
     private const SOURCE     = 'frontend';
-    private const TYPE       = 'user_checkin';
+    private const TYPE       = 'cancel_registration';
     private const VERSION    = '2.0';
 
     public function __construct(?RabbitMQClient $client = null)
@@ -26,17 +26,7 @@ class UserCheckinSender
 
     public function send(array $data): void
     {
-        if (empty($data['identity_uuid']) && empty($data['user_id'])) {
-            throw new \InvalidArgumentException('user_id is required');
-        }
-        if (empty($data['badge_id'])) {
-            throw new \InvalidArgumentException('badge_id is required');
-        }
-
-        \Drupal::logger('rabbitmq_sender')->info('Sending user check-in', [
-            'user_id'  => $data['user_id'],
-            'badge_id' => $data['badge_id'],
-        ]);
+        $this->validate($data);
 
         $xml = $this->buildXml($data);
 
@@ -52,11 +42,15 @@ class UserCheckinSender
 
     public function buildXml(array $data): string
     {
-        $messageId  = $this->generateUuidV4();
-        $timestamp  = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
-        $checkinAt  = !empty($data['checkin_at']) ? (string) $data['checkin_at'] : $timestamp;
+        $this->validate($data);
+
+        $messageId     = $this->generateUuidV4();
+        $timestamp     = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
+        $correlationId = (string) $data['correlation_id'];
+        $identityUuid  = (string) ($data['identity_uuid'] ?? $data['user_id'] ?? '');
 
         $dom = new \DOMDocument('1.0', 'UTF-8');
+        $dom->formatOutput = false;
 
         $message = $dom->createElement('message');
         $dom->appendChild($message);
@@ -67,21 +61,33 @@ class UserCheckinSender
         $header->appendChild($dom->createElement('source', self::SOURCE));
         $header->appendChild($dom->createElement('type', self::TYPE));
         $header->appendChild($dom->createElement('version', self::VERSION));
+        $header->appendChild($dom->createElement('correlation_id', htmlspecialchars($correlationId, ENT_XML1, 'UTF-8')));
         $message->appendChild($header);
 
         $body = $dom->createElement('body');
-        $identityUuid = (string) ($data['identity_uuid'] ?? $data['user_id'] ?? '');
         $body->appendChild($dom->createElement('identity_uuid', htmlspecialchars($identityUuid, ENT_XML1, 'UTF-8')));
-        $body->appendChild($dom->createElement('badge_id', htmlspecialchars((string) $data['badge_id'], ENT_XML1, 'UTF-8')));
+        $body->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
 
-        if (!empty($data['session_id'])) {
-            $body->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
+        if (array_key_exists('reason', $data) && $data['reason'] !== null) {
+            $body->appendChild($dom->createElement('reason', htmlspecialchars((string) $data['reason'], ENT_XML1, 'UTF-8')));
         }
 
-        $body->appendChild($dom->createElement('checkin_at', htmlspecialchars($checkinAt, ENT_XML1, 'UTF-8')));
         $message->appendChild($body);
 
         return $dom->saveXML() ?: '';
+    }
+
+    private function validate(array $data): void
+    {
+        if (empty($data['identity_uuid']) && empty($data['user_id'])) {
+            throw new \InvalidArgumentException('identity_uuid is required');
+        }
+        if (empty($data['session_id'])) {
+            throw new \InvalidArgumentException('session_id is required');
+        }
+        if (empty($data['correlation_id'])) {
+            throw new \InvalidArgumentException('correlation_id is required');
+        }
     }
 
     private function resolveClient(): RabbitMQClient

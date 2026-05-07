@@ -34,3 +34,9 @@ services:
 
   rabbitmq_sender.user_unregistered_sender:
     class: Drupal\rabbitmq_sender\UserUnregisteredSender
+
+  rabbitmq_sender.cancel_registration_sender:
+    class: Drupal\rabbitmq_sender\CancelRegistrationSender
+
+  rabbitmq_sender.payment_registered_sender:
+    class: Drupal\rabbitmq_sender\PaymentRegisteredSender
