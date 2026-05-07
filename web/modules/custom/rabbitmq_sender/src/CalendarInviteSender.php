@@ -9,6 +9,7 @@ namespace Drupal\rabbitmq_sender;
 class CalendarInviteSender
 {
     use RetryTrait;
+    use XmlValidationTrait;
 
     private const EXCHANGE      = 'calendar.exchange';
     private const ROUTING_KEY   = 'frontend.to.planning.calendar.invite';
@@ -16,6 +17,7 @@ class CalendarInviteSender
     private const SOURCE        = 'frontend';
     private const TYPE          = 'calendar_invite';
     private const VERSION       = '2.0';
+    private const XSD_PATH      = __DIR__ . '/../../../../../xsd/calendar_invite.xsd';
 
     private ?RabbitMQClient $client;
 
@@ -38,8 +40,8 @@ class CalendarInviteSender
         if (empty($data['end_datetime'])) {
             throw new \InvalidArgumentException('end_datetime is required');
         }
-        if (empty($data['user_id'])) {
-            throw new \InvalidArgumentException('user_id is required');
+        if (empty($data['identity_uuid'])) {
+            throw new \InvalidArgumentException('identity_uuid is required');
         }
         if (empty($data['attendee_email'])) {
             throw new \InvalidArgumentException('attendee_email is required');
@@ -47,10 +49,12 @@ class CalendarInviteSender
 
         // ✅ FIX: safe logging
         $this->log('info', 'Sending calendar invite', [
-            'session_id' => $data['session_id'],
+            'session_id'    => $data['session_id'],
+            'identity_uuid' => $data['identity_uuid'],
         ]);
 
         $xml = $this->buildXml($data);
+        $this->validateXml($xml, self::XSD_PATH);
 
         $this->sendWithRetry(function () use ($xml): void {
             $this->resolveClient()->declareExchange(self::EXCHANGE, self::EXCHANGE_TYPE);
@@ -72,20 +76,21 @@ class CalendarInviteSender
         if (empty($data['end_datetime'])) {
             throw new \InvalidArgumentException('end_datetime is required');
         }
-        if (empty($data['user_id'])) {
-            throw new \InvalidArgumentException('user_id is required');
+        if (empty($data['identity_uuid'])) {
+            throw new \InvalidArgumentException('identity_uuid is required');
         }
         if (empty($data['attendee_email'])) {
             throw new \InvalidArgumentException('attendee_email is required');
         }
 
         $messageId = $this->generateUuidV4();
-        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
+        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z');
 
         $dom = new \DOMDocument('1.0', 'UTF-8');
         $dom->formatOutput = false;
 
         $message = $dom->createElement('message');
+        $message->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
         $dom->appendChild($message);
 
         $header = $dom->createElement('header');
@@ -97,7 +102,7 @@ class CalendarInviteSender
         $message->appendChild($header);
 
         $body = $dom->createElement('body');
-        $body->appendChild($dom->createElement('user_id', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
+        $body->appendChild($dom->createElement('identity_uuid', htmlspecialchars((string) $data['identity_uuid'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('title', htmlspecialchars((string) $data['title'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('start_datetime', htmlspecialchars((string) $data['start_datetime'], ENT_XML1, 'UTF-8')));

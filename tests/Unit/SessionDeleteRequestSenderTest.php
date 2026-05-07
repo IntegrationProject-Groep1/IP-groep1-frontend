@@ -166,3 +166,4 @@ class SessionDeleteRequestSenderTest extends TestCase
         (new SessionDeleteRequestSender($mock))->send(['session_id' => 'sess-001']);
     }
 }
+

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\rabbitmq_receiver;
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
+use Drupal\rabbitmq_sender\XmlValidationTrait;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
 
@@ -15,12 +16,15 @@ use PhpAmqpLib\Wire\AMQPTable;
  */
 class SessionViewResponseReceiver
 {
+    use XmlValidationTrait;
+
     private const EXCHANGE      = 'planning.exchange';
     private const EXCHANGE_TYPE = 'topic';
     private const ROUTING_KEY   = 'planning.to.frontend.session.view.response';
     private const QUEUE         = 'frontend.planning.session.view.response';
     private const DLQ           = 'frontend.planning.session.view.response.dlq';
     private const DLX           = 'frontend.planning.dlx';
+    private const XSD_PATH      = 'xsd/session_view_response.xsd';
 
     public function __construct(private readonly RabbitMQClient $client) {}
 
@@ -35,6 +39,7 @@ class SessionViewResponseReceiver
      */
     public function processMessageFromXml(string $xmlString): array
     {
+        $this->validateXml($xmlString, self::XSD_PATH);
         $xml = $this->parseXml($xmlString);
         $body = $xml->body;
 
@@ -49,23 +54,25 @@ class SessionViewResponseReceiver
 
         $sessions = [];
 
-        foreach ($body->sessions->session as $session) {
-            $sessionId = trim((string) $session->session_id);
-            if ($sessionId === '') {
-                continue;
-            }
+        if (isset($body->sessions->session)) {
+            foreach ($body->sessions->session as $session) {
+                $sessionId = trim((string) $session->session_id);
+                if ($sessionId === '') {
+                    continue;
+                }
 
-            $sessions[] = [
-                'session_id'        => $sessionId,
-                'title'             => trim((string) $session->title),
-                'start_datetime'    => trim((string) $session->start_datetime),
-                'end_datetime'      => trim((string) $session->end_datetime),
-                'location'          => trim((string) $session->location),
-                'session_type'      => trim((string) $session->session_type),
-                'status'            => trim((string) $session->status),
-                'max_attendees'     => (int) (string) $session->max_attendees,
-                'current_attendees' => (int) (string) $session->current_attendees,
-            ];
+                $sessions[] = [
+                    'session_id'        => $sessionId,
+                    'title'             => trim((string) $session->title),
+                    'start_datetime'    => trim((string) $session->start_datetime),
+                    'end_datetime'      => trim((string) $session->end_datetime),
+                    'location'          => trim((string) $session->location),
+                    'session_type'      => trim((string) $session->session_type),
+                    'status'            => trim((string) $session->status),
+                    'max_attendees'     => (int) (string) $session->max_attendees,
+                    'current_attendees' => (int) (string) $session->current_attendees,
+                ];
+            }
         }
 
         return $sessions;

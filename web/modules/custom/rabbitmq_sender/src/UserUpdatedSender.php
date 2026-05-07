@@ -11,6 +11,7 @@ use PhpAmqpLib\Message\AMQPMessage;
 class UserUpdatedSender
 {
     use RetryTrait;
+    use XmlValidationTrait;
 
     private ?RabbitMQClient $client;
 
@@ -18,6 +19,7 @@ class UserUpdatedSender
     private const SOURCE     = 'frontend';
     private const TYPE       = 'user_updated';
     private const VERSION    = '2.0';
+    private const XSD_PATH   = __DIR__ . '/../../../../../xsd/user_updated.xsd';
 
     public function __construct(?RabbitMQClient $client = null)
     {
@@ -26,9 +28,10 @@ class UserUpdatedSender
 
     public function send(array $data): void
     {
-        if (empty($data['user_id'])) {
-            throw new \InvalidArgumentException('user_id is required');
+        if (empty($data['identity_uuid'])) {
+            throw new \InvalidArgumentException('identity_uuid is required');
         }
+        $this->assertValidUuid((string) $data['identity_uuid'], 'identity_uuid');
         if (empty($data['email'])) {
             throw new \InvalidArgumentException('email is required');
         }
@@ -45,6 +48,7 @@ class UserUpdatedSender
         ]);
 
         $xml = $this->buildXml($data);
+        $this->validateXml($xml, self::XSD_PATH);
 
         $this->sendWithRetry(function () use ($xml): void {
             $this->resolveClient()->declareQueue(self::QUEUE_NAME);
@@ -59,11 +63,13 @@ class UserUpdatedSender
     public function buildXml(array $data): string
     {
         $messageId = $this->generateUuidV4();
-        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
+        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z');
 
         $dom = new \DOMDocument('1.0', 'UTF-8');
+        $dom->formatOutput = false;
 
         $message = $dom->createElement('message');
+        $message->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
         $dom->appendChild($message);
 
         $header = $dom->createElement('header');
@@ -78,7 +84,7 @@ class UserUpdatedSender
         $customer = $dom->createElement('customer');
 
         // identity_uuid: master UUID from Identity Service (falls back to Drupal user_id)
-        $identityUuid = (string) ($data['identity_uuid'] ?? $data['user_id'] ?? '');
+        $identityUuid = (string) ($data['identity_uuid'] ?? '');
         $customer->appendChild($dom->createElement('identity_uuid', htmlspecialchars($identityUuid, ENT_XML1, 'UTF-8')));
         $customer->appendChild($dom->createElement('email', htmlspecialchars((string) $data['email'], ENT_XML1, 'UTF-8')));
 

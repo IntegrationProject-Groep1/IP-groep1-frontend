@@ -6,6 +6,7 @@ namespace Drupal\rabbitmq_receiver;
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
 use Drupal\rabbitmq_sender\UserCheckinSender;
+use Drupal\rabbitmq_sender\XmlValidationTrait;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
 
@@ -14,9 +15,12 @@ use PhpAmqpLib\Wire\AMQPTable;
  */
 class BadgeScannedReceiver
 {
+    use XmlValidationTrait;
+
     private const QUEUE = 'frontend.crm.badge.scanned';
     private const DLQ   = 'frontend.crm.badge.scanned.dlq';
     private const DLX   = 'frontend.crm.dlx';
+    private const XSD_PATH = __DIR__ . '/../../../../../xsd/badge_scanned.xsd';
 
     private ?RabbitMQClient $client;
     private ?UserCheckinSender $userCheckinSender;
@@ -42,6 +46,8 @@ class BadgeScannedReceiver
      */
     public function processMessageFromXml(string $xmlString): mixed
     {
+        $this->validateXml($xmlString, self::XSD_PATH);
+        
         $xmlString = preg_replace('/ xmlns="[^"]*"/', '', $xmlString) ?? $xmlString;
         libxml_use_internal_errors(true);
         $xml = simplexml_load_string($xmlString);
@@ -53,29 +59,14 @@ class BadgeScannedReceiver
 
         $body = $xml->body;
 
-        $userId = trim((string) $body->user_id);
-        if ($userId === '') {
-            throw new \InvalidArgumentException('user_id is required');
-        }
-
         $badgeId = trim((string) $body->badge_id);
         if ($badgeId === '') {
             throw new \InvalidArgumentException('badge_id is required');
         }
 
-        // Forward check-in event to CRM (non-fatal when sender is unavailable).
-        if ($this->userCheckinSender !== null) {
-            try {
-                $this->userCheckinSender->send([
-                    'user_id'  => $userId,
-                    'badge_id' => $badgeId,
-                ]);
-            } catch (\Throwable $e) {
-                \Drupal::logger('rabbitmq_receiver')->error(
-                    'user_checkin mislukt voor user @id badge @badge: @message',
-                    ['@id' => $userId, '@badge' => $badgeId, '@message' => $e->getMessage()]
-                );
-            }
+        $location = trim((string) $body->location);
+        if ($location === '') {
+            throw new \InvalidArgumentException('location is required');
         }
 
         return true;
