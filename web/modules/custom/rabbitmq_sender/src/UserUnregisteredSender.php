@@ -69,7 +69,9 @@ class UserUnregisteredSender
         $message->appendChild($header);
 
         $body = $dom->createElement('body');
-        $body->appendChild($dom->createElement('user_id', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
+        // identity_uuid in body per contract §5.3 (not user_id)
+        $identityUuid = (string) ($data['identity_uuid'] ?? $data['user_id'] ?? '');
+        $body->appendChild($dom->createElement('identity_uuid', htmlspecialchars($identityUuid, ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('email', htmlspecialchars((string) ($data['email'] ?? ''), ENT_XML1, 'UTF-8')));
 
         if (!empty($data['reason'])) {

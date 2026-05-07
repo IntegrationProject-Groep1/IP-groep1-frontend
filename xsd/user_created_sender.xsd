@@ -31,9 +31,9 @@
               <xs:element name="customer">
                 <xs:complexType>
                   <xs:sequence>
-                    <xs:element name="user_id"       type="xs:string"/>
-                    <xs:element name="email"         type="xs:string"/>
-                    <xs:element name="date_of_birth" type="xs:string"/>
+                    <xs:element name="identity_uuid"  type="xs:string"/>
+                    <xs:element name="email"          type="xs:string"/>
+                    <xs:element name="date_of_birth"  type="xs:string"/>
                     <xs:element name="contact">
                       <xs:complexType>
                         <xs:sequence>
@@ -42,11 +42,11 @@
                         </xs:sequence>
                       </xs:complexType>
                     </xs:element>
-                    <xs:element name="is_company">
+                    <xs:element name="type">
                       <xs:simpleType>
                         <xs:restriction base="xs:string">
-                          <xs:enumeration value="true"/>
-                          <xs:enumeration value="false"/>
+                          <xs:enumeration value="private"/>
+                          <xs:enumeration value="company"/>
                         </xs:restriction>
                       </xs:simpleType>
                     </xs:element>

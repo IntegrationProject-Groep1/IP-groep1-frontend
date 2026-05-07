@@ -29,8 +29,8 @@ class UserCreatedSender
         if (empty($data['email'])) {
             throw new \InvalidArgumentException('email is required');
         }
-        if (empty($data['user_id'])) {
-            throw new \InvalidArgumentException('user_id is required');
+        if (empty($data['identity_uuid']) && empty($data['user_id'])) {
+            throw new \InvalidArgumentException('identity_uuid is required');
         }
 
         \Drupal::logger('rabbitmq_sender')->info('Sending user created event', [
@@ -71,8 +71,9 @@ class UserCreatedSender
         $body     = $dom->createElement('body');
         $customer = $dom->createElement('customer');
 
-        // Field order per contract: user_id, email, date_of_birth, contact, is_company, company_name, vat_number, company_id
-        $customer->appendChild($dom->createElement('user_id', htmlspecialchars((string) ($data['user_id'] ?? ''), ENT_XML1, 'UTF-8')));
+        // Field order per contract §5.4: identity_uuid, email, date_of_birth, contact, type, company_name, vat_number, company_id
+        $identityUuid = (string) ($data['identity_uuid'] ?? $data['user_id'] ?? '');
+        $customer->appendChild($dom->createElement('identity_uuid', htmlspecialchars($identityUuid, ENT_XML1, 'UTF-8')));
         $customer->appendChild($dom->createElement('email', htmlspecialchars((string) $data['email'], ENT_XML1, 'UTF-8')));
         $customer->appendChild($dom->createElement('date_of_birth', htmlspecialchars((string) ($data['date_of_birth'] ?? ''), ENT_XML1, 'UTF-8')));
 
@@ -81,7 +82,9 @@ class UserCreatedSender
         $contact->appendChild($dom->createElement('last_name', htmlspecialchars($data['last_name'] ?? '', ENT_XML1, 'UTF-8')));
         $customer->appendChild($contact);
 
-        $customer->appendChild($dom->createElement('is_company', !empty($data['is_company']) ? 'true' : 'false'));
+        // type: private or company (replaces is_company boolean)
+        $type = !empty($data['is_company']) ? 'company' : 'private';
+        $customer->appendChild($dom->createElement('type', $type));
 
         if (!empty($data['is_company'])) {
             if (!empty($data['company_name'])) {

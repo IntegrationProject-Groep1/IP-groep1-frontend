@@ -35,9 +35,7 @@ class UserRegisteredSender
         if (empty($data['session_id'])) {
             throw new \InvalidArgumentException('session_id is required');
         }
-        if (empty($data['session_name'])) {
-            throw new \InvalidArgumentException('session_name is required');
-        }
+        // session_title is optional in contract §5.5; no validation needed
 
         \Drupal::logger('rabbitmq_sender')->info('Sending user registered event', [
             'user_id'    => $data['user_id'],
@@ -66,41 +64,54 @@ class UserRegisteredSender
         $message = $dom->createElement('message');
         $dom->appendChild($message);
 
+        // Header order per contract §5.5: message_id, timestamp, source, type, version, correlation_id (optional, last)
         $header = $dom->createElement('header');
         $header->appendChild($dom->createElement('message_id', $messageId));
-        $header->appendChild($dom->createElement('correlation_id', $messageId));
         $header->appendChild($dom->createElement('timestamp', $timestamp));
         $header->appendChild($dom->createElement('source', self::SOURCE));
         $header->appendChild($dom->createElement('type', self::TYPE));
         $header->appendChild($dom->createElement('version', self::VERSION));
+        $header->appendChild($dom->createElement('correlation_id', $messageId));
         $message->appendChild($header);
 
-        $body = $dom->createElement('body');
-        $user = $dom->createElement('user');
+        $body     = $dom->createElement('body');
+        $customer = $dom->createElement('customer');
 
-        $user->appendChild($dom->createElement('user_id', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
-        $user->appendChild($dom->createElement('email', htmlspecialchars((string) $data['email'], ENT_XML1, 'UTF-8')));
+        // identity_uuid: master UUID from Identity Service (falls back to user_id)
+        $identityUuid = (string) ($data['identity_uuid'] ?? $data['user_id'] ?? '');
+        $customer->appendChild($dom->createElement('identity_uuid', htmlspecialchars($identityUuid, ENT_XML1, 'UTF-8')));
+        $customer->appendChild($dom->createElement('email', htmlspecialchars((string) $data['email'], ENT_XML1, 'UTF-8')));
 
         $contact = $dom->createElement('contact');
         $contact->appendChild($dom->createElement('first_name', htmlspecialchars($data['first_name'] ?? '', ENT_XML1, 'UTF-8')));
         $contact->appendChild($dom->createElement('last_name', htmlspecialchars($data['last_name'] ?? '', ENT_XML1, 'UTF-8')));
-        $user->appendChild($contact);
+        $customer->appendChild($contact);
 
-        $user->appendChild($dom->createElement('type', !empty($data['is_company']) ? 'company' : 'private'));
+        // type: private or company
+        $type = !empty($data['is_company']) ? 'company' : 'private';
+        $customer->appendChild($dom->createElement('type', $type));
 
+        // company fields (flat siblings per contract §5.5)
         if (!empty($data['is_company'])) {
-            $company = $dom->createElement('company');
-            $company->appendChild($dom->createElement('name', htmlspecialchars($data['company_name'] ?? '', ENT_XML1, 'UTF-8')));
-            $company->appendChild($dom->createElement('vat_number', htmlspecialchars($data['vat_number'] ?? '', ENT_XML1, 'UTF-8')));
-            $user->appendChild($company);
+            if (!empty($data['company_name'])) {
+                $customer->appendChild($dom->createElement('company_name', htmlspecialchars((string) $data['company_name'], ENT_XML1, 'UTF-8')));
+            }
+            if (!empty($data['vat_number'])) {
+                $customer->appendChild($dom->createElement('vat_number', htmlspecialchars((string) $data['vat_number'], ENT_XML1, 'UTF-8')));
+            }
         }
 
-        $body->appendChild($user);
+        // session_id inside <customer> per contract §5.5
+        $customer->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
 
-        $session = $dom->createElement('session');
-        $session->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
-        $session->appendChild($dom->createElement('name', htmlspecialchars((string) $data['session_name'], ENT_XML1, 'UTF-8')));
-        $body->appendChild($session);
+        $body->appendChild($customer);
+
+        // session_title outside <customer>, optional
+        if (!empty($data['session_title'])) {
+            $body->appendChild($dom->createElement('session_title', htmlspecialchars((string) $data['session_title'], ENT_XML1, 'UTF-8')));
+        } elseif (!empty($data['session_name'])) {
+            $body->appendChild($dom->createElement('session_title', htmlspecialchars((string) $data['session_name'], ENT_XML1, 'UTF-8')));
+        }
 
         $body->appendChild($dom->createElement('payment_status', 'pending'));
         $message->appendChild($body);

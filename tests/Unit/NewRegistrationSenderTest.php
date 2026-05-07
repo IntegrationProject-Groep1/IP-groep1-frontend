@@ -78,7 +78,7 @@ class NewRegistrationSenderTest extends TestCase
             'first_name' => 'Jan',
             'last_name' => 'Jansen',
             'email' => 'jan@test.be',
-            'user_id' => '12345',
+            'identity_uuid' => '12345',
             'date_of_birth' => '1990-05-15',
             'registration_date' => '2026-03-31',
             'session_id' => '550e8400-e29b-41d4-a716-446655440001',
@@ -89,7 +89,7 @@ class NewRegistrationSenderTest extends TestCase
         $this->assertStringContainsString('<body>', $xml);
         $this->assertStringContainsString('<customer>', $xml);
         $this->assertStringContainsString('<email>jan@test.be</email>', $xml);
-        $this->assertStringContainsString('<user_id>12345</user_id>', $xml);
+        $this->assertStringContainsString('<identity_uuid>12345</identity_uuid>', $xml);
         $this->assertStringContainsString('<first_name>Jan</first_name>', $xml);
         $this->assertStringContainsString('<last_name>Jansen</last_name>', $xml);
         $this->assertStringContainsString('<date_of_birth>1990-05-15</date_of_birth>', $xml);

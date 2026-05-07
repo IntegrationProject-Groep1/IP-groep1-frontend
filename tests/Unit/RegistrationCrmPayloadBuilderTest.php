@@ -83,7 +83,7 @@ class RegistrationCrmPayloadBuilderTest extends TestCase
         ], '7');
 
         $this->assertSame([], $payload['address']);
-        $this->assertSame([], $payload['registration_fee']);
+        $this->assertSame(['amount' => '0.00', 'status' => 'unpaid'], $payload['registration_fee']);
         $this->assertSame('', $payload['company_name']);
         $this->assertSame('', $payload['vat_number']);
         $this->assertSame('', $payload['badge_id']);
@@ -120,7 +120,7 @@ class RegistrationCrmPayloadBuilderTest extends TestCase
         ], '12');
 
         $this->assertSame([], $payload['address']);
-        $this->assertSame([], $payload['registration_fee']);
+        $this->assertSame(['amount' => '0.00', 'status' => 'unpaid'], $payload['registration_fee']);
     }
 
     public function test_build_joins_session_ids_array_into_comma_separated_session_id(): void

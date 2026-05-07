@@ -112,6 +112,15 @@ function event_theme_preprocess_page(array &$variables): void {
   $variables['social_twitter']       = theme_get_setting('event_theme_social_twitter') ?: '';
   $variables['current_route']        = \Drupal::routeMatch()->getRouteName() ?? '';
   $variables['is_admin']             = $account->hasPermission('administer site configuration');
+  $variables['current_uid']          = $account->id();
+  $variables['current_display_name'] = $account->getDisplayName();
+  // First name from profile field; fall back to display name.
+  $fullUser = $account->isAuthenticated() ? \Drupal\user\Entity\User::load($account->id()) : null;
+  $firstName = '';
+  if ($fullUser && $fullUser->hasField('field_first_name')) {
+    $firstName = (string) $fullUser->get('field_first_name')->value;
+  }
+  $variables['current_first_name'] = $firstName ?: $account->getDisplayName();
 }
 
 /**
