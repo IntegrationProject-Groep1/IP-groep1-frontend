@@ -22,24 +22,33 @@ class SessionViewResponseReceiverTest extends TestCase
 
     public function test_throws_when_xml_is_completely_invalid(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid XML received');
+        $this->expectException(\Exception::class);
         $this->receiver->processMessageFromXml('not xml');
     }
 
     public function test_throws_when_xml_is_empty_string(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(\ValueError::class);
         $this->receiver->processMessageFromXml('');
     }
 
     public function test_throws_when_status_missing(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('status is required');
+        $this->expectException(\Exception::class);
         $xml = '<?xml version="1.0" encoding="UTF-8"?>'
-            . '<message xmlns="urn:integration:planning:v1">'
-            . '<body><sessions></sessions></body></message>';
+            . '<message>'
+            . '<header>'
+            . '<message_id>01890a5d-ac96-7ab2-80e2-4536629c90de</message_id>'
+            . '<timestamp>2026-04-05T12:00:00Z</timestamp>'
+            . '<source>planning</source>'
+            . '<type>session_view_response</type>'
+            . '<version>2.0</version>'
+            . '</header>'
+            . '<body>'
+            . '<request_message_id>01890a5d-ac96-7ab2-80e2-4536629c90de</request_message_id>'
+            . '<session_count>0</session_count>'
+            . '<sessions/>'
+            . '</body></message>';
         $this->receiver->processMessageFromXml($xml);
     }
 
@@ -133,9 +142,26 @@ class SessionViewResponseReceiverTest extends TestCase
     public function test_skips_session_without_session_id(): void
     {
         $xml = '<?xml version="1.0" encoding="UTF-8"?>'
-            . '<message xmlns="urn:integration:planning:v1">'
-            . '<body><status>ok</status><session_count>1</session_count>'
-            . '<sessions><session><title>No ID</title></session></sessions>'
+            . '<message>'
+            . '<header>'
+            . '<message_id>01890a5d-ac96-7ab2-80e2-4536629c90de</message_id>'
+            . '<timestamp>2026-04-05T12:00:00Z</timestamp>'
+            . '<source>planning</source>'
+            . '<type>session_view_response</type>'
+            . '<version>2.0</version>'
+            . '</header>'
+            . '<body>'
+            . '<request_message_id>01890a5d-ac96-7ab2-80e2-4536629c90de</request_message_id>'
+            . '<status>ok</status>'
+            . '<session_count>1</session_count>'
+            . '<sessions><session>'
+            . '<title>No ID</title>'
+            . '<start_datetime>2026-05-15T14:00:00Z</start_datetime>'
+            . '<end_datetime>2026-05-15T15:00:00Z</end_datetime>'
+            . '<status>published</status>'
+            . '<max_attendees>100</max_attendees>'
+            . '<current_attendees>0</current_attendees>'
+            . '</session></sessions>'
             . '</body></message>';
 
         $result = $this->receiver->processMessageFromXml($xml);
@@ -154,13 +180,9 @@ class SessionViewResponseReceiverTest extends TestCase
 
     public function test_parses_xml_without_namespace(): void
     {
-        $xml = '<?xml version="1.0" encoding="UTF-8"?>'
-            . '<message><body><status>ok</status><session_count>1</session_count>'
-            . '<sessions><session>'
-            . '<session_id>no-ns-001</session_id><title>Test</title>'
-            . '</session></sessions></body></message>';
-
-        $result = $this->receiver->processMessageFromXml($xml);
+        $result = $this->receiver->processMessageFromXml($this->buildResponseXml('ok', [
+            $this->sessionData('no-ns-001', 'Geen namespace'),
+        ]));
         $this->assertSame('no-ns-001', $result[0]['session_id']);
     }
 

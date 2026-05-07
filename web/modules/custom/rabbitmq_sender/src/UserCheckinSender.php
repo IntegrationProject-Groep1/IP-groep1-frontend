@@ -75,7 +75,7 @@ class UserCheckinSender
         $message->appendChild($header);
 
         $body = $dom->createElement('body');
-        $body->appendChild($dom->createElement('user_id', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
+        $body->appendChild($dom->createElement('identity_uuid', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('badge_id', htmlspecialchars((string) $data['badge_id'], ENT_XML1, 'UTF-8')));
 
         if (!empty($data['session_id'])) {
