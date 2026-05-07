@@ -122,40 +122,40 @@ class CalendarInviteSenderTest extends TestCase
         $this->assertStringNotContainsString('<location>', $xml);
     }
 
-    public function test_buildXml_includes_user_id_when_provided(): void
+    public function test_buildXml_includes_identity_uuid_when_provided(): void
     {
         $data = $this->validData();
-        $data['user_id'] = '550e8400-e29b-41d4-a716-446655440000';
+        $data['identity_uuid'] = '550e8400-e29b-41d4-a716-446655440000';
 
         $xml = $this->sender->buildXml($data);
 
         $this->assertStringContainsString('<identity_uuid>550e8400-e29b-41d4-a716-446655440000</identity_uuid>', $xml);
     }
 
-    public function test_buildXml_throws_when_user_id_missing(): void
+    public function test_buildXml_throws_when_identity_uuid_missing(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('user_id is required');
+        $this->expectExceptionMessage('identity_uuid is required');
 
         $data = $this->validData();
-        unset($data['user_id']);
+        unset($data['identity_uuid']);
         $this->sender->buildXml($data);
     }
 
-    public function test_buildXml_throws_when_user_id_empty(): void
+    public function test_buildXml_throws_when_identity_uuid_empty(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('user_id is required');
+        $this->expectExceptionMessage('identity_uuid is required');
 
         $data = $this->validData();
-        $data['user_id'] = '';
+        $data['identity_uuid'] = '';
         $this->sender->buildXml($data);
     }
 
-    public function test_buildXml_escapes_special_chars_in_user_id(): void
+    public function test_buildXml_escapes_special_chars_in_identity_uuid(): void
     {
         $data = $this->validData();
-        $data['user_id'] = 'id<with>&special';
+        $data['identity_uuid'] = 'id<with>&special';
 
         $xml = $this->sender->buildXml($data);
 
@@ -334,7 +334,7 @@ class CalendarInviteSenderTest extends TestCase
             'title'          => 'Keynote: AI in de zorgsector',
             'start_datetime' => '2026-05-15T14:00:00Z',
             'end_datetime'   => '2026-05-15T15:00:00Z',
-            'user_id'        => '550e8400-e29b-41d4-a716-446655440000',
+            'identity_uuid'  => '550e8400-e29b-41d4-a716-446655440000',
             'attendee_email' => 'jan@test.be',
         ];
     }

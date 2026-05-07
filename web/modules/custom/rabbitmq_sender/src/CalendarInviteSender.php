@@ -40,8 +40,8 @@ class CalendarInviteSender
         if (empty($data['end_datetime'])) {
             throw new \InvalidArgumentException('end_datetime is required');
         }
-        if (empty($data['user_id'])) {
-            throw new \InvalidArgumentException('user_id is required');
+        if (empty($data['identity_uuid'])) {
+            throw new \InvalidArgumentException('identity_uuid is required');
         }
         if (empty($data['attendee_email'])) {
             throw new \InvalidArgumentException('attendee_email is required');
@@ -49,7 +49,8 @@ class CalendarInviteSender
 
         // ✅ FIX: safe logging
         $this->log('info', 'Sending calendar invite', [
-            'session_id' => $data['session_id'],
+            'session_id'    => $data['session_id'],
+            'identity_uuid' => $data['identity_uuid'],
         ]);
 
         $xml = $this->buildXml($data);
@@ -75,8 +76,8 @@ class CalendarInviteSender
         if (empty($data['end_datetime'])) {
             throw new \InvalidArgumentException('end_datetime is required');
         }
-        if (empty($data['user_id'])) {
-            throw new \InvalidArgumentException('user_id is required');
+        if (empty($data['identity_uuid'])) {
+            throw new \InvalidArgumentException('identity_uuid is required');
         }
         if (empty($data['attendee_email'])) {
             throw new \InvalidArgumentException('attendee_email is required');
@@ -101,7 +102,7 @@ class CalendarInviteSender
         $message->appendChild($header);
 
         $body = $dom->createElement('body');
-        $body->appendChild($dom->createElement('identity_uuid', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
+        $body->appendChild($dom->createElement('identity_uuid', htmlspecialchars((string) $data['identity_uuid'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('title', htmlspecialchars((string) $data['title'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('start_datetime', htmlspecialchars((string) $data['start_datetime'], ENT_XML1, 'UTF-8')));

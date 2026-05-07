@@ -31,6 +31,7 @@ class UserCheckinSender
         if (empty($data['user_id'])) {
             throw new \InvalidArgumentException('user_id is required');
         }
+        $this->assertValidUuid((string) $data['user_id'], 'user_id');
         if (empty($data['badge_id'])) {
             throw new \InvalidArgumentException('badge_id is required');
         }

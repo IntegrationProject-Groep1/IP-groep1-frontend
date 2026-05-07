@@ -28,11 +28,12 @@ class UserCreatedSender
 
     public function send(array $data): void
     {
+        if (empty($data['identity_uuid'])) {
+            throw new \InvalidArgumentException('identity_uuid is required');
+        }
+        $this->assertValidUuid((string) $data['identity_uuid'], 'identity_uuid');
         if (empty($data['email'])) {
             throw new \InvalidArgumentException('email is required');
-        }
-        if (empty($data['identity_uuid']) && empty($data['user_id'])) {
-            throw new \InvalidArgumentException('identity_uuid is required');
         }
 
         $xml = $this->buildXml($data);
@@ -74,7 +75,7 @@ class UserCreatedSender
         $customer = $dom->createElement('customer');
 
         // Field order per contract §5.4
-        $identityUuid = (string) ($data['identity_uuid'] ?? $data['user_id'] ?? '');
+        $identityUuid = (string) ($data['identity_uuid'] ?? '');
         $customer->appendChild($dom->createElement('identity_uuid', htmlspecialchars($identityUuid, ENT_XML1, 'UTF-8')));
         $customer->appendChild($dom->createElement('email', htmlspecialchars((string) $data['email'], ENT_XML1, 'UTF-8')));
         $customer->appendChild($dom->createElement('date_of_birth', htmlspecialchars((string) ($data['date_of_birth'] ?? ''), ENT_XML1, 'UTF-8')));

@@ -83,7 +83,8 @@ class SessionEnrollmentServiceTest extends TestCase
                 return $data['session_id'] === 'sess-001'
                     && $data['title'] === 'Keynote: AI 2026'
                     && $data['start_datetime'] === '2026-05-15T14:00:00Z'
-                    && $data['end_datetime'] === '2026-05-15T15:00:00Z';
+                    && $data['end_datetime'] === '2026-05-15T15:00:00Z'
+                    && $data['identity_uuid'] === 'user-001';
             }));
         $service = new SessionEnrollmentService($this->makeLogger(), $newRegistrationSender, $calendarInviteSender);
         $service->enroll($this->makeUserData(), ['sess-001'], $this->makeSessionMap());

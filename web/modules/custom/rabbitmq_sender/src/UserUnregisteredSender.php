@@ -28,9 +28,10 @@ class UserUnregisteredSender
 
     public function send(array $data): void
     {
-        if (empty($data['user_id'])) {
-            throw new \InvalidArgumentException('user_id is required');
+        if (empty($data['identity_uuid'])) {
+            throw new \InvalidArgumentException('identity_uuid is required');
         }
+        $this->assertValidUuid((string) $data['identity_uuid'], 'identity_uuid');
         if (empty($data['email'])) {
             throw new \InvalidArgumentException('email is required');
         }
@@ -75,7 +76,7 @@ class UserUnregisteredSender
 
         $body = $dom->createElement('body');
         // identity_uuid in body per contract §5.3 (not user_id)
-        $identityUuid = (string) ($data['identity_uuid'] ?? $data['user_id'] ?? '');
+        $identityUuid = (string) ($data['identity_uuid'] ?? '');
         $body->appendChild($dom->createElement('identity_uuid', htmlspecialchars($identityUuid, ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('email', htmlspecialchars((string) ($data['email'] ?? ''), ENT_XML1, 'UTF-8')));
 

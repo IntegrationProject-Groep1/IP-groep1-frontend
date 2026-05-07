@@ -17,6 +17,12 @@ trait XmlValidationTrait {
    *
    * @throws \Exception
    */
+  protected function assertValidUuid(string $value, string $field): void {
+    if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value)) {
+      throw new \InvalidArgumentException("{$field} must be a valid UUID");
+    }
+  }
+
   protected function validateXml(string $xmlContent, string $xsdPath): void {
     if (!file_exists($xsdPath)) {
       throw new \Exception("XSD file not found: $xsdPath");
