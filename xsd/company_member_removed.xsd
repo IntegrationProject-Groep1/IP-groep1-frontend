@@ -15,7 +15,7 @@
           <xs:element name="source"><xs:simpleType><xs:restriction base="xs:string">
             <xs:enumeration value="frontend"/></xs:restriction></xs:simpleType></xs:element>
           <xs:element name="type"><xs:simpleType><xs:restriction base="xs:string">
-            <xs:enumeration value="user_updated"/></xs:restriction></xs:simpleType></xs:element>
+            <xs:enumeration value="company_member_removed"/></xs:restriction></xs:simpleType></xs:element>
           <xs:element name="version"><xs:simpleType><xs:restriction base="xs:string">
             <xs:enumeration value="2.0"/></xs:restriction></xs:simpleType></xs:element>
           <xs:element name="correlation_id" type="UUIDType" minOccurs="0"/>
@@ -25,25 +25,15 @@
         <xs:complexType><xs:sequence>
           <xs:element name="customer">
             <xs:complexType><xs:sequence>
-              <!-- identity_uuid: de master_uuid van de Identity Service -->
               <xs:element name="identity_uuid" type="UUIDType"/>
               <xs:element name="email"         type="xs:string"/>
-              <xs:element name="date_of_birth" type="xs:date" minOccurs="0"/>
-              <xs:element name="contact">
-                <xs:complexType><xs:sequence>
-                  <xs:element name="first_name" type="xs:string"/>
-                  <xs:element name="last_name"  type="xs:string"/>
-                </xs:sequence></xs:complexType>
-              </xs:element>
-              <xs:element name="type">
+              <xs:element name="company_id"   type="xs:string"/>
+              <xs:element name="reason">
                 <xs:simpleType><xs:restriction base="xs:string">
-                  <xs:enumeration value="private"/>
-                  <xs:enumeration value="company"/>
+                  <xs:enumeration value="invite_revoked"/>
+                  <xs:enumeration value="admin_removed"/>
                 </xs:restriction></xs:simpleType>
               </xs:element>
-              <xs:element name="company_name" type="xs:string" minOccurs="0"/>
-              <xs:element name="vat_number"   type="xs:string" minOccurs="0"/>
-              <xs:element name="company_id"   type="xs:string" minOccurs="0"/>
             </xs:sequence></xs:complexType>
           </xs:element>
         </xs:sequence></xs:complexType>
