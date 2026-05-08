@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Drupal\company_invite\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\company_invite\Form\CompanyInviteForm;
 use Drupal\company_invite\Service\InviteService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -17,14 +16,12 @@ class InviteDashboardController extends ControllerBase
 {
     public function __construct(
         private readonly InviteService $inviteService,
-        private readonly FormBuilderInterface $formBuilder,
     ) {}
 
     public static function create(ContainerInterface $container): static
     {
         return new static(
             $container->get('company_invite.invite_service'),
-            $container->get('form_builder'),
         );
     }
 
@@ -80,7 +77,7 @@ class InviteDashboardController extends ControllerBase
         ];
 
         return [
-            'form' => $this->formBuilder->getForm(CompanyInviteForm::class),
+            'form' => $this->formBuilder()->getForm(CompanyInviteForm::class),
             'overview_title' => [
                 '#markup' => '<h2 style="margin-top:2rem;margin-bottom:1rem;font-size:1.125rem;font-weight:600;">'
                     . $this->t('Sent invitations') . '</h2>',
