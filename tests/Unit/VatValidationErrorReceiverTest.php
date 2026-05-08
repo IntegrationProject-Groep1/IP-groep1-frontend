@@ -24,10 +24,8 @@ class VatValidationErrorReceiverTest extends TestCase
         $this->receiver->processMessageFromXml('invalid xml');
     }
 
-    public function test_throws_exception_when_identity_uuid_is_missing(): void
+    public function test_processes_message_without_identity_uuid(): void
     {
-        $this->expectException(\Exception::class);
-
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
         $xml .= '<message>';
         $xml .= '<header>';
@@ -39,9 +37,12 @@ class VatValidationErrorReceiverTest extends TestCase
         $xml .= '</header>';
         $xml .= '<body>';
         $xml .= '<vat_number>BE0123456789</vat_number>';
+        $xml .= '<error_message>Invalid VAT number</error_message>';
+        $xml .= '<timestamp>2026-05-15T10:00:00Z</timestamp>';
         $xml .= '</body></message>';
 
-        $this->receiver->processMessageFromXml($xml);
+        $result = $this->receiver->processMessageFromXml($xml);
+        $this->assertTrue($result);
     }
 
     public function test_throws_exception_when_vat_number_is_missing(): void

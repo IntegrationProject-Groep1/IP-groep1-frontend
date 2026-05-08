@@ -43,11 +43,6 @@ class VatValidationErrorReceiver
 
         $body = $xml->body;
 
-        $identityUuid = trim((string) $body->identity_uuid);
-        if ($identityUuid === '') {
-            throw new \InvalidArgumentException('identity_uuid is required');
-        }
-
         $vatNumber = trim((string) $body->vat_number);
         if ($vatNumber === '') {
             throw new \InvalidArgumentException('vat_number is required');
