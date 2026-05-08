@@ -5,5 +5,5 @@ services:
       - '@database'
       - '@logger.factory'
       - '@plugin.manager.mail'
-      - '@rabbitmq_sender.identity_service_client'
-      - '@rabbitmq_sender.user_created_sender'
+      - '@?rabbitmq_sender.identity_service_client'
+      - '@?rabbitmq_sender.user_created_sender'
