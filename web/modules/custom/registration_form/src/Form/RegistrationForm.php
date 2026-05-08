@@ -10,7 +10,6 @@ use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\Core\Url;
 use Drupal\registration_form\Service\RegistrationService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Builds and validates the public registration form.
@@ -20,7 +19,6 @@ class RegistrationForm extends FormBase
     public function __construct(
         private readonly RegistrationService $registrationService,
         private readonly PrivateTempStoreFactory $tempStoreFactory,
-        private readonly RequestStack $requestStack,
     ) {}
 
     public static function create(ContainerInterface $container): static
@@ -28,7 +26,6 @@ class RegistrationForm extends FormBase
         return new static(
             $container->get('registration_form.registration_service'),
             $container->get('tempstore.private'),
-            $container->get('request_stack'),
         );
     }
 
@@ -40,9 +37,10 @@ class RegistrationForm extends FormBase
     public function buildForm(array $form, FormStateInterface $form_state): array
     {
         // Check for an invite token in the query string.
-        $inviteToken  = (string) ($this->requestStack->getCurrentRequest()?->query->get('invite_token') ?? '');
+        // FormBase already owns $requestStack; use \Drupal::request() to avoid redeclaring it.
+        $inviteToken  = (string) (\Drupal::request()->query->get('invite_token') ?? '');
         $invitedEmail = '';
-        if ($inviteToken !== '' && \Drupal::hasContainer() && \Drupal::hasService('company_invite.invite_service')) {
+        if ($inviteToken !== '' && \Drupal::hasService('company_invite.invite_service')) {
             /** @var \Drupal\company_invite\Service\InviteService $inviteService */
             $inviteService = \Drupal::service('company_invite.invite_service');
             $invitedEmail  = $inviteService->getEmailForToken($inviteToken) ?? '';
