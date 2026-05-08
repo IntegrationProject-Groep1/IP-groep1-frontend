@@ -64,3 +64,32 @@ function company_invite_uninstall(): void
 {
     \Drupal::database()->schema()->dropTable('company_invite_tokens');
 }
+
+/**
+ * Creates the company_admin role with the invite permission if it doesn't exist yet.
+ * Also run as an update hook so existing installs get the role too.
+ */
+function company_invite_install(): void
+{
+    _company_invite_ensure_role();
+}
+
+function company_invite_update_8001(): void
+{
+    _company_invite_ensure_role();
+}
+
+function _company_invite_ensure_role(): void
+{
+    $roleStorage = \Drupal::entityTypeManager()->getStorage('user_role');
+    if ($roleStorage->load('company_admin')) {
+        return;
+    }
+
+    $role = $roleStorage->create([
+        'id'    => 'company_admin',
+        'label' => 'Company admin',
+    ]);
+    $role->grantPermission('access company invite');
+    $role->save();
+}
