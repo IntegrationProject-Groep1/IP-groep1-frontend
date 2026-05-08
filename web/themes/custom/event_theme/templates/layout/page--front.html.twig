@@ -32,6 +32,9 @@
         {% if logged_in and nav_show_enroll %}
           <a href="{{ path('session_enrollment.enroll') }}" class="nav-link">{{ 'Enroll'|t }}</a>
         {% endif %}
+        {% if logged_in and is_company_user %}
+          <a href="{{ path('company_invite.invite_form') }}" class="nav-link">{{ 'Invite member'|t }}</a>
+        {% endif %}
         {% if is_admin %}
           <a href="{{ path('session_management.create') }}" class="nav-link">{{ 'Create session'|t }}</a>
           <a href="{{ path('session_management.end') }}" class="nav-link">{{ 'End session'|t }}</a>
@@ -122,6 +125,9 @@
       {% if logged_in and nav_show_enroll %}
         <a href="{{ path('session_enrollment.enroll') }}" class="nav-link">{{ 'Enroll'|t }}</a>
       {% endif %}
+      {% if logged_in and is_company_user %}
+        <a href="{{ path('company_invite.invite_form') }}" class="nav-link">{{ 'Invite member'|t }}</a>
+      {% endif %}
       {% if is_admin %}
         <a href="{{ path('session_management.create') }}" class="nav-link">{{ 'Create session'|t }}</a>
         <a href="{{ path('session_management.end') }}" class="nav-link">{{ 'End session'|t }}</a>
@@ -211,6 +217,33 @@
 {# ════════════════════════════════════════════════════════════ MAIN #}
 <main role="main" class="flex-1 py-10">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    {# ── Company quick actions ── #}
+    {% if logged_in and is_company_user %}
+      <div class="mb-8 p-6 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+           style="background-color:var(--color-surface);border-color:var(--color-border);">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider mb-1" style="color:var(--color-muted);">
+            {{ 'Company dashboard'|t }}
+          </p>
+          <h2 class="text-lg font-semibold" style="color:var(--color-text);">
+            {{ 'Manage your team'|t }}
+          </h2>
+          <p class="text-sm mt-1" style="color:var(--color-muted);">
+            {{ 'Invite colleagues and track the status of your invitations.'|t }}
+          </p>
+        </div>
+        <a href="{{ path('company_invite.invite_form') }}"
+           class="btn-primary shrink-0 inline-flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+          </svg>
+          {{ 'Invite member'|t }}
+        </a>
+      </div>
+    {% endif %}
+
     {{ page.content }}
   </div>
 </main>
