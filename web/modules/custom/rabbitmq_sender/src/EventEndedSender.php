@@ -15,7 +15,9 @@ class EventEndedSender
 
     private ?RabbitMQClient $client;
 
-    private const QUEUE_NAME = 'event.ended';
+    private const QUEUE_NAME      = 'event.ended';
+    private const QUEUE_FACTURATIE = 'facturatie.incoming';
+    private const QUEUE_KASSA      = 'kassa.incoming';
     private const TYPE       = 'event_ended';
     private const VERSION    = '2.0';
     private const SOURCE     = 'frontend';
@@ -38,12 +40,19 @@ class EventEndedSender
         $this->validateXml($xml, self::XSD_PATH);
 
         $this->sendWithRetry(function () use ($xml): void {
+            $client = $this->resolveClient();
             $msg = new AMQPMessage($xml, [
                 'delivery_mode' => 2,
                 'content_type'  => 'application/xml',
             ]);
-            $this->resolveClient()->declareQueue(self::QUEUE_NAME);
-            $this->resolveClient()->getChannel()->basic_publish($msg, '', self::QUEUE_NAME);
+            $client->declareQueue(self::QUEUE_NAME);
+            $client->getChannel()->basic_publish($msg, '', self::QUEUE_NAME);
+
+            $client->declareQueue(self::QUEUE_FACTURATIE);
+            $client->getChannel()->basic_publish($msg, '', self::QUEUE_FACTURATIE);
+
+            $client->declareQueue(self::QUEUE_KASSA);
+            $client->getChannel()->basic_publish($msg, '', self::QUEUE_KASSA);
         });
     }
 
