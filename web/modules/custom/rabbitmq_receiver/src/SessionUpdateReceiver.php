@@ -7,27 +7,37 @@ use Drupal\rabbitmq_sender\RabbitMQClient;
 use PhpAmqpLib\Message\AMQPMessage;
 
 /**
- * Consumes session update events from RabbitMQ.
+ * Consumes session_updated events from Planning via planning.exchange topic exchange.
+ *
+ * Planning publishes on:
+ *   Exchange:    planning.exchange                    (topic, durable)
+ *   Routing key: planning.to.frontend.session.updated
+ *
+ * We bind our own durable queue so we survive broker restarts.
+ *   Queue: frontend.planning.session.updated
  */
 class SessionUpdateReceiver
 {
-    private RabbitMQClient $client;
-    private string $queueName;
+    private const EXCHANGE     = 'planning.exchange';
+    private const ROUTING_KEY  = 'planning.to.frontend.session.updated';
+    private const QUEUE        = 'frontend.planning.session.updated';
 
-    public function __construct(RabbitMQClient $client, ?string $queueName = null)
+    private RabbitMQClient $client;
+
+    public function __construct(RabbitMQClient $client)
     {
         $this->client = $client;
-        $prefix = getenv('RABBITMQ_PREFIX') ?: 'frontend.';
-        $this->queueName = $queueName ?? ($prefix . 'session.update');
     }
 
     public function listen(): void
     {
         $channel = $this->client->getChannel();
-        $channel->queue_declare($this->queueName, false, true, false, false);
+        $channel->exchange_declare(self::EXCHANGE, 'topic', false, true, false);
+        $channel->queue_declare(self::QUEUE, false, true, false, false);
+        $channel->queue_bind(self::QUEUE, self::EXCHANGE, self::ROUTING_KEY);
 
         $channel->basic_consume(
-            $this->queueName,
+            self::QUEUE,
             '',
             false,
             false,
@@ -38,7 +48,7 @@ class SessionUpdateReceiver
             }
         );
 
-        echo "Listening for session updates...\n";
+        echo 'Listening for session_updated on ' . self::EXCHANGE . ' → ' . self::QUEUE . "\n";
 
         while ($channel->is_consuming()) {
             $channel->wait();
@@ -52,8 +62,12 @@ class SessionUpdateReceiver
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
+        $msgType   = (string) $xml->header->type;
         $sessionId = (string) $xml->body->session_id;
 
+        if ($msgType !== 'session_updated') {
+            throw new \InvalidArgumentException("Expected type session_updated, got {$msgType}");
+        }
         if (empty($sessionId)) {
             throw new \InvalidArgumentException('session_id is required');
         }
@@ -70,17 +84,20 @@ class SessionUpdateReceiver
                 throw new \InvalidArgumentException('Invalid XML received');
             }
 
-            $sessionId = (string) $xml->body->session_id;
-            $newTime = (string) $xml->body->new_time;
-            $newLocation = (string) $xml->body->location;
+            $sessionId      = (string) $xml->body->session_id;
+            $title          = (string) $xml->body->title;
+            $startDatetime  = (string) $xml->body->start_datetime;
+            $endDatetime    = (string) $xml->body->end_datetime;
+            $location       = (string) $xml->body->location;
+            $status         = (string) $xml->body->status;
+            $changeReason   = (string) $xml->body->change_reason;
 
             if (empty($sessionId)) {
                 throw new \InvalidArgumentException('session_id is required');
             }
 
             // Update the session in Drupal storage.
-            // This placeholder will later be wired to the Drupal API/service layer.
-            echo "Session updated: {$sessionId} - {$newTime} - {$newLocation}\n";
+            echo "Session updated: {$sessionId} | {$title} | {$startDatetime} → {$endDatetime} | {$location} | {$status}" . ($changeReason ? " | reason: {$changeReason}" : '') . "\n";
 
             $msg->ack();
 

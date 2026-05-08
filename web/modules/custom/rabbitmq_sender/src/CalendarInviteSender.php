@@ -22,8 +22,7 @@ class CalendarInviteSender
     private const ROUTING_KEY   = 'calendar.invite';
     private const EXCHANGE_TYPE = 'topic';
     private const SOURCE        = 'frontend';
-    private const TYPE          = 'calendar.invite';
-    private const NAMESPACE     = 'urn:integration:planning:v1';
+    private const TYPE          = 'calendar_invite';
 
     private ?RabbitMQClient $client;
 
@@ -78,15 +77,15 @@ class CalendarInviteSender
         $dom = new \DOMDocument('1.0', 'UTF-8');
         $dom->formatOutput = false;
 
-        $message = $dom->createElementNS(self::NAMESPACE, 'message');
+        $message = $dom->createElement('message');
         $dom->appendChild($message);
 
-        // Header — aligned with Planning's expected namespace and field names.
         $header = $dom->createElement('header');
         $header->appendChild($dom->createElement('message_id', $messageId));
         $header->appendChild($dom->createElement('timestamp', $timestamp));
         $header->appendChild($dom->createElement('source', self::SOURCE));
         $header->appendChild($dom->createElement('type', self::TYPE));
+        $header->appendChild($dom->createElement('version', '2.0'));
         $message->appendChild($header);
 
         // Body — only the fields Planning's consumer actually reads.

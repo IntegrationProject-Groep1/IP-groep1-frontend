@@ -81,102 +81,59 @@ class NewRegistrationSender
 
         $header = $xml->createElement('header');
         $header->appendChild($xml->createElement('message_id', $messageId));
-        $header->appendChild($xml->createElement('correlation_id', $messageId));
-        $header->appendChild($xml->createElement('version', self::MESSAGE_VERSION));
-        $header->appendChild($xml->createElement('type', self::MESSAGE_TYPE));
         $header->appendChild($xml->createElement('timestamp', $timestamp));
         $header->appendChild($xml->createElement('source', $this->resolveSource()));
+        $header->appendChild($xml->createElement('type', self::MESSAGE_TYPE));
+        $header->appendChild($xml->createElement('version', self::MESSAGE_VERSION));
+        $header->appendChild($xml->createElement('correlation_id', $messageId));
         $message->appendChild($header);
 
         $body = $xml->createElement('body');
         $customer = $xml->createElement('customer');
+        $customer->appendChild($xml->createElement('identity_uuid', (string) ($data['identity_uuid'] ?? $data['user_id'])));
         $customer->appendChild($xml->createElement('email', (string) $data['email']));
-        $customer->appendChild($xml->createElement('user_id', (string) $data['user_id']));
 
-        if (!empty($data['type'])) {
-            $customer->appendChild($xml->createElement('type', (string) $data['type']));
-        } elseif (array_key_exists('is_company', $data)) {
-            // Keep backward compatibility for clients still sending boolean company flags.
-            $customer->appendChild($xml->createElement('type', !empty($data['is_company']) ? 'company' : 'private'));
-        }
+        $customerType = !empty($data['type']) ? $data['type'] : (!empty($data['is_company']) ? 'company' : 'private');
+        $customer->appendChild($xml->createElement('type', $customerType));
 
-        if (array_key_exists('is_company_linked', $data)) {
-            $customer->appendChild($xml->createElement('is_company_linked', !empty($data['is_company_linked']) ? 'true' : 'false'));
-        } elseif (array_key_exists('is_company', $data)) {
-            $customer->appendChild($xml->createElement('is_company_linked', !empty($data['is_company']) ? 'true' : 'false'));
-        }
-
-        // CRM main branch expects first_name/last_name directly under customer.
-        $customer->appendChild($xml->createElement('first_name', (string) $data['first_name']));
-        $customer->appendChild($xml->createElement('last_name', (string) $data['last_name']));
-
-        // date_of_birth is always required by downstream CRM -> Kassa forwarding.
-        $customer->appendChild($xml->createElement('date_of_birth', (string) $data['date_of_birth']));
-
-        if (!empty($data['registration_date'])) {
-            $customer->appendChild($xml->createElement('registration_date', (string) $data['registration_date']));
-        }
-
-        if (!empty($data['badge_id'])) {
-            $customer->appendChild($xml->createElement('badge_id', (string) $data['badge_id']));
-        }
-
-        if (!empty($data['company_name'])) {
-            $customer->appendChild($xml->createElement('company_name', (string) $data['company_name']));
-        }
+        $isCompanyLinked = !empty($data['is_company_linked']) || !empty($data['is_company']);
+        $customer->appendChild($xml->createElement('is_company_linked', $isCompanyLinked ? 'true' : 'false'));
 
         if (!empty($data['vat_number'])) {
             $customer->appendChild($xml->createElement('vat_number', (string) $data['vat_number']));
         }
 
-        if (!empty($data['address']) && is_array($data['address'])) {
-            $address = $xml->createElement('address');
-            $addressFields = ['street', 'number', 'postal_code', 'city'];
+        // date_of_birth is always required by downstream CRM -> Kassa forwarding.
+        $customer->appendChild($xml->createElement('date_of_birth', (string) $data['date_of_birth']));
 
-            foreach ($addressFields as $field) {
-                if (isset($data['address'][$field]) && $data['address'][$field] !== '') {
-                    $address->appendChild($xml->createElement($field, (string) $data['address'][$field]));
-                }
-            }
+        $contact = $xml->createElement('contact');
+        $contact->appendChild($xml->createElement('first_name', (string) $data['first_name']));
+        $contact->appendChild($xml->createElement('last_name', (string) $data['last_name']));
+        $customer->appendChild($contact);
 
-            if (!empty($data['address']['country'])) {
-                $countryCode = strtoupper((string) $data['address']['country']);
-                if (strlen($countryCode) !== 2) {
-                    throw new \InvalidArgumentException('address.country must be a 2-letter country code');
-                }
-                $address->appendChild($xml->createElement('country', $countryCode));
-            }
-
-            if ($address->hasChildNodes()) {
-                $customer->appendChild($address);
-            }
+        if (!empty($data['address'])) {
+            $addressStr = is_array($data['address'])
+                ? implode(', ', array_filter($data['address']))
+                : (string) $data['address'];
+            $customer->appendChild($xml->createElement('address', $addressStr));
         }
 
-        if (!empty($data['registration_fee']) && is_array($data['registration_fee'])) {
-            $registrationFee = $xml->createElement('registration_fee');
-            if (isset($data['registration_fee']['amount']) && $data['registration_fee']['amount'] !== '') {
-                // CRM contract requires EUR for registration fee amounts.
-                $amount = $xml->createElement('amount', (string) $data['registration_fee']['amount']);
-                $amount->setAttribute('currency', 'eur');
-                $registrationFee->appendChild($amount);
-            }
-
-            if (array_key_exists('paid', $data['registration_fee'])) {
-                $registrationFee->appendChild(
-                    $xml->createElement('paid', !empty($data['registration_fee']['paid']) ? 'true' : 'false')
-                );
-            }
-
-            if ($registrationFee->hasChildNodes()) {
-                $customer->appendChild($registrationFee);
-            }
+        if (!empty($data['company_id'])) {
+            $customer->appendChild($xml->createElement('company_id', (string) $data['company_id']));
         }
-
-        $body->appendChild($customer);
 
         if (!empty($data['session_id'])) {
-            $body->appendChild($xml->createElement('session_id', (string) $data['session_id']));
+            $customer->appendChild($xml->createElement('session_id', (string) $data['session_id']));
         }
+
+        $paymentDue = $xml->createElement('payment_due');
+        $amount = $xml->createElement('amount', (string) ($data['payment_due']['amount'] ?? '0.00'));
+        $amount->setAttribute('currency', 'eur');
+        $paymentDue->appendChild($amount);
+        $paymentDue->appendChild($xml->createElement('status', 'unpaid'));
+        $customer->appendChild($paymentDue);
+
+        $body->appendChild($customer);
 
         $message->appendChild($body);
 

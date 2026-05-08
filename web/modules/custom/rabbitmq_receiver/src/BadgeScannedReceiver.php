@@ -51,14 +51,18 @@ class BadgeScannedReceiver
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
-        $userId = (string) $xml->body->user_id;
-        $badgeId = (string) $xml->body->badge_id;
+        $badgeId   = (string) $xml->body->badge_id;
+        $location  = (string) $xml->body->location;
+        $scannedAt = (string) $xml->body->scanned_at;
 
-        if (empty($userId)) {
-            throw new \InvalidArgumentException('user_id is required');
-        }
         if (empty($badgeId)) {
             throw new \InvalidArgumentException('badge_id is required');
+        }
+        if (empty($location)) {
+            throw new \InvalidArgumentException('location is required');
+        }
+        if (empty($scannedAt)) {
+            throw new \InvalidArgumentException('scanned_at is required');
         }
 
         return true;
@@ -73,18 +77,16 @@ class BadgeScannedReceiver
                 throw new \InvalidArgumentException('Invalid XML received');
             }
 
-            $userId = (string) $xml->body->user_id;
-            $badgeId = (string) $xml->body->badge_id;
+            $badgeId   = (string) $xml->body->badge_id;
+            $location  = (string) $xml->body->location;
+            $scannedAt = (string) $xml->body->scanned_at;
 
-            if (empty($userId)) {
-                throw new \InvalidArgumentException('user_id is required');
-            }
             if (empty($badgeId)) {
                 throw new \InvalidArgumentException('badge_id is required');
             }
 
-            // Placeholder for updating the badge assignment in Drupal storage.
-            echo "Badge scanned: {$userId} - {$badgeId}\n";
+            // Placeholder for updating the badge scan in Drupal storage.
+            echo "Badge scanned: {$badgeId} at {$location} — {$scannedAt}\n";
 
             $msg->ack();
 

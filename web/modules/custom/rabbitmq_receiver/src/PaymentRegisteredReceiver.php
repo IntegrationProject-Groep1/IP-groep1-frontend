@@ -21,10 +21,10 @@ class PaymentRegisteredReceiver
     public function listen(): void
     {
         $channel = $this->client->getChannel();
-        $channel->queue_declare('payment.registered', false, true, false, false);
+        $channel->queue_declare('frontend.incoming', false, true, false, false);
 
         $channel->basic_consume(
-            'payment.registered',
+            'frontend.incoming',
             '',
             false,
             false,
@@ -49,14 +49,18 @@ class PaymentRegisteredReceiver
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
-        $userId = (string) $xml->body->user_id;
-        $status = (string) $xml->body->status;
+        $identityUuid    = (string) $xml->body->identity_uuid;
+        $invoiceId       = (string) $xml->body->invoice->id;
+        $paymentContext  = (string) $xml->body->payment_context;
 
-        if (empty($userId)) {
-            throw new \InvalidArgumentException('user_id is required');
+        if (empty($identityUuid)) {
+            throw new \InvalidArgumentException('identity_uuid is required');
         }
-        if (empty($status)) {
-            throw new \InvalidArgumentException('status is required');
+        if (empty($invoiceId)) {
+            throw new \InvalidArgumentException('invoice.id is required');
+        }
+        if (empty($paymentContext)) {
+            throw new \InvalidArgumentException('payment_context is required');
         }
 
         return true;
@@ -71,18 +75,26 @@ class PaymentRegisteredReceiver
                 throw new \InvalidArgumentException('Invalid XML received');
             }
 
-            $userId = (string) $xml->body->user_id;
-            $status = (string) $xml->body->status;
-
-            if (empty($userId)) {
-                throw new \InvalidArgumentException('user_id is required');
+            $msgType = (string) $xml->header->type;
+            if ($msgType !== 'payment_registered') {
+                $msg->nack(false, true);
+                return;
             }
-            if (empty($status)) {
-                throw new \InvalidArgumentException('status is required');
+
+            $identityUuid   = (string) $xml->body->identity_uuid;
+            $invoiceId      = (string) $xml->body->invoice->id;
+            $amountPaid     = (string) $xml->body->invoice->amount_paid;
+            $paymentContext = (string) $xml->body->payment_context;
+
+            if (empty($identityUuid)) {
+                throw new \InvalidArgumentException('identity_uuid is required');
+            }
+            if (empty($invoiceId)) {
+                throw new \InvalidArgumentException('invoice.id is required');
             }
 
             // Update payment status in Drupal storage.
-            echo "Payment registered: {$userId} - {$status}\n";
+            echo "Payment registered: {$identityUuid} - {$invoiceId} - {$amountPaid} ({$paymentContext})\n";
 
             $msg->ack();
 

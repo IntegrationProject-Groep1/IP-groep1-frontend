@@ -29,7 +29,7 @@ class UserCreatedSender
         $xml = $this->buildXml($data);
         $this->sendWithRetry(function () use ($xml): void {
             $msg = new AMQPMessage($xml, ['delivery_mode' => 2]);
-            $this->client->getChannel()->basic_publish($msg, '', 'user.created');
+            $this->client->getChannel()->basic_publish($msg, '', 'crm.incoming');
         });
     }
 
@@ -46,31 +46,31 @@ class UserCreatedSender
         $timestamp = (new \DateTime())->format('c');
 
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message xmlns="urn:integration:planning:v1">';
+        $xml .= '<message>';
         $xml .= '<header>';
         $xml .= "<message_id>{$messageId}</message_id>";
         $xml .= "<timestamp>{$timestamp}</timestamp>";
-        $xml .= '<source>frontend.drupal</source>';
-        $xml .= '<receiver>crm.salesforce</receiver>';
-        $xml .= '<type>user.created</type>';
-        $xml .= '<version>1.0</version>';
-        $xml .= '<correlation_id></correlation_id>';
+        $xml .= '<source>frontend</source>';
+        $xml .= '<type>user_created</type>';
+        $xml .= '<version>2.0</version>';
         $xml .= '</header>';
         $xml .= '<body>';
-        $xml .= '<user>';
+        $xml .= '<customer>';
+        $xml .= '<identity_uuid>' . htmlspecialchars($data['identity_uuid'] ?? '', ENT_XML1, 'UTF-8') . '</identity_uuid>';
+        $xml .= '<email>' . htmlspecialchars($data['email'], ENT_XML1, 'UTF-8') . '</email>';
+        $xml .= '<date_of_birth>' . htmlspecialchars($data['date_of_birth'] ?? '', ENT_XML1, 'UTF-8') . '</date_of_birth>';
+        $xml .= '<contact>';
         $xml .= '<first_name>' . htmlspecialchars($data['first_name'] ?? '', ENT_XML1, 'UTF-8') . '</first_name>';
         $xml .= '<last_name>' . htmlspecialchars($data['last_name'] ?? '', ENT_XML1, 'UTF-8') . '</last_name>';
-        $xml .= '<email>' . htmlspecialchars($data['email'], ENT_XML1, 'UTF-8') . '</email>';
-        $xml .= '<is_company>' . (!empty($data['is_company']) ? 'true' : 'false') . '</is_company>';
+        $xml .= '</contact>';
+        $xml .= '<type>' . (!empty($data['is_company']) ? 'company' : 'private') . '</type>';
 
         if (!empty($data['is_company'])) {
-            $xml .= '<company>';
-            $xml .= '<name>' . htmlspecialchars($data['company_name'] ?? '', ENT_XML1, 'UTF-8') . '</name>';
+            $xml .= '<company_name>' . htmlspecialchars($data['company_name'] ?? '', ENT_XML1, 'UTF-8') . '</company_name>';
             $xml .= '<vat_number>' . htmlspecialchars($data['vat_number'] ?? '', ENT_XML1, 'UTF-8') . '</vat_number>';
-            $xml .= '</company>';
         }
 
-        $xml .= '</user>';
+        $xml .= '</customer>';
         $xml .= '</body>';
         $xml .= '</message>';
 

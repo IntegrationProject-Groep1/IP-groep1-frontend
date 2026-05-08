@@ -21,10 +21,10 @@ class VatValidationErrorReceiver
     public function listen(): void
     {
         $channel = $this->client->getChannel();
-        $channel->queue_declare('vat.validation.error', false, true, false, false);
+        $channel->queue_declare('frontend.incoming', false, true, false, false);
 
         $channel->basic_consume(
-            'vat.validation.error',
+            'frontend.incoming',
             '',
             false,
             false,
@@ -49,11 +49,11 @@ class VatValidationErrorReceiver
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
-        $userId = (string) $xml->body->user_id;
+        $identityUuid = (string) $xml->body->identity_uuid;
         $vatNumber = (string) $xml->body->vat_number;
 
-        if (empty($userId)) {
-            throw new \InvalidArgumentException('user_id is required');
+        if (empty($identityUuid)) {
+            throw new \InvalidArgumentException('identity_uuid is required');
         }
         if (empty($vatNumber)) {
             throw new \InvalidArgumentException('vat_number is required');
@@ -71,19 +71,25 @@ class VatValidationErrorReceiver
                 throw new \InvalidArgumentException('Invalid XML received');
             }
 
-            $userId = (string) $xml->body->user_id;
-            $vatNumber = (string) $xml->body->vat_number;
+            $msgType = (string) $xml->header->type;
+            if ($msgType !== 'vat_validation_error') {
+                $msg->nack(false, true);
+                return;
+            }
+
+            $identityUuid = (string) $xml->body->identity_uuid;
+            $vatNumber    = (string) $xml->body->vat_number;
             $errorMessage = (string) $xml->body->error_message;
 
-            if (empty($userId)) {
-                throw new \InvalidArgumentException('user_id is required');
+            if (empty($identityUuid)) {
+                throw new \InvalidArgumentException('identity_uuid is required');
             }
             if (empty($vatNumber)) {
                 throw new \InvalidArgumentException('vat_number is required');
             }
 
             // Show the VAT validation error to the user in Drupal.
-            echo "VAT validation error: {$userId} - {$vatNumber} - {$errorMessage}\n";
+            echo "VAT validation error: {$identityUuid} - {$vatNumber} - {$errorMessage}\n";
 
             $msg->ack();
 

@@ -32,7 +32,7 @@ class UserCheckinSender
         $xml = $this->buildXml($data);
         $this->sendWithRetry(function () use ($xml): void {
             $msg = new AMQPMessage($xml, ['delivery_mode' => 2]);
-            $this->client->getChannel()->basic_publish($msg, '', 'user.checkin');
+            $this->client->getChannel()->basic_publish($msg, '', 'crm.incoming');
         });
     }
 
@@ -49,20 +49,18 @@ class UserCheckinSender
         $timestamp = (new \DateTime())->format('c');
 
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message xmlns="urn:integration:planning:v1">';
+        $xml .= '<message>';
         $xml .= '<header>';
         $xml .= "<message_id>{$messageId}</message_id>";
         $xml .= "<timestamp>{$timestamp}</timestamp>";
-        $xml .= '<source>frontend.drupal</source>';
-        $xml .= '<receiver>monitoring.elastic</receiver>';
-        $xml .= '<type>user.checkin</type>';
-        $xml .= '<version>1.0</version>';
-        $xml .= '<correlation_id></correlation_id>';
+        $xml .= '<source>frontend</source>';
+        $xml .= '<type>user_checkin</type>';
+        $xml .= '<version>2.0</version>';
         $xml .= '</header>';
         $xml .= '<body>';
-        $xml .= '<user_id>' . htmlspecialchars($data['user_id'], ENT_XML1, 'UTF-8') . '</user_id>';
+        $xml .= '<identity_uuid>' . htmlspecialchars($data['user_id'], ENT_XML1, 'UTF-8') . '</identity_uuid>';
         $xml .= '<badge_id>' . htmlspecialchars($data['badge_id'], ENT_XML1, 'UTF-8') . '</badge_id>';
-        $xml .= "<timestamp>{$timestamp}</timestamp>";
+        $xml .= "<checkin_at>{$timestamp}</checkin_at>";
         $xml .= '</body>';
         $xml .= '</message>';
 
