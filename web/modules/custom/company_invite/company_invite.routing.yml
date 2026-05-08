@@ -6,6 +6,14 @@ company_invite.invite_form:
   requirements:
     _user_is_logged_in: 'TRUE'
 
+company_invite.delete_invite:
+  path: '/company/invite/{token}/delete'
+  defaults:
+    _controller: '\Drupal\company_invite\Controller\InviteDeleteController::delete'
+  requirements:
+    _user_is_logged_in: 'TRUE'
+    token: '[a-f0-9]{64}'
+
 company_invite.register_invited:
   path: '/register/invite/{token}'
   defaults:

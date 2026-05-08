@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\company_invite\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\Core\Url;
 use Drupal\company_invite\Form\CompanyInviteForm;
 use Drupal\company_invite\Service\InviteService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -48,6 +49,8 @@ class InviteDashboardController extends ControllerBase
                 $badge  = 'color:#d97706;background:#fef9c3;';
             }
 
+            $deleteUrl = Url::fromRoute('company_invite.delete_invite', ['token' => $invite['token']])->toString();
+
             $rows[] = [
                 'data' => [
                     ['data' => $invite['email']],
@@ -57,6 +60,14 @@ class InviteDashboardController extends ControllerBase
                         'data' => [
                             '#markup' => '<span style="' . $badge . 'padding:2px 10px;border-radius:9999px;font-size:0.75rem;font-weight:600;">'
                                 . $status . '</span>',
+                        ],
+                    ],
+                    [
+                        'data' => [
+                            '#markup' => '<a href="' . $deleteUrl . '" '
+                                . 'onclick="return confirm(\'Are you sure you want to delete this invitation?\')" '
+                                . 'style="color:#ef4444;font-size:0.8rem;font-weight:500;">'
+                                . $this->t('Delete') . '</a>',
                         ],
                     ],
                 ],
@@ -70,6 +81,7 @@ class InviteDashboardController extends ControllerBase
                 $this->t('Invited on'),
                 $this->t('Expires'),
                 $this->t('Status'),
+                $this->t('Actions'),
             ],
             '#rows'    => $rows,
             '#empty'   => $this->t('No invitations sent yet.'),

@@ -153,6 +153,23 @@ class InviteService
     }
 
     /**
+     * Deletes an invite token. Only the owner may delete their own invites.
+     *
+     * @throws \InvalidArgumentException When the token does not belong to the owner.
+     */
+    public function deleteInvite(string $token, string $ownerUuid): void
+    {
+        $affected = $this->database->delete(self::TABLE)
+            ->condition('token', $token)
+            ->condition('business_owner_uuid', $ownerUuid)
+            ->execute();
+
+        if ($affected === 0) {
+            throw new \InvalidArgumentException('Invite not found or you do not have permission to delete it.');
+        }
+    }
+
+    /**
      * Marks a token as used after the invited user completes registration.
      */
     public function markTokenUsed(string $token): void
