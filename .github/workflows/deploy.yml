@@ -4,7 +4,7 @@ on:
   push:
     branches: ["dev"]   # dev: build on every push, no tag required
   workflow_run:
-    workflows: ["CI Pipeline"] # Must match the 'name' of your CI workflow exactly
+    workflows: ["CI"] # Must match the 'name' of your CI workflow exactly
     types:
       - completed
   workflow_dispatch:
@@ -57,6 +57,5 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ steps.repo_name.outputs.value }}:latest
-            ghcr.io/${{ steps.repo_name.outputs.value }}:${{ steps.vars.outputs.tag }}
-            ghcr.io/${{ steps.repo_name.outputs.value }}:${{ github.sha }}
-
+            ghcr.io/${{ steps.repo_name.outputs.value }}:${{ github.event.workflow_run.head_branch }}
+            ghcr.io/${{ steps.repo_name.outputs.value }}:${{ github.event.workflow_run.head_sha }}

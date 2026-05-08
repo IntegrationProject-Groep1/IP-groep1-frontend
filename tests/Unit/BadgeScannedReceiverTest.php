@@ -1,22 +1,18 @@
 <?php
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
-use Drupal\rabbitmq_receiver\BadgeScannedReceiver;
+namespace Drupal\rabbitmq_receiver;
+
 use Drupal\rabbitmq_sender\RabbitMQClient;
 use Tests\Unit\XmlTestBuilder;
 
-/**
- * Unit tests for badge scanned receiver XML validation.
- */
-class BadgeScannedReceiverTest extends TestCase
+class BadgeScannedReceiver
 {
-    private BadgeScannedReceiver $receiver;
+    private RabbitMQClient $client;
 
-    protected function setUp(): void
+    public function __construct(RabbitMQClient $client)
     {
-        $stubClient = $this->createStub(RabbitMQClient::class);
-        $this->receiver = new BadgeScannedReceiver($stubClient);
+        $this->client = $client;
     }
 
     private function buildXml(array $fields): string
@@ -36,13 +32,13 @@ class BadgeScannedReceiverTest extends TestCase
         $this->receiver->processMessageFromXml($this->buildXml(['badge_id' => 'nfc-badge-abc123']));
     }
 
-    public function test_throws_exception_when_badge_id_is_missing(): void
+    private function handleMessage(AMQPMessage $msg): void
     {
         $this->expectException(\Exception::class);
         $this->receiver->processMessageFromXml($this->buildXml(['location' => 'entrance', 'scanned_at' => '2026-05-07T00:00:00Z']));
     }
 
-    public function test_valid_xml_is_processed_correctly(): void
+    private function parseXml(string $xmlString): \SimpleXMLElement
     {
         $xml = $this->buildXml([
             'badge_id'   => 'nfc-badge-abc123',

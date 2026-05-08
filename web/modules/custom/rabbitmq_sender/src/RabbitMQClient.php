@@ -14,18 +14,29 @@ class RabbitMQClient
 {
     private ?AMQPStreamConnection $connection = null;
     private ?AMQPChannel $channel = null;
+    private readonly string $host;
+    private readonly int $port;
+    private readonly string $user;
+    private readonly string $password;
+    private readonly string $vhost;
 
     public function __construct(
-        private readonly string $host,
-        private readonly int $port,
-        private readonly string $user,
-        private readonly string $password,
-        private readonly string $vhost = '/'
+        ?string $host = null,
+        ?int $port = null,
+        ?string $user = null,
+        ?string $password = null,
+        ?string $vhost = null
     ) {
-        if (empty($host)) {
+        $this->host = $host ?? (string) (getenv('RABBITMQ_HOST') ?: 'rabbitmq_broker');
+        $this->port = $port ?? (int) (getenv('RABBITMQ_PORT') ?: 5672);
+        $this->user = $user ?? (string) (getenv('RABBITMQ_USER') ?: 'guest');
+        $this->password = $password ?? (string) (getenv('RABBITMQ_PASS') ?: 'guest');
+        $this->vhost = $vhost ?? (string) (getenv('RABBITMQ_VHOST') ?: '/');
+
+        if (empty($this->host)) {
             throw new \InvalidArgumentException('Host cannot be empty');
         }
-        if ($port <= 0) {
+        if ($this->port <= 0) {
             throw new \InvalidArgumentException('Port must be greater than 0');
         }
     }

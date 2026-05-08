@@ -57,11 +57,18 @@ class BadgeScannedReceiver
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
-        $body = $xml->body;
+        $badgeId   = (string) $xml->body->badge_id;
+        $location  = (string) $xml->body->location;
+        $scannedAt = (string) $xml->body->scanned_at;
 
-        $badgeId = trim((string) $body->badge_id);
-        if ($badgeId === '') {
+        if (empty($badgeId)) {
             throw new \InvalidArgumentException('badge_id is required');
+        }
+        if (empty($location)) {
+            throw new \InvalidArgumentException('location is required');
+        }
+        if (empty($scannedAt)) {
+            throw new \InvalidArgumentException('scanned_at is required');
         }
 
         $location = trim((string) $body->location);
@@ -86,13 +93,16 @@ class BadgeScannedReceiver
             'x-dead-letter-routing-key' => self::DLQ,
         ]);
 
-        $channel->queue_declare(self::QUEUE, false, true, false, false, false, $args);
+            $badgeId   = (string) $xml->body->badge_id;
+            $location  = (string) $xml->body->location;
+            $scannedAt = (string) $xml->body->scanned_at;
 
-        $msg = $channel->basic_get(self::QUEUE);
+            if (empty($badgeId)) {
+                throw new \InvalidArgumentException('badge_id is required');
+            }
 
-        if ($msg === null) {
-            return false;
-        }
+            // Placeholder for updating the badge scan in Drupal storage.
+            echo "Badge scanned: {$badgeId} at {$location} — {$scannedAt}\n";
 
         try {
             $this->processMessageFromXml($msg->body);
