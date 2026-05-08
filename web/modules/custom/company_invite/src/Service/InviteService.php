@@ -138,6 +138,21 @@ class InviteService
     }
 
     /**
+     * Returns all invites sent by a given owner UUID, newest first.
+     *
+     * @return array<array{email: string, created: int, expires: int, used: int}>
+     */
+    public function getInvitesForOwner(string $ownerUuid): array
+    {
+        return $this->database->select(self::TABLE, 'i')
+            ->fields('i', ['token', 'email', 'created', 'expires', 'used'])
+            ->condition('business_owner_uuid', $ownerUuid)
+            ->orderBy('created', 'DESC')
+            ->execute()
+            ->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Marks a token as used after the invited user completes registration.
      */
     public function markTokenUsed(string $token): void

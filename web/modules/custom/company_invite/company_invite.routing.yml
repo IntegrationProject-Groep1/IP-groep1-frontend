@@ -1,8 +1,8 @@
 company_invite.invite_form:
   path: '/company/invite'
   defaults:
-    _form: '\Drupal\company_invite\Form\CompanyInviteForm'
-    _title: 'Invite a team member'
+    _controller: '\Drupal\company_invite\Controller\InviteDashboardController::page'
+    _title: 'Team members'
   requirements:
     _user_is_logged_in: 'TRUE'
 
