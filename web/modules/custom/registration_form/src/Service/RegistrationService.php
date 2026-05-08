@@ -56,6 +56,8 @@ class RegistrationService
             $data['master_uuid'] = $masterUuid;
         }
 
+        $this->storeIsCompanyOnUser((int) $user->id(), (bool) ($data['is_company'] ?? false));
+
         // Notify CRM that a new user account was created (non-fatal).
         if ($this->userCreatedSender !== null) {
             try {
@@ -247,6 +249,19 @@ class RegistrationService
         }
 
         \Drupal::service('user.data')->set('registration_form', $userId, 'master_uuid', $masterUuid);
+    }
+
+    /**
+     * Stores whether the user registered as a company so other modules can check
+     * this without loading CRM data (e.g. company_invite checks it for access control).
+     */
+    private function storeIsCompanyOnUser(int $userId, bool $isCompany): void
+    {
+        if (!class_exists('\Drupal') || !\Drupal::hasContainer()) {
+            return;
+        }
+
+        \Drupal::service('user.data')->set('registration_form', $userId, 'is_company', $isCompany);
     }
 
 }

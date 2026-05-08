@@ -1,0 +1,36 @@
+{#
+  form--company-invite-form.html.twig
+  Dashboard invite widget for company admins — styled with Tailwind + CSS variables.
+#}
+{{ attach_library('event_theme/global') }}
+
+<div class="card p-8 max-w-xl mx-auto">
+
+  <div class="mb-6">
+    <h2 class="text-xl font-semibold tracking-tight" style="color:var(--color-text);">
+      {{ 'Invite a team member'|t }}
+    </h2>
+    <p class="mt-1 text-sm" style="color:var(--color-muted);">
+      {{ 'Enter the email address of the person you want to add to your company account. They will receive an invitation link to complete their registration.'|t }}
+    </p>
+  </div>
+
+  {% if message %}
+    <div class="mb-5">{{ message }}</div>
+  {% endif %}
+
+  <form{{ attributes }}>
+    {{ form.form_build_id }}
+    {{ form.form_token }}
+    {{ form.form_id }}
+
+    <div class="mb-5">
+      {{ form.invite_email }}
+    </div>
+
+    <div>
+      {{ form.submit }}
+    </div>
+  </form>
+
+</div>
