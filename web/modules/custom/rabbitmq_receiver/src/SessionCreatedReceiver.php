@@ -1,49 +1,91 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Drupal\rabbitmq_receiver;
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
+use Drupal\rabbitmq_sender\XmlValidationTrait;
 use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable;
 
 /**
- * Receives session.created events from Planning via the planning.exchange topic exchange.
- *
- * Planning's producer publishes on:
- *   Exchange:    planning.exchange       (topic, durable)
- *   Routing key: planning.session.created
- *
- * We bind our own durable queue to that exchange so we survive broker restarts.
- *   Queue:       frontend.planning.session.created
- *
- * Expected XML body fields: session_id, title, start_datetime, end_datetime,
- *                           location, session_type, status, max_attendees, current_attendees
+ * Receives session_created messages from the Planning system.
  */
 class SessionCreatedReceiver
 {
+    use XmlValidationTrait;
+
     private const EXCHANGE      = 'planning.exchange';
     private const EXCHANGE_TYPE = 'topic';
-    private const ROUTING_KEY   = 'planning.session.created';
+    private const ROUTING_KEY   = 'planning.to.frontend.session.created';
     private const QUEUE         = 'frontend.planning.session.created';
+    private const DLQ           = 'frontend.planning.session.created.dlq';
+    private const DLX           = 'frontend.planning.dlx';
+    private const XSD_PATH      = __DIR__ . '/../../../../../xsd/session_created.xsd';
 
-    private RabbitMQClient $client;
+    public function __construct(private readonly RabbitMQClient $client) {}
 
-    public function __construct(RabbitMQClient $client)
+    /**
+     * Parse and validate an incoming session_created XML message.
+     *
+     * @return array<string, mixed>
+     * @throws \InvalidArgumentException
+     */
+    public function processMessageFromXml(string $xmlString): array
     {
-        $this->client = $client;
+        $this->validateXml($xmlString, self::XSD_PATH);
+        
+        $xml = $this->parseXml($xmlString);
+        $body = $xml->body;
+
+        $sessionId = trim((string) $body->session_id);
+        if ($sessionId === '') {
+            throw new \InvalidArgumentException('session_id is required');
+        }
+
+        $title = trim((string) $body->title);
+        if ($title === '') {
+            throw new \InvalidArgumentException('title is required');
+        }
+
+        $startDatetime = trim((string) $body->start_datetime);
+        if ($startDatetime === '') {
+            throw new \InvalidArgumentException('start_datetime is required');
+        }
+
+        $endDatetime = trim((string) $body->end_datetime);
+        if ($endDatetime === '') {
+            throw new \InvalidArgumentException('end_datetime is required');
+        }
+
+        return [
+            'session_id'        => $sessionId,
+            'title'             => $title,
+            'start_datetime'    => $startDatetime,
+            'end_datetime'      => $endDatetime,
+            'location'          => trim((string) $body->location),
+            'session_type'      => trim((string) $body->session_type),
+            'status'            => trim((string) $body->status),
+            'max_attendees'     => (int) (string) $body->max_attendees,
+            'current_attendees' => (int) (string) $body->current_attendees,
+        ];
     }
 
+    /**
+     * Subscribe to the session_created queue with DLQ support.
+     */
     public function listen(): void
     {
         $channel = $this->client->getChannel();
 
-        // Declare the exchange idempotently — safe to call even if Planning already declared it.
+        $args = new AMQPTable([
+            'x-dead-letter-exchange'    => self::DLX,
+            'x-dead-letter-routing-key' => self::DLQ,
+        ]);
+
         $channel->exchange_declare(self::EXCHANGE, self::EXCHANGE_TYPE, false, true, false);
-
-        // Declare our own durable queue so messages queue up when we are offline.
-        $channel->queue_declare(self::QUEUE, false, true, false, false);
-
-        // Bind our queue to the exchange with Planning's routing key.
+        $channel->queue_declare(self::QUEUE, false, true, false, false, false, $args);
         $channel->queue_bind(self::QUEUE, self::EXCHANGE, self::ROUTING_KEY);
 
         $channel->basic_consume(
@@ -54,11 +96,14 @@ class SessionCreatedReceiver
             false,
             false,
             function (AMQPMessage $msg): void {
-                $this->processMessage($msg);
+                try {
+                    $this->processMessageFromXml($msg->body);
+                    $msg->ack();
+                } catch (\Throwable $e) {
+                    $msg->nack(false, false);
+                }
             }
         );
-
-        echo 'Listening for planning.session.created on ' . self::EXCHANGE . " → " . self::QUEUE . "\n";
 
         while ($channel->is_consuming()) {
             $channel->wait();
@@ -66,92 +111,55 @@ class SessionCreatedReceiver
     }
 
     /**
-     * Parses and validates an XML string from Planning.
-     * Returns an associative array of the session data.
+     * Parse an XML string, stripping the default namespace for uniform access.
      *
-     * @throws \InvalidArgumentException on invalid or incomplete XML.
+     * @throws \InvalidArgumentException on invalid XML
      */
-    public function processMessageFromXml(string $xmlString): array
+    private function parseXml(string $xmlString): \SimpleXMLElement
     {
-        // Suppress parse warnings — we check the return value ourselves.
-        $xml = @simplexml_load_string($xmlString);
+        libxml_use_internal_errors(true);
+        $cleaned = preg_replace('/ xmlns="[^"]*"/', '', $xmlString);
+        $xml = simplexml_load_string($cleaned);
+        libxml_clear_errors();
+
         if ($xml === false) {
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
-        // Planning wraps content in <header> + <body>. Register the namespace so
-        // XPath works regardless of whether the prefix is declared on child nodes.
-        $namespaces = $xml->getNamespaces(true);
-        $ns = reset($namespaces) ?: null;
-
-        // Access body — handle both namespaced and non-namespaced XML gracefully.
-        if ($ns !== null) {
-            $xml->registerXPathNamespace('ns', $ns);
-            $bodyNodes = $xml->xpath('ns:body') ?: $xml->xpath('body');
-        } else {
-            $bodyNodes = $xml->xpath('body');
-        }
-
-        $body = ($bodyNodes && count($bodyNodes) > 0) ? $bodyNodes[0] : $xml->body ?? null;
-
-        if ($body === null) {
-            throw new \InvalidArgumentException('<body> element is missing');
-        }
-
-        $sessionId = trim((string) ($body->session_id ?? ''));
-        if (empty($sessionId)) {
-            throw new \InvalidArgumentException('session_id is required');
-        }
-
-        $title = trim((string) ($body->title ?? ''));
-        if (empty($title)) {
-            throw new \InvalidArgumentException('title is required');
-        }
-
-        $startDatetime = trim((string) ($body->start_datetime ?? ''));
-        if (empty($startDatetime)) {
-            throw new \InvalidArgumentException('start_datetime is required');
-        }
-
-        $endDatetime = trim((string) ($body->end_datetime ?? ''));
-        if (empty($endDatetime)) {
-            throw new \InvalidArgumentException('end_datetime is required');
-        }
-
-        return [
-            'session_id'        => $sessionId,
-            'title'             => $title,
-            'start_datetime'    => $startDatetime,
-            'end_datetime'      => $endDatetime,
-            'location'          => trim((string) ($body->location ?? '')),
-            'session_type'      => trim((string) ($body->session_type ?? '')),
-            'status'            => trim((string) ($body->status ?? '')),
-            'max_attendees'     => (int) ($body->max_attendees ?? 0),
-            'current_attendees' => (int) ($body->current_attendees ?? 0),
-        ];
+        return $xml;
     }
 
-    private function processMessage(AMQPMessage $msg): void
+    /**
+     * Poll the session_created queue once (non-blocking) and process any waiting message.
+     *
+     * Returns true when a message was processed, false when the queue was empty.
+     */
+    public function pollOnce(): bool
     {
-        try {
-            $data = $this->processMessageFromXml($msg->body);
+        $channel = $this->client->getChannel();
 
-            // Placeholder — wire to Drupal session storage / calendar service here.
-            echo sprintf(
-                "session.created received: %s | %s | %s → %s | attendees: %d/%d\n",
-                $data['session_id'],
-                $data['title'],
-                $data['start_datetime'],
-                $data['end_datetime'],
-                $data['current_attendees'],
-                $data['max_attendees']
-            );
+        $args = new AMQPTable([
+            'x-dead-letter-exchange'    => self::DLX,
+            'x-dead-letter-routing-key' => self::DLQ,
+        ]);
 
-            $msg->ack();
-        } catch (\Exception $e) {
-            error_log('SessionCreatedReceiver error: ' . $e->getMessage());
-            // Do not requeue — malformed messages must not loop indefinitely.
-            $msg->nack(false);
+        $channel->exchange_declare(self::EXCHANGE, self::EXCHANGE_TYPE, false, true, false);
+        $channel->queue_declare(self::QUEUE, false, true, false, false, false, $args);
+        $channel->queue_bind(self::QUEUE, self::EXCHANGE, self::ROUTING_KEY);
+
+        $msg = $channel->basic_get(self::QUEUE);
+
+        if ($msg === null) {
+            return false;
         }
+
+        try {
+            $this->processMessageFromXml($msg->body);
+            $msg->ack();
+        } catch (\Throwable $e) {
+            $msg->nack(false, false);
+        }
+
+        return true;
     }
 }

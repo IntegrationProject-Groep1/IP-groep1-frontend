@@ -1,0 +1,56 @@
+{#
+  form--user-login-form.html.twig
+  Drupal login form (/user/login) styled with Tailwind + CSS variables.
+  Form ID: user_login_form
+#}
+
+<div class="min-h-[60vh] flex items-center justify-center py-12 px-4">
+  <div class="card p-8 w-full max-w-md">
+
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-full mb-4"
+           style="background-color:color-mix(in srgb,var(--color-primary) 12%,transparent);">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+             style="color:var(--color-primary);" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold tracking-tight" style="color:var(--color-text);">
+        {{ 'Log in'|t }}
+      </h1>
+      <p class="mt-1 text-sm" style="color:var(--color-muted);">
+        {{ 'Welcome back! Enter your credentials below.'|t }}
+      </p>
+    </div>
+
+    {% if message %}
+      <div class="mb-6">{{ message }}</div>
+    {% endif %}
+
+    <form{{ attributes }}>
+      {{ form.form_build_id }}
+      {{ form.form_token }}
+      {{ form.form_id }}
+
+      <div class="mb-5">{{ form.name }}</div>
+      <div class="mb-6">{{ form.pass }}</div>
+
+      <div class="mb-6">{{ form.actions }}</div>
+
+      {# Remaining fields (e.g. honeypot, extras from modules) #}
+      {{ form|without('name', 'pass', 'actions', 'form_build_id', 'form_token', 'form_id') }}
+    </form>
+
+    <div class="mt-6 text-center text-sm" style="color:var(--color-muted);">
+      <a href="{{ path('user.register') }}" style="color:var(--color-primary);" class="hover:underline">
+        {{ "Don't have an account? Register here"|t }}
+      </a>
+      <span class="mx-2">·</span>
+      <a href="{{ path('user.pass') }}" style="color:var(--color-primary);" class="hover:underline">
+        {{ 'Forgot password?'|t }}
+      </a>
+    </div>
+
+  </div>
+</div>

@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Drupal\rabbitmq_receiver;
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
-use PhpAmqpLib\Message\AMQPMessage;
+use Tests\Unit\XmlTestBuilder;
 
 class BadgeScannedReceiver
 {
@@ -15,80 +15,38 @@ class BadgeScannedReceiver
         $this->client = $client;
     }
 
-    public function listen(): void
+    private function buildXml(array $fields): string
     {
-        $channel = $this->client->getChannel();
-        $channel->queue_declare('badge.scanned', false, true, false, false);
-
-        $channel->basic_consume(
-            'badge.scanned',
-            '',
-            false,
-            false,
-            false,
-            false,
-            function (AMQPMessage $msg) {
-                $this->handleMessage($msg);
-            }
-        );
-
-        echo "Listening for badge scans...\n";
-
-        while ($channel->is_consuming()) {
-            $channel->wait();
-        }
+        return XmlTestBuilder::build('badge_scanned', ['source' => 'iot_gateway'], $fields);
     }
 
-    public function processMessageFromXml(string $xmlString): bool
+    public function test_throws_exception_when_xml_is_invalid(): void
     {
-        $xml = $this->parseXml($xmlString);
+        $this->expectException(\Exception::class);
+        $this->receiver->processMessageFromXml('invalid xml');
+    }
 
-        $userId = (string) $xml->body->user_id;
-        $badgeId = (string) $xml->body->badge_id;
-
-        if (empty($userId)) {
-            throw new \InvalidArgumentException('user_id is required');
-        }
-
-        if (empty($badgeId)) {
-            throw new \InvalidArgumentException('badge_id is required');
-        }
-
-        return true;
+    public function test_throws_exception_when_location_and_scanned_at_are_missing(): void
+    {
+        $this->expectException(\Exception::class);
+        $this->receiver->processMessageFromXml($this->buildXml(['badge_id' => 'nfc-badge-abc123']));
     }
 
     private function handleMessage(AMQPMessage $msg): void
     {
-        try {
-            $xml = $this->parseXml($msg->body);
-
-            $userId = (string) $xml->body->user_id;
-            $badgeId = (string) $xml->body->badge_id;
-
-            if (empty($userId) || empty($badgeId)) {
-                throw new \InvalidArgumentException('Missing required fields');
-            }
-
-            echo "Badge scanned: {$userId} - {$badgeId}\n";
-
-            $msg->ack();
-
-        } catch (\Throwable $e) {
-            error_log('BadgeScannedReceiver error: ' . $e->getMessage());
-            $msg->nack(false, false); // discard message (no infinite retry loop)
-        }
+        $this->expectException(\Exception::class);
+        $this->receiver->processMessageFromXml($this->buildXml(['location' => 'entrance', 'scanned_at' => '2026-05-07T00:00:00Z']));
     }
 
     private function parseXml(string $xmlString): \SimpleXMLElement
     {
-        libxml_use_internal_errors(true);
+        $xml = $this->buildXml([
+            'badge_id'   => 'nfc-badge-abc123',
+            'location'   => 'entrance',
+            'scanned_at' => '2026-05-07T00:00:00Z'
+        ]);
 
-        $xml = simplexml_load_string($xmlString, 'SimpleXMLElement', LIBXML_NOCDATA);
-
-        if ($xml === false) {
-            throw new \InvalidArgumentException('Invalid XML received');
-        }
-
-        return $xml;
+        $result = $this->receiver->processMessageFromXml($xml);
+        $this->assertTrue($result);
     }
 }

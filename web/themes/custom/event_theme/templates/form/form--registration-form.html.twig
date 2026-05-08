@@ -1,20 +1,22 @@
 {#
-  Template: registration-form.html.twig
-  Overrides the default Drupal form render for registration_form.
+  form--registration-form.html.twig
+  Registration form styled with Tailwind + CSS variables.
 #}
 {{ attach_library('event_theme/global') }}
 
-<div class="registration-card">
-  <div class="registration-card__header">
-    <h1 class="registration-card__title">Register for a session</h1>
-    <p class="registration-card__subtitle">
-      Fill in your details below to reserve your spot.
+<div class="card p-8 max-w-2xl mx-auto">
+
+  <div class="mb-8">
+    <h1 class="text-2xl font-bold tracking-tight" style="color:var(--color-text);">
+      {{ 'Register for a session'|t }}
+    </h1>
+    <p class="mt-1 text-sm" style="color:var(--color-muted);">
+      {{ 'Fill in your details below to reserve your spot.'|t }}
     </p>
   </div>
 
-  {# Status messages #}
   {% if message %}
-    {{ message }}
+    <div class="mb-6">{{ message }}</div>
   {% endif %}
 
   <form{{ attributes }}>
@@ -22,33 +24,36 @@
     {{ form.form_token }}
     {{ form.form_id }}
 
-    {# Personal details #}
-    <div class="form-section">
-      <p class="form-section__title">Personal details</p>
-      <div class="form-row">
-        <div class="form-item">{{ form.first_name }}</div>
-        <div class="form-item">{{ form.last_name }}</div>
+    {# ── Personal details ── #}
+    <div class="mb-7">
+      <p class="section-label">{{ 'Personal details'|t }}</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>{{ form.first_name }}</div>
+        <div>{{ form.last_name }}</div>
       </div>
-      <div class="form-item">{{ form.email }}</div>
+      <div class="mt-4">{{ form.email }}</div>
     </div>
 
-    {# Session selection #}
-    <div class="form-section">
-      <p class="form-section__title">Session</p>
-      <div class="form-item">{{ form.session_id }}</div>
+    {# ── Session selection ── #}
+    <div class="mb-7">
+      <p class="section-label">{{ 'Session'|t }}</p>
+      <div>{{ form.session_id }}</div>
     </div>
 
-    {# Company toggle + conditional fields #}
-    <div class="form-section">
-      <p class="form-section__title">Company (optional)</p>
-      <div class="form-item form-item--checkbox">
+    {# ── Company (optional) ── #}
+    <div class="mb-7">
+      <p class="section-label">{{ 'Company (optional)'|t }}</p>
+      <div class="flex items-center gap-2 mb-4">
         {{ form.is_company }}
       </div>
-      <div class="form-fieldset">{{ form.company_fields }}</div>
+      <div class="rounded-lg border p-4" style="border-color:var(--color-border);background-color:var(--color-bg);">
+        {{ form.company_fields }}
+      </div>
     </div>
 
-    {# Submit #}
-    {{ form.submit }}
-
+    {# ── Submit ── #}
+    <div>{{ form.submit }}</div>
   </form>
+
 </div>
+

@@ -85,4 +85,24 @@ class ValidationTest extends TestCase
 
         $this->validator->validate($this->validData());
     }
+
+    // -------------------------------------------------------------------------
+    // payment_status auto-assignment
+    // -------------------------------------------------------------------------
+
+    public function test_payment_status_is_set_to_pending_after_successful_validation(): void
+    {
+        $this->registrationRepository
+            ->method('existsByEmailAndSession')
+            ->willReturn(false);
+
+        $this->sessionRepository
+            ->method('isSessionFull')
+            ->willReturn(false);
+
+        $result = $this->validator->validate($this->validData());
+
+        $this->assertSame('pending', $result['payment_status']);
+    }
 }
+

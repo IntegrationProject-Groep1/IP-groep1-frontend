@@ -2,10 +2,12 @@
 declare(strict_types=1);
 
 /**
- * Local test script: simulates Planning publishing a session.created event.
+ * Local test script: simulates Planning publishing session events.
  *
- * Use this together with test_planning_receive.php to verify the full round-trip
- * locally without needing the actual Planning service running.
+ * Publishes three message types in sequence:
+ *   1. session_created  → planning.exchange / planning.session.created
+ *   2. session_updated  → planning.exchange / planning.session.updated
+ *   3. session_deleted  → planning.exchange / planning.session.deleted
  *
  * Prerequisites:
  *   1. docker-compose -f docker-compose.local.yml up -d
@@ -88,7 +90,90 @@ try {
     echo "  title         : {$title}\n";
     echo "  session_type  : {$sessionType}\n";
     echo "  max_attendees : {$maxAttendees}\n";
-    echo "  routing key   : planning.session.created\n";
+    echo "  routing key   : planning.session.created\n\n";
+
+    // ── session_updated ───────────────────────────────────────────────────────
+    $updatedTimestamp = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c');
+    $updatedMessageId = sprintf('%04x%04x-%04x-4%03x-%04x-%04x%04x%04x',
+        mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+        mt_rand(0, 0x0fff), mt_rand(0, 0x3fff) | 0x8000,
+        mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+    );
+    $updatedTitle = $title . ' (Updated)';
+
+    $xmlUpdated = <<<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<message xmlns="urn:integration:planning:v1">
+  <header>
+    <message_id>{$updatedMessageId}</message_id>
+    <timestamp>{$updatedTimestamp}</timestamp>
+    <source>planning</source>
+    <type>session_updated</type>
+    <version>1.0</version>
+    <correlation_id>{$messageId}</correlation_id>
+  </header>
+  <body>
+    <session_id>{$sessionId}</session_id>
+    <title>{$updatedTitle}</title>
+    <start_datetime>2026-05-15T14:30:00Z</start_datetime>
+    <end_datetime>2026-05-15T15:30:00Z</end_datetime>
+    <location>Aula B - Campus Jette</location>
+    <session_type>{$sessionType}</session_type>
+    <status>published</status>
+    <max_attendees>{$maxAttendees}</max_attendees>
+    <current_attendees>5</current_attendees>
+  </body>
+</message>
+XML;
+
+    $msgUpdated = new AMQPMessage($xmlUpdated, [
+        'delivery_mode' => 2,
+        'content_type'  => 'application/xml',
+    ]);
+    $channel->basic_publish($msgUpdated, 'planning.exchange', 'planning.session.updated');
+
+    echo "✓ Simulated session_updated published to planning.exchange\n";
+    echo "  session_id  : {$sessionId}\n";
+    echo "  title       : {$updatedTitle}\n";
+    echo "  routing key : planning.session.updated\n\n";
+
+    // ── session_deleted ───────────────────────────────────────────────────────
+    $deletedTimestamp = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c');
+    $deletedMessageId = sprintf('%04x%04x-%04x-4%03x-%04x-%04x%04x%04x',
+        mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+        mt_rand(0, 0x0fff), mt_rand(0, 0x3fff) | 0x8000,
+        mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+    );
+
+    $xmlDeleted = <<<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<message xmlns="urn:integration:planning:v1">
+  <header>
+    <message_id>{$deletedMessageId}</message_id>
+    <timestamp>{$deletedTimestamp}</timestamp>
+    <source>planning</source>
+    <type>session_deleted</type>
+    <version>1.0</version>
+    <correlation_id>{$messageId}</correlation_id>
+  </header>
+  <body>
+    <session_id>{$sessionId}</session_id>
+    <reason>cancelled</reason>
+    <deleted_by>planning-admin</deleted_by>
+  </body>
+</message>
+XML;
+
+    $msgDeleted = new AMQPMessage($xmlDeleted, [
+        'delivery_mode' => 2,
+        'content_type'  => 'application/xml',
+    ]);
+    $channel->basic_publish($msgDeleted, 'planning.exchange', 'planning.session.deleted');
+
+    echo "✓ Simulated session_deleted published to planning.exchange\n";
+    echo "  session_id  : {$sessionId}\n";
+    echo "  reason      : cancelled\n";
+    echo "  routing key : planning.session.deleted\n";
 
     $channel->close();
 } catch (\Throwable $e) {

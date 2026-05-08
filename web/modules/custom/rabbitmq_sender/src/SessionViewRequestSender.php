@@ -1,0 +1,106 @@
+<?php
+declare(strict_types=1);
+
+namespace Drupal\rabbitmq_sender;
+
+/**
+ * Sends session_view_request messages to Planning to retrieve available sessions.
+ *
+ * Frontend publishes on:
+ *   Exchange:    planning.exchange      (topic, durable)
+ *   Routing key: frontend.to.planning.session.view
+ *
+ * Planning responds via:
+ *   Exchange:    planning.exchange
+ *   Routing key: planning.to.frontend.session.view.response
+ *   Queue:       frontend.planning.session.view.response  (handled by SessionViewResponseReceiver)
+ *
+ * The optional session_id body field scopes the request to a single session.
+ * Omit it to request all available sessions.
+ */
+class SessionViewRequestSender
+{
+    use RetryTrait;
+    use XmlValidationTrait;
+
+    private const EXCHANGE      = 'planning.exchange';
+    private const ROUTING_KEY   = 'frontend.to.planning.session.view';
+    private const EXCHANGE_TYPE = 'topic';
+    private const SOURCE        = 'frontend';
+    private const TYPE          = 'session_view_request';
+    private const VERSION       = '2.0';
+    private const XSD_PATH      = __DIR__ . '/../../../../../xsd/session_view_request.xsd';
+
+    private ?RabbitMQClient $client;
+
+    public function __construct(?RabbitMQClient $client = null)
+    {
+        $this->client = $client;
+    }
+
+    public function send(array $data = []): void
+    {
+        $xml = $this->buildXml($data);
+        $this->validateXml($xml, self::XSD_PATH);
+
+        $this->sendWithRetry(function () use ($xml): void {
+            $this->resolveClient()->declareExchange(self::EXCHANGE, self::EXCHANGE_TYPE);
+            $this->resolveClient()->publishToExchange(self::EXCHANGE, self::ROUTING_KEY, $xml);
+        });
+    }
+
+    public function buildXml(array $data = []): string
+    {
+        $messageId = $this->generateUuidV4();
+        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z');
+
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        $dom->formatOutput = false;
+
+        $message = $dom->createElement('message');
+        $message->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
+        $dom->appendChild($message);
+
+        $header = $dom->createElement('header');
+        $header->appendChild($dom->createElement('message_id', $messageId));
+        $header->appendChild($dom->createElement('timestamp', $timestamp));
+        $header->appendChild($dom->createElement('source', self::SOURCE));
+        $header->appendChild($dom->createElement('type', self::TYPE));
+        $header->appendChild($dom->createElement('version', self::VERSION));
+        $message->appendChild($header);
+
+        $body = $dom->createElement('body');
+        if (!empty($data['session_id'])) {
+            $body->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
+        }
+        $message->appendChild($body);
+
+        return $dom->saveXML() ?: '';
+    }
+
+    private function resolveClient(): RabbitMQClient
+    {
+        if ($this->client !== null) {
+            return $this->client;
+        }
+
+        $this->client = new RabbitMQClient(
+            (string) (getenv('RABBITMQ_HOST') ?: 'rabbitmq_broker'),
+            (int) (getenv('RABBITMQ_PORT') ?: 5672),
+            (string) (getenv('RABBITMQ_USER') ?: 'guest'),
+            (string) (getenv('RABBITMQ_PASS') ?: 'guest'),
+            (string) (getenv('RABBITMQ_VHOST') ?: '/')
+        );
+
+        return $this->client;
+    }
+
+    private function generateUuidV4(): string
+    {
+        $bytes = random_bytes(16);
+        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+    }
+}

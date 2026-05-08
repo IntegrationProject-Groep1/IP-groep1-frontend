@@ -9,6 +9,7 @@
   <xs:element name="message">
     <xs:complexType>
       <xs:sequence>
+        <!-- header VERPLICHT — geen minOccurs="0" zoals in v1.0 -->
         <xs:element name="header">
           <xs:complexType>
             <xs:sequence>

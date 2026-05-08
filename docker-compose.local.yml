@@ -10,6 +10,12 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
       RABBITMQ_DEFAULT_VHOST: /
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     networks:
       - shift_net
 
@@ -22,4 +28,8 @@ services:
       RABBITMQ_VHOST: /
     depends_on:
       rabbitmq_local:
-        condition: service_started
+        condition: service_healthy
+
+networks:
+  shift_net:
+    external: true

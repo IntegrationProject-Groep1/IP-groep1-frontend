@@ -34,6 +34,7 @@ jobs:
           php-version: '8.2'
           extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql
           coverage: none
+          extensions: mbstring, xml, simplexml
 
       - name: Validate composer.json
         run: composer validate --no-check-publish

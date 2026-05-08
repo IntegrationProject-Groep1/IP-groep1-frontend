@@ -20,10 +20,8 @@ $settings['hash_salt'] = 'local-dev-hash-salt-event-platform-2526';
 
 $settings['update_free_access'] = FALSE;
 
-// Only load dev services file if it exists
-$dev_services = $app_root . '/sites/development.services.yml';
-if (file_exists($dev_services)) {
-  $settings['container_yamls'][] = $dev_services;
+if (file_exists($app_root . '/sites/development.services.yml')) {
+  $settings['container_yamls'][] = $app_root . '/sites/development.services.yml';
 }
 
 $settings['file_scan_ignore_directories'] = [
@@ -58,5 +56,9 @@ if (getenv('DRUPAL_REVERSE_PROXY') === 'true') {
   }
 }
 
-// Performance tweak
-ini_set('memory_limit', '512M');
+// Add your Azure domain to trusted hosts.
+$settings['trusted_host_patterns'][] = '^integrationproject-2526s2-dag01\.westeurope\.cloudapp\.azure\.com$';
+$settings['trusted_host_patterns'][] = '^integrationproject-2526s2-dag01\.westeurope\.cloudapp\.azure\.com:30020$';
+
+// Cloudflare Tunnel — desiderius.me
+$settings['trusted_host_patterns'][] = '^(.+\\.)?desiderius\\.me(:\\d+)?$';

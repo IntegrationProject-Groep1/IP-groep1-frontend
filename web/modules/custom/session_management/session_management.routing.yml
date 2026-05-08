@@ -4,7 +4,7 @@ session_management.create:
     _form: '\Drupal\session_management\Form\SessionForm'
     _title: 'Create a session'
   requirements:
-    _permission: 'access content'
+    _permission: 'administer site configuration'
 
 session_management.confirmation:
   path: '/session/confirmation'
@@ -13,3 +13,11 @@ session_management.confirmation:
     _title: 'Session created'
   requirements:
     _permission: 'access content'
+
+session_management.end:
+  path: '/session/end'
+  defaults:
+    _form: '\Drupal\session_management\Form\SessionEndForm'
+    _title: 'End a session'
+  requirements:
+    _permission: 'administer site configuration'

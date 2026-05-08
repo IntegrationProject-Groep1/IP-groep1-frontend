@@ -73,18 +73,18 @@ class CalendarInviteSenderTest extends TestCase
 
     // ─── buildXml: correct XML structure ─────────────────────────────────────
 
-    public function test_buildXml_contains_correct_namespace(): void
+    public function test_buildXml_does_not_contain_namespace(): void
     {
         $xml = $this->sender->buildXml($this->validData());
 
-        $this->assertStringContainsString('xmlns="urn:integration:planning:v1"', $xml);
+        $this->assertStringNotContainsString('xmlns=', $xml);
     }
 
     public function test_buildXml_contains_type_calendar_invite(): void
     {
         $xml = $this->sender->buildXml($this->validData());
 
-        $this->assertStringContainsString('<type>calendar.invite</type>', $xml);
+        $this->assertStringContainsString('<type>calendar_invite</type>', $xml);
     }
 
     public function test_buildXml_contains_source_frontend(): void
@@ -102,6 +102,7 @@ class CalendarInviteSenderTest extends TestCase
         $this->assertStringContainsString('<title>Keynote: AI in de zorgsector</title>', $xml);
         $this->assertStringContainsString('<start_datetime>2026-05-15T14:00:00Z</start_datetime>', $xml);
         $this->assertStringContainsString('<end_datetime>2026-05-15T15:00:00Z</end_datetime>', $xml);
+        $this->assertStringContainsString('<attendee_email>jan@test.be</attendee_email>', $xml);
     }
 
     public function test_buildXml_includes_location_when_provided(): void
@@ -119,6 +120,46 @@ class CalendarInviteSenderTest extends TestCase
         $xml = $this->sender->buildXml($this->validData());
 
         $this->assertStringNotContainsString('<location>', $xml);
+    }
+
+    public function test_buildXml_includes_identity_uuid_when_provided(): void
+    {
+        $data = $this->validData();
+        $data['identity_uuid'] = '550e8400-e29b-41d4-a716-446655440000';
+
+        $xml = $this->sender->buildXml($data);
+
+        $this->assertStringContainsString('<identity_uuid>550e8400-e29b-41d4-a716-446655440000</identity_uuid>', $xml);
+    }
+
+    public function test_buildXml_throws_when_identity_uuid_missing(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('identity_uuid is required');
+
+        $data = $this->validData();
+        unset($data['identity_uuid']);
+        $this->sender->buildXml($data);
+    }
+
+    public function test_buildXml_throws_when_identity_uuid_empty(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('identity_uuid is required');
+
+        $data = $this->validData();
+        $data['identity_uuid'] = '';
+        $this->sender->buildXml($data);
+    }
+
+    public function test_buildXml_escapes_special_chars_in_identity_uuid(): void
+    {
+        $data = $this->validData();
+        $data['identity_uuid'] = 'id<with>&special';
+
+        $xml = $this->sender->buildXml($data);
+
+        $this->assertStringContainsString('<identity_uuid>id&lt;with&gt;&amp;special</identity_uuid>', $xml);
     }
 
     public function test_buildXml_includes_empty_location_when_key_present_but_empty(): void
@@ -219,7 +260,7 @@ class CalendarInviteSenderTest extends TestCase
             ->method('publishToExchange')
             ->with(
                 'calendar.exchange',
-                'calendar.invite',
+                'frontend.to.planning.calendar.invite',
                 $this->anything()
             );
 
@@ -274,7 +315,7 @@ class CalendarInviteSenderTest extends TestCase
             ->method('publishToExchange')
             ->with(
                 'calendar.exchange',
-                'calendar.invite',
+                'frontend.to.planning.calendar.invite',
                 $this->callback(static function (string $xml): bool {
                     $dom = new \DOMDocument();
                     return $dom->loadXML($xml) !== false;
@@ -293,6 +334,8 @@ class CalendarInviteSenderTest extends TestCase
             'title'          => 'Keynote: AI in de zorgsector',
             'start_datetime' => '2026-05-15T14:00:00Z',
             'end_datetime'   => '2026-05-15T15:00:00Z',
+            'identity_uuid'  => '550e8400-e29b-41d4-a716-446655440000',
+            'attendee_email' => 'jan@test.be',
         ];
     }
 }

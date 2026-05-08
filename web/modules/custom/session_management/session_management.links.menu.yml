@@ -3,3 +3,9 @@ session_management.create:
   route_name: session_management.create
   menu_name: main
   weight: 10
+
+session_management.end:
+  title: 'End session'
+  route_name: session_management.end
+  menu_name: main
+  weight: 11

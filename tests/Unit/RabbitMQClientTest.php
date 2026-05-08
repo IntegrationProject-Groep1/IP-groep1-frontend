@@ -76,3 +76,4 @@ class RabbitMQClientTest extends TestCase
         putenv($name . '=' . $value);
     }
 }
+

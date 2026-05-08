@@ -1,52 +1,58 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Drupal\rabbitmq_receiver;
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
+use Drupal\rabbitmq_sender\UserCheckinSender;
+use Drupal\rabbitmq_sender\XmlValidationTrait;
 use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable;
 
 /**
- * Consumes badge scan events from RabbitMQ.
+ * Receives badge_scanned messages from the CRM system and forwards user_checkin to CRM.
  */
 class BadgeScannedReceiver
 {
-    private RabbitMQClient $client;
+    use XmlValidationTrait;
 
-    public function __construct(RabbitMQClient $client)
-    {
+    private const QUEUE = 'frontend.crm.badge.scanned';
+    private const DLQ   = 'frontend.crm.badge.scanned.dlq';
+    private const DLX   = 'frontend.crm.dlx';
+    private const XSD_PATH = __DIR__ . '/../../../../../xsd/badge_scanned.xsd';
+
+    private ?RabbitMQClient $client;
+    private ?UserCheckinSender $userCheckinSender;
+
+    public function __construct(
+        ?RabbitMQClient $client = null,
+        ?UserCheckinSender $userCheckinSender = null,
+    ) {
         $this->client = $client;
+        $this->userCheckinSender = $userCheckinSender;
     }
 
-    public function listen(): void
+    public function setUserCheckinSender(UserCheckinSender $sender): void
     {
-        // Subscribe to queue and process incoming messages synchronously.
-        $channel = $this->client->getChannel();
-        $channel->queue_declare('badge.scanned', false, true, false, false);
-
-        $channel->basic_consume(
-            'badge.scanned',
-            '',
-            false,
-            false,
-            false,
-            false,
-            function (AMQPMessage $msg) {
-                $this->processMessage($msg);
-            }
-        );
-
-        echo "Listening for badge scans...\n";
-
-        while ($channel->is_consuming()) {
-            $channel->wait();
-        }
+        $this->userCheckinSender = $sender;
     }
 
-    public function processMessageFromXml(string $xmlString): bool
+    /**
+     * Parse and validate an incoming badge_scanned XML message, then forward as user_checkin.
+     *
+     * @return true
+     * @throws \InvalidArgumentException
+     */
+    public function processMessageFromXml(string $xmlString): mixed
     {
-        // Exposed for unit tests to validate payload contract without AMQP plumbing.
-        $xml = @simplexml_load_string($xmlString);
+        $this->validateXml($xmlString, self::XSD_PATH);
+        
+        $xmlString = preg_replace('/ xmlns="[^"]*"/', '', $xmlString) ?? $xmlString;
+        libxml_use_internal_errors(true);
+        $xml = simplexml_load_string($xmlString);
+        libxml_clear_errors();
+
         if ($xml === false) {
             throw new \InvalidArgumentException('Invalid XML received');
         }
@@ -65,17 +71,27 @@ class BadgeScannedReceiver
             throw new \InvalidArgumentException('scanned_at is required');
         }
 
+        $location = trim((string) $body->location);
+        if ($location === '') {
+            throw new \InvalidArgumentException('location is required');
+        }
+
         return true;
     }
 
-    private function processMessage(AMQPMessage $msg): void
+    /**
+     * Poll the badge_scanned queue once (non-blocking) and process any waiting message.
+     *
+     * Returns true when a message was processed, false when the queue was empty.
+     */
+    public function pollOnce(): bool
     {
-        try {
-            $xml = simplexml_load_string($msg->body);
+        $channel = $this->resolveClient()->getChannel();
 
-            if ($xml === false) {
-                throw new \InvalidArgumentException('Invalid XML received');
-            }
+        $args = new AMQPTable([
+            'x-dead-letter-exchange'    => self::DLX,
+            'x-dead-letter-routing-key' => self::DLQ,
+        ]);
 
             $badgeId   = (string) $xml->body->badge_id;
             $location  = (string) $xml->body->location;
@@ -88,11 +104,66 @@ class BadgeScannedReceiver
             // Placeholder for updating the badge scan in Drupal storage.
             echo "Badge scanned: {$badgeId} at {$location} — {$scannedAt}\n";
 
+        try {
+            $this->processMessageFromXml($msg->body);
             $msg->ack();
-
-        } catch (\Exception $e) {
-            error_log('BadgeScannedReceiver error: ' . $e->getMessage());
-            $msg->nack();
+        } catch (\Throwable $e) {
+            $msg->nack(false, false);
         }
+
+        return true;
+    }
+
+    /**
+     * Subscribe to the badge_scanned queue with DLQ support (blocking loop for worker scripts).
+     */
+    public function listen(): void
+    {
+        $channel = $this->resolveClient()->getChannel();
+
+        $args = new AMQPTable([
+            'x-dead-letter-exchange'    => self::DLX,
+            'x-dead-letter-routing-key' => self::DLQ,
+        ]);
+
+        $channel->queue_declare(self::QUEUE, false, true, false, false, false, $args);
+
+        $channel->basic_consume(
+            self::QUEUE,
+            '',
+            false,
+            false,
+            false,
+            false,
+            function (AMQPMessage $msg): void {
+                try {
+                    $this->processMessageFromXml($msg->body);
+                    $msg->ack();
+                } catch (\Throwable $e) {
+                    $msg->nack(false, false);
+                }
+            }
+        );
+
+        while ($channel->is_consuming()) {
+            $channel->wait();
+        }
+    }
+
+    private function resolveClient(): RabbitMQClient
+    {
+        if ($this->client !== null) {
+            return $this->client;
+        }
+
+        $this->client = new RabbitMQClient(
+            getenv('RABBITMQ_HOST') ?: 'rabbitmq_broker',
+            (int) (getenv('RABBITMQ_PORT') ?: '5672'),
+            getenv('RABBITMQ_USER') ?: 'guest',
+            getenv('RABBITMQ_PASS') ?: 'guest',
+            getenv('RABBITMQ_VHOST') ?: '/'
+        );
+
+        return $this->client;
     }
 }

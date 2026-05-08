@@ -21,6 +21,7 @@ class UserCreatedSenderTest extends TestCase
     public function test_throws_exception_when_email_is_missing(): void
     {
         $this->expectException(\InvalidArgumentException::class);
+
         $this->sender->send([
             'first_name' => 'Jan',
             'last_name' => 'Jansen',
@@ -36,7 +37,7 @@ class UserCreatedSenderTest extends TestCase
             'is_company' => false,
         ]);
 
-        $this->assertStringContainsString('<type>user.created</type>', $xml);
+        $this->assertStringContainsString('<type>user_created</type>', $xml);
         $this->assertStringContainsString('<email>jan@test.be</email>', $xml);
         $this->assertStringNotContainsString('<session>', $xml);
     }

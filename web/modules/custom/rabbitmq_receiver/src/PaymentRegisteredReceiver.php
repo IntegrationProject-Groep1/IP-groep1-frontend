@@ -1,106 +1,91 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Drupal\rabbitmq_receiver;
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
+use Drupal\rabbitmq_sender\XmlValidationTrait;
 use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable;
 
 /**
- * Consumes payment registration events from RabbitMQ.
+ * Receives payment_registered messages from the CRM system.
  */
 class PaymentRegisteredReceiver
 {
-    private RabbitMQClient $client;
+    use XmlValidationTrait;
 
-    public function __construct(RabbitMQClient $client)
+    private const QUEUE = 'frontend.crm.payment.registered';
+    private const DLQ   = 'frontend.crm.payment.registered.dlq';
+    private const DLX   = 'frontend.crm.dlx';
+    private const XSD_PATH = __DIR__ . '/../../../../../xsd/payment_registered.xsd';
+
+    public function __construct(private readonly RabbitMQClient $client) {}
+
+    /**
+     * Parse and validate an incoming payment_registered XML message.
+     *
+     * @return true
+     * @throws \InvalidArgumentException
+     */
+    public function processMessageFromXml(string $xmlString): mixed
     {
-        $this->client = $client;
-    }
+        $this->validateXml($xmlString, self::XSD_PATH);
+        
+        $xmlString = preg_replace('/ xmlns="[^"]*"/', '', $xmlString) ?? $xmlString;
+        libxml_use_internal_errors(true);
+        $xml = simplexml_load_string($xmlString);
+        libxml_clear_errors();
 
-    public function listen(): void
-    {
-        $channel = $this->client->getChannel();
-        $channel->queue_declare('frontend.incoming', false, true, false, false);
-
-        $channel->basic_consume(
-            'frontend.incoming',
-            '',
-            false,
-            false,
-            false,
-            false,
-            function (AMQPMessage $msg) {
-                $this->processMessage($msg);
-            }
-        );
-
-        echo "Listening for payment registrations...\n";
-
-        while ($channel->is_consuming()) {
-            $channel->wait();
-        }
-    }
-
-    public function processMessageFromXml(string $xmlString): bool
-    {
-        $xml = @simplexml_load_string($xmlString);
         if ($xml === false) {
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
-        $identityUuid    = (string) $xml->body->identity_uuid;
-        $invoiceId       = (string) $xml->body->invoice->id;
-        $paymentContext  = (string) $xml->body->payment_context;
+        $body = $xml->body;
 
-        if (empty($identityUuid)) {
-            throw new \InvalidArgumentException('identity_uuid is required');
-        }
-        if (empty($invoiceId)) {
-            throw new \InvalidArgumentException('invoice.id is required');
-        }
-        if (empty($paymentContext)) {
-            throw new \InvalidArgumentException('payment_context is required');
+        $invoice = $body->invoice;
+        $status = trim((string) $invoice->status);
+        if ($status === '') {
+            throw new \InvalidArgumentException('status is required');
         }
 
         return true;
     }
 
-    private function processMessage(AMQPMessage $msg): void
+    /**
+     * Subscribe to the payment_registered queue with DLQ support.
+     */
+    public function listen(): void
     {
-        try {
-            $xml = simplexml_load_string($msg->body);
+        $channel = $this->client->getChannel();
 
-            if ($xml === false) {
-                throw new \InvalidArgumentException('Invalid XML received');
+        $args = new AMQPTable([
+            'x-dead-letter-exchange'    => self::DLX,
+            'x-dead-letter-routing-key' => self::DLQ,
+        ]);
+
+        $channel->queue_declare(self::QUEUE, false, true, false, false, false, $args);
+
+        $channel->basic_consume(
+            self::QUEUE,
+            '',
+            false,
+            false,
+            false,
+            false,
+            function (AMQPMessage $msg): void {
+                try {
+                    $this->processMessageFromXml($msg->body);
+                    $msg->ack();
+                } catch (\Throwable $e) {
+                    $msg->nack(false, false);
+                }
             }
+        );
 
-            $msgType = (string) $xml->header->type;
-            if ($msgType !== 'payment_registered') {
-                $msg->nack(false, true);
-                return;
-            }
-
-            $identityUuid   = (string) $xml->body->identity_uuid;
-            $invoiceId      = (string) $xml->body->invoice->id;
-            $amountPaid     = (string) $xml->body->invoice->amount_paid;
-            $paymentContext = (string) $xml->body->payment_context;
-
-            if (empty($identityUuid)) {
-                throw new \InvalidArgumentException('identity_uuid is required');
-            }
-            if (empty($invoiceId)) {
-                throw new \InvalidArgumentException('invoice.id is required');
-            }
-
-            // Update payment status in Drupal storage.
-            echo "Payment registered: {$identityUuid} - {$invoiceId} - {$amountPaid} ({$paymentContext})\n";
-
-            $msg->ack();
-
-        } catch (\Exception $e) {
-            error_log('PaymentRegisteredReceiver error: ' . $e->getMessage());
-            $msg->nack();
+        while ($channel->is_consuming()) {
+            $channel->wait();
         }
     }
 }

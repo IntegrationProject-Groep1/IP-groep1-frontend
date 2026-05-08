@@ -44,6 +44,21 @@ try {
     $channel->queue_bind('frontend.planning.session.created', 'planning.exchange', 'planning.session.created');
     echo "✓ Queue declared & bound: frontend.planning.session.created → planning.exchange (planning.session.created)\n";
 
+    // ── frontend.planning.session.updated (queue) ────────────────────────────
+    $channel->queue_declare('frontend.planning.session.updated', false, true, false, false);
+    $channel->queue_bind('frontend.planning.session.updated', 'planning.exchange', 'planning.session.updated');
+    echo "✓ Queue declared & bound: frontend.planning.session.updated → planning.exchange (planning.session.updated)\n";
+
+    // ── frontend.planning.session.deleted (queue) ────────────────────────────
+    $channel->queue_declare('frontend.planning.session.deleted', false, true, false, false);
+    $channel->queue_bind('frontend.planning.session.deleted', 'planning.exchange', 'planning.session.deleted');
+    echo "✓ Queue declared & bound: frontend.planning.session.deleted → planning.exchange (planning.session.deleted)\n";
+
+    // ── frontend.planning.session.view.response (queue) ──────────────────────
+    $channel->queue_declare('frontend.planning.session.view.response', false, true, false, false);
+    $channel->queue_bind('frontend.planning.session.view.response', 'planning.exchange', 'planning.session.view.response');
+    echo "✓ Queue declared & bound: frontend.planning.session.view.response → planning.exchange (planning.session.view.response)\n";
+
     // ── planning.calendar.invite (queue) ─────────────────────────────────────
     // Planning's consumer queue — we create it locally so test sends land somewhere.
     $channel->queue_declare('planning.calendar.invite', false, true, false, false);
