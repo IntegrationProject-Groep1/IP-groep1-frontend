@@ -15,6 +15,7 @@ use PhpAmqpLib\Wire\AMQPTable;
 class PaymentRegisteredReceiver
 {
     use XmlValidationTrait;
+    use ReceiverLogTrait;
 
     private const QUEUE = 'frontend.crm.payment.registered';
     private const DLQ   = 'frontend.crm.payment.registered.dlq';
@@ -79,6 +80,7 @@ class PaymentRegisteredReceiver
                     $this->processMessageFromXml($msg->body);
                     $msg->ack();
                 } catch (\Throwable $e) {
+                    $this->logReceiverError($e, self::QUEUE, $msg->body);
                     $msg->nack(false, false);
                 }
             }

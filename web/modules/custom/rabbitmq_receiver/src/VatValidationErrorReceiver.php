@@ -15,6 +15,7 @@ use PhpAmqpLib\Wire\AMQPTable;
 class VatValidationErrorReceiver
 {
     use XmlValidationTrait;
+    use ReceiverLogTrait;
 
     private const QUEUE    = 'frontend.crm.vat.validation.error';
     private const DLQ      = 'frontend.crm.vat.validation.error.dlq';
@@ -77,6 +78,7 @@ class VatValidationErrorReceiver
                     $this->processMessageFromXml($msg->body);
                     $msg->ack();
                 } catch (\Throwable $e) {
+                    $this->logReceiverError($e, self::QUEUE, $msg->body);
                     $msg->nack(false, false);
                 }
             }

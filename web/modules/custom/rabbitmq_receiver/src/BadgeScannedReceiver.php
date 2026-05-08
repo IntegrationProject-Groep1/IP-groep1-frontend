@@ -16,6 +16,7 @@ use PhpAmqpLib\Wire\AMQPTable;
 class BadgeScannedReceiver
 {
     use XmlValidationTrait;
+    use ReceiverLogTrait;
 
     private const QUEUE = 'frontend.crm.badge.scanned';
     private const DLQ   = 'frontend.crm.badge.scanned.dlq';
@@ -108,6 +109,7 @@ class BadgeScannedReceiver
             $this->processMessageFromXml($msg->body);
             $msg->ack();
         } catch (\Throwable $e) {
+            $this->logReceiverError($e, self::QUEUE, $msg->body);
             $msg->nack(false, false);
         }
 
@@ -140,6 +142,7 @@ class BadgeScannedReceiver
                     $this->processMessageFromXml($msg->body);
                     $msg->ack();
                 } catch (\Throwable $e) {
+                    $this->logReceiverError($e, self::QUEUE, $msg->body);
                     $msg->nack(false, false);
                 }
             }

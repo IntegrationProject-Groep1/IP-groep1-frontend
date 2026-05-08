@@ -17,6 +17,7 @@ use PhpAmqpLib\Wire\AMQPTable;
 class SessionViewResponseReceiver
 {
     use XmlValidationTrait;
+    use ReceiverLogTrait;
 
     private const EXCHANGE      = 'planning.exchange';
     private const EXCHANGE_TYPE = 'topic';
@@ -109,6 +110,7 @@ class SessionViewResponseReceiver
                     \Drupal::state()->set('planning.sessions', $sessions);
                     $msg->ack();
                 } catch (\Throwable $e) {
+                    $this->logReceiverError($e, self::QUEUE, $msg->body);
                     $msg->nack(false, false);
                 }
             }
@@ -149,6 +151,7 @@ class SessionViewResponseReceiver
             \Drupal::state()->set('planning.sessions', $sessions);
             $msg->ack();
         } catch (\Throwable $e) {
+            $this->logReceiverError($e, self::QUEUE, $msg->body);
             $msg->nack(false, false);
         }
 

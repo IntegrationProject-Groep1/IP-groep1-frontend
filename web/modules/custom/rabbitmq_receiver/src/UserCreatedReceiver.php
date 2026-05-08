@@ -15,6 +15,7 @@ use PhpAmqpLib\Wire\AMQPTable;
 class UserCreatedReceiver
 {
     use XmlValidationTrait;
+    use ReceiverLogTrait;
 
     private const QUEUE    = 'frontend.crm.user.created';
     private const DLQ      = 'frontend.crm.user.created.dlq';
@@ -92,6 +93,7 @@ class UserCreatedReceiver
                     $this->processMessageFromXml($msg->body);
                     $msg->ack();
                 } catch (\Throwable $e) {
+                    $this->logReceiverError($e, self::QUEUE, $msg->body);
                     $msg->nack(false, false);
                 }
             }
