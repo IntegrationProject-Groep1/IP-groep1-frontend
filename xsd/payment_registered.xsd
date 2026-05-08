@@ -16,7 +16,7 @@
       <xs:enumeration value="facturatie"/>
       <xs:enumeration value="monitoring"/>
       <xs:enumeration value="mailing"/>
-      <xs:enumeration value="identity"/>
+      <xs:enumeration value="identity-service"/>
       <xs:enumeration value="iot_gateway"/>
     </xs:restriction>
   </xs:simpleType>
