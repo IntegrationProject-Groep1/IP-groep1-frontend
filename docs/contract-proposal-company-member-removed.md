@@ -7,6 +7,22 @@
 
 ---
 
+## Beschrijving
+
+In het kader van de **company registratie feature** (branch `claude/add-company-registration-azMAX`) is er een nieuwe flow geïmplementeerd waarbij een bedrijfsbeheerder collega's kan uitnodigen via e-mail. Deze flow werkt als volgt:
+
+1. Een gebruiker registreert zich als bedrijf via het registratieformulier
+2. Na inloggen kan de bedrijfsbeheerder via `/company/invite` een e-mailadres invoeren
+3. Het systeem stuurt een uitnodigingsmail met een unieke link én maakt de gebruiker **alvast aan in CRM** via een `user_created` bericht met `company_id` gekoppeld
+4. De uitgenodigde klikt de link → komt op het registratieformulier met e-mail vooringevuld
+5. Na registratie herkent de Identity Service de gebruiker (zelfde `master_uuid`) → CRM weet dat deze persoon tot het bedrijf behoort
+
+**Het probleem** ontstaat wanneer de bedrijfsbeheerder een uitnodiging **intrekt** vóórdat de uitgenodigde zich heeft geregistreerd. De invite link wordt geblokkeerd (token verwijderd), maar CRM heeft de gebruiker al als bedrijfslid geregistreerd via het eerder verstuurde `user_created` bericht. Er bestaat momenteel **geen berichttype** om CRM te informeren dat deze koppeling ongedaan gemaakt moet worden.
+
+Dit voorstel introduceert `company_member_removed` om deze gap op te vullen.
+
+---
+
 ## Aanleiding
 
 Het huidige contract (v2.3) ondersteunt het koppelen van een gebruiker aan een bedrijf via `user_created` en `user_updated`, maar voorziet geen manier om die koppeling later ongedaan te maken.
