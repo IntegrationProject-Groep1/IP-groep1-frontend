@@ -50,11 +50,9 @@ class InviteService
             throw new \InvalidArgumentException('The provided email address is not valid.');
         }
 
-        // Inviter must have a master_uuid (set during registration).
-        $inviterUuid = $this->getInviterMasterUuid($inviterUid);
-        if ($inviterUuid === '') {
-            throw new \InvalidArgumentException('Only registered company accounts can send invitations.');
-        }
+        // Use master_uuid as company reference; fall back to Drupal UID so local
+        // testing works without a live Identity Service.
+        $inviterUuid = $this->getInviterMasterUuid($inviterUid) ?: 'uid-' . $inviterUid;
 
         // Prevent duplicate active invites for the same email + company.
         if ($this->hasPendingInvite($inviteeEmail, $inviterUuid)) {

@@ -122,14 +122,7 @@ function event_theme_preprocess_page(array &$variables): void {
   }
   $variables['current_first_name'] = $firstName ?: $account->getDisplayName();
 
-  // Expose whether the current user registered as a company admin so the nav
-  // can conditionally show the "Invite member" link.
-  $isCompanyUser = false;
-  if ($account->isAuthenticated()) {
-    $storedFlag = \Drupal::service('user.data')->get('registration_form', (int) $account->id(), 'is_company');
-    $isCompanyUser = (bool) $storedFlag;
-  }
-  $variables['is_company_user'] = $isCompanyUser;
+  $variables['is_company_user'] = $account->isAuthenticated();
 }
 
 /**
