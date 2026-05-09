@@ -20,7 +20,7 @@ class PaymentRegisteredReceiver
     private const QUEUE = 'frontend.crm.payment.registered';
     private const DLQ   = 'frontend.crm.payment.registered.dlq';
     private const DLX   = 'frontend.crm.dlx';
-    private const XSD_PATH = __DIR__ . '/../../../../../xsd/payment_registered.xsd';
+    private const XSD_PATH = __DIR__ . '/../../../../../xsd/payment_registered_receiver.xsd';
 
     public function __construct(private readonly RabbitMQClient $client) {}
 

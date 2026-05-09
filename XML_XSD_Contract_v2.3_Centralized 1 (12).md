@@ -2523,6 +2523,8 @@ Kassa stuurt dit na elke afgeronde kassatransactie.
 - **consumption** → routing key `kassa.payments.consumption` (samen met `consumption_order`)
 - **registration** → routing key `kassa.payments.registration` (inschrijvingsgeld aan kassa)
 
+> **`identity_uuid` & `invoice.id`:** Deze zijn optioneel (`minOccurs="0"`) om "anonieme" kassabetalingen of betalingen waarvoor de CRM-sync nog niet is afgerond te ondersteunen. In dat geval koppelt Facturatie de betaling aan een generieke "Bar Klant" in FossBilling.
+>
 > **`correlation_id`:** bij consumption = `message_id` van de bijhorende `consumption_order`. Bij registration = `message_id` van de originele `new_registration`.
 >
 > **`payment_method`:** `company_link` (bedrijfsrekening), `on_site` (cash/kaart/badge wallet), `online`.
@@ -2559,12 +2561,9 @@ Kassa stuurt dit na elke afgeronde kassatransactie.
             <xs:sequence>
               <xs:element name="message_id"     type="UUIDType"/>
               <xs:element name="timestamp"      type="xs:dateTime"/>
-              <xs:element name="source"><xs:simpleType><xs:restriction base="xs:string">
-                <xs:enumeration value="kassa"/></xs:restriction></xs:simpleType></xs:element>
-              <xs:element name="type"><xs:simpleType><xs:restriction base="xs:string">
-                <xs:enumeration value="payment_registered"/></xs:restriction></xs:simpleType></xs:element>
-              <xs:element name="version"><xs:simpleType><xs:restriction base="xs:string">
-                <xs:enumeration value="2.0"/></xs:restriction></xs:simpleType></xs:element>
+              <xs:element name="source"         type="xs:string"/>
+              <xs:element name="type"           type="xs:string"/>
+              <xs:element name="version"        type="xs:string"/>
               <xs:element name="correlation_id" type="UUIDType" minOccurs="0"/>
             </xs:sequence>
           </xs:complexType>
@@ -3305,9 +3304,9 @@ Facturatie stuurt dit naar CRM nadat een online betaling (via de facturatie-link
             <xs:sequence>
               <xs:element name="message_id"     type="UUIDType"/>
               <xs:element name="timestamp"      type="xs:dateTime"/>
-              <xs:element name="source"         type="xs:string" fixed="facturatie"/>
-              <xs:element name="type"           type="xs:string" fixed="payment_registered"/>
-              <xs:element name="version"        type="xs:string" fixed="2.0"/>
+              <xs:element name="source"         type="xs:string"/>
+              <xs:element name="type"           type="xs:string"/>
+              <xs:element name="version"        type="xs:string"/>
               <xs:element name="correlation_id" type="UUIDType" minOccurs="0"/>
             </xs:sequence>
           </xs:complexType>
@@ -3315,11 +3314,11 @@ Facturatie stuurt dit naar CRM nadat een online betaling (via de facturatie-link
         <xs:element name="body">
           <xs:complexType>
             <xs:sequence>
-              <xs:element name="identity_uuid" type="UUIDType"/>
+              <xs:element name="identity_uuid" type="UUIDType" minOccurs="0"/>
               <xs:element name="invoice">
                 <xs:complexType>
                   <xs:sequence>
-                    <xs:element name="id" type="xs:string"/>
+                    <xs:element name="id" type="xs:string" minOccurs="0"/>
                     <xs:element name="amount_paid" type="CurrencyAmountType"/>
                     <xs:element name="status">
                       <xs:simpleType>
@@ -4157,9 +4156,9 @@ Wanneer Kassa een `payment_registered` stuurt naar `crm.incoming` (routing: `kas
     <xs:sequence>
       <xs:element name="message_id" type="UUIDType"/>
       <xs:element name="timestamp" type="xs:dateTime"/>
-      <xs:element name="source" type="SourceType" fixed="frontend"/>
-      <xs:element name="type" type="xs:string" fixed="payment_registered"/>
-      <xs:element name="version" type="xs:string" fixed="2.0"/>
+      <xs:element name="source" type="xs:string"/>
+      <xs:element name="type" type="xs:string"/>
+      <xs:element name="version" type="xs:string"/>
       <xs:element name="correlation_id" type="UUIDType" minOccurs="0"/>
     </xs:sequence>
   </xs:complexType>
@@ -7016,6 +7015,7 @@ Maar: dit document IS nu de canonieke bron. Zolang er geen issue + update gewees
 *Document v2.3 — Gegenereerd op basis van volledige repo-audit + bestaande v2.0 contract — April 2026*
 *Sectie 10.4, 27 en 28 toegevoegd Mei 2026 — gap resolution na repo-scan*
 *Volgende geplande revisie: na demo 3 — toevoegen of aanpassen via Pull Request*
+
 
 
 
