@@ -66,10 +66,7 @@ class CompanyMemberRemovedSender
                 'content_type'  => 'application/xml',
             ]);
             $this->resolveClient()->getChannel()->basic_publish($msg, '', self::QUEUE_NAME);
-            \Drupal::logger('rabbitmq_sender')->info('Published @type to @queue', [
-                '@type'  => self::TYPE,
-                '@queue' => self::QUEUE_NAME,
-            ]);
+            $this->logOutboundSuccess(self::TYPE, self::QUEUE_NAME, $xml);
         });
     }
 
