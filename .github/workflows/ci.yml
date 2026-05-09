@@ -32,9 +32,8 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, simplexml
           coverage: none
-          extensions: mbstring, xml, simplexml
 
       - name: Validate composer.json
         run: composer validate --no-check-publish
