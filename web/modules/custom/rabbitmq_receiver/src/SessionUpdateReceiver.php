@@ -74,6 +74,14 @@ class SessionUpdateReceiver
             'status'            => trim((string) $body->status),
             'max_attendees'     => (int) (string) $body->max_attendees,
             'current_attendees' => (int) (string) $body->current_attendees,
+            'change_reason'     => trim((string) ($body->change_reason ?? '')),
+            'speaker'           => isset($body->speaker) ? [
+                'identity_uuid' => trim((string) ($body->speaker->identity_uuid ?? '')),
+                'first_name'    => trim((string) ($body->speaker->contact->first_name ?? '')),
+                'last_name'     => trim((string) ($body->speaker->contact->last_name ?? '')),
+                'organisation'  => trim((string) ($body->speaker->organisation ?? '')),
+                'email'         => trim((string) ($body->speaker->email ?? '')),
+            ] : null,
         ];
     }
 

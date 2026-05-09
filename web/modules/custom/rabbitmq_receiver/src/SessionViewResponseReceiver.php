@@ -25,7 +25,7 @@ class SessionViewResponseReceiver
     private const QUEUE         = 'frontend.planning.session.view.response';
     private const DLQ           = 'frontend.planning.session.view.response.dlq';
     private const DLX           = 'frontend.planning.dlx';
-    private const XSD_PATH      = 'xsd/session_view_response.xsd';
+    private const XSD_PATH      = __DIR__ . '/../../../../../xsd/session_view_response.xsd';
 
     public function __construct(private readonly RabbitMQClient $client) {}
 
@@ -76,6 +76,13 @@ class SessionViewResponseReceiver
                     'status'            => trim((string) $session->status),
                     'max_attendees'     => (int) (string) $session->max_attendees,
                     'current_attendees' => (int) (string) $session->current_attendees,
+                    'speaker'           => isset($session->speaker) ? [
+                        'identity_uuid' => trim((string) ($session->speaker->identity_uuid ?? '')),
+                        'first_name'    => trim((string) ($session->speaker->contact->first_name ?? '')),
+                        'last_name'     => trim((string) ($session->speaker->contact->last_name ?? '')),
+                        'organisation'  => trim((string) ($session->speaker->organisation ?? '')),
+                        'email'         => trim((string) ($session->speaker->email ?? '')),
+                    ] : null,
                 ];
             }
         }

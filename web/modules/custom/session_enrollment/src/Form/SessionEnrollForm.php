@@ -77,13 +77,19 @@ class SessionEnrollForm extends FormBase
         $sessionIds  = array_values((array) ($form_state->getValue('session_ids') ?? []));
         $sessionMap  = $this->buildSessionMap();
 
+        $userId     = (int) $currentUser->id();
+        $masterUuid = \Drupal::service('user.data')->get('registration_form', $userId, 'master_uuid') ?? '';
+
         $userData = [
             'email'         => $currentUser->getEmail(),
-            'user_id'       => (string) $currentUser->id(),
-            'first_name'    => $this->resolveUserField($currentUser->id(), 'field_first_name') ?: $currentUser->getAccountName(),
-            'last_name'     => $this->resolveUserField($currentUser->id(), 'field_last_name') ?: '',
-            'date_of_birth' => $this->resolveUserField($currentUser->id(), 'field_date_of_birth') ?: '',
-            'is_company'    => false,
+            'user_id'       => (string) $userId,
+            'master_uuid'   => $masterUuid !== '' ? $masterUuid : null,
+            'first_name'    => $this->resolveUserField($userId, 'field_first_name') ?: $currentUser->getAccountName(),
+            'last_name'     => $this->resolveUserField($userId, 'field_last_name') ?: '',
+            'date_of_birth' => $this->resolveUserField($userId, 'field_date_of_birth') ?: '',
+            'is_company'    => (bool) $this->resolveUserField($userId, 'field_is_company'),
+            'company_name'  => $this->resolveUserField($userId, 'field_company_name'),
+            'vat_number'    => $this->resolveUserField($userId, 'field_vat_number'),
         ];
 
         try {
