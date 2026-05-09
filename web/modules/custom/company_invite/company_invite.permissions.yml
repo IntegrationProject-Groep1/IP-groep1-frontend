@@ -1,0 +1,4 @@
+access company invite:
+  title: 'Access company invite dashboard'
+  description: 'Allows company admins to invite team members.'
+  restrict access: false

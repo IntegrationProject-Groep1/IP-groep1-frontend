@@ -1,0 +1,8 @@
+company_invite.invite_form:
+  title: 'Invite member'
+  route_name: company_invite.invite_form
+  menu_name: account
+  weight: -5
+  options:
+    attributes:
+      class: ['company-invite-link']

@@ -58,6 +58,12 @@ class RegistrationService
             $data['master_uuid'] = $masterUuid;
         }
 
+        $isCompany = (bool) ($data['is_company'] ?? false);
+        $this->storeIsCompanyOnUser((int) $user->id(), $isCompany);
+        if ($isCompany) {
+            $this->grantCompanyInvitePermission($user);
+        }
+
         // Notify CRM that a new user account was created (non-fatal).
         if ($this->userCreatedSender !== null) {
             try {
@@ -254,6 +260,40 @@ class RegistrationService
         }
 
         \Drupal::service('user.data')->set('registration_form', $userId, 'master_uuid', $masterUuid);
+    }
+
+    /**
+     * Assigns the company_admin role to the user so the "Invite member" menu
+     * link and route are only accessible to company accounts.
+     */
+    private function grantCompanyInvitePermission(User $user): void
+    {
+        if (!class_exists('\Drupal') || !\Drupal::hasContainer()) {
+            return;
+        }
+
+        $roleStorage = $this->entityTypeManager->getStorage('user_role');
+        if (!$roleStorage->load('company_admin')) {
+            $role = $roleStorage->create(['id' => 'company_admin', 'label' => 'Company admin']);
+            $role->grantPermission('access company invite');
+            $role->save();
+        }
+
+        $user->addRole('company_admin');
+        $user->save();
+    }
+
+    /**
+     * Stores whether the user registered as a company so other modules can check
+     * this without loading CRM data (e.g. company_invite checks it for access control).
+     */
+    private function storeIsCompanyOnUser(int $userId, bool $isCompany): void
+    {
+        if (!class_exists('\Drupal') || !\Drupal::hasContainer()) {
+            return;
+        }
+
+        \Drupal::service('user.data')->set('registration_form', $userId, 'is_company', $isCompany);
     }
 
 }

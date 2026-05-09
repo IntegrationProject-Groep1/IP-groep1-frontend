@@ -1,0 +1,30 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Implements hook_mail().
+ *
+ * Defines the invite email sent to the prospective team member.
+ */
+function company_invite_mail(string $key, array &$message, array $params): void
+{
+    if ($key !== 'company_invite') {
+        return;
+    }
+
+    $message['subject'] = t('You have been invited to join @company', [
+        '@company' => $params['company_name'] ?? 'a company',
+    ]);
+
+    $message['body'][] = t('Hello,');
+    $message['body'][] = t(
+        '@inviter has invited you to create an account and join their company on our platform.',
+        ['@inviter' => $params['inviter_name'] ?? 'A colleague']
+    );
+    $message['body'][] = t(
+        'Click the link below to complete your registration (valid for 7 days):' . "\n" . '@link',
+        ['@link' => $params['invite_link']]
+    );
+    $message['body'][] = t('If you did not expect this invitation, you can safely ignore this email.');
+}

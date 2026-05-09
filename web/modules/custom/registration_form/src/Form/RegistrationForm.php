@@ -36,6 +36,21 @@ class RegistrationForm extends FormBase
 
     public function buildForm(array $form, FormStateInterface $form_state): array
     {
+        // Check for an invite token in the query string.
+        // FormBase already owns $requestStack; use \Drupal::request() to avoid redeclaring it.
+        $inviteToken  = (string) (\Drupal::request()->query->get('invite_token') ?? '');
+        $invitedEmail = '';
+        if ($inviteToken !== '' && \Drupal::hasService('company_invite.invite_service')) {
+            /** @var \Drupal\company_invite\Service\InviteService $inviteService */
+            $inviteService = \Drupal::service('company_invite.invite_service');
+            $invitedEmail  = $inviteService->getEmailForToken($inviteToken) ?? '';
+        }
+
+        // Store the validated token in form state for use during submit.
+        if ($invitedEmail !== '') {
+            $form_state->set('invite_token', $inviteToken);
+        }
+
         $form['first_name'] = [
             '#type'     => 'textfield',
             '#title'    => $this->t('First name'),
@@ -48,10 +63,21 @@ class RegistrationForm extends FormBase
             '#required' => true,
         ];
 
+        $emailAttributes = [];
+        if ($invitedEmail !== '') {
+            // Lock the email field when the user arrives via a company invite link.
+            $emailAttributes = [
+                'readonly' => 'readonly',
+                'class'    => ['invited-email'],
+            ];
+        }
+
         $form['email'] = [
-            '#type'     => 'email',
-            '#title'    => $this->t('Email address'),
-            '#required' => true,
+            '#type'          => 'email',
+            '#title'         => $this->t('Email address'),
+            '#required'      => true,
+            '#default_value' => $invitedEmail,
+            '#attributes'    => $emailAttributes,
         ];
 
         $form['password'] = [
@@ -159,6 +185,14 @@ class RegistrationForm extends FormBase
 
         try {
             $this->registrationService->register($data);
+
+            // Mark the invite token as used so it cannot be replayed.
+            $inviteToken = (string) ($form_state->get('invite_token') ?? '');
+            if ($inviteToken !== '' && \Drupal::hasService('company_invite.invite_service')) {
+                /** @var \Drupal\company_invite\Service\InviteService $inviteService */
+                $inviteService = \Drupal::service('company_invite.invite_service');
+                $inviteService->markTokenUsed($inviteToken);
+            }
 
             $this->tempStoreFactory
                 ->get('registration_form')

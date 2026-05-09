@@ -43,6 +43,12 @@
             {{ 'Enroll'|t }}
           </a>
         {% endif %}
+        {% if logged_in and is_company_user %}
+          <a href="{{ path('company_invite.invite_form') }}"
+             class="nav-link {{ current_route starts with 'company_invite' ? 'is-active' : '' }}">
+            {{ 'Invite member'|t }}
+          </a>
+        {% endif %}
         {% if is_admin %}
           <a href="{{ path('session_management.create') }}"
              class="nav-link {{ current_route == 'session_management.create' ? 'is-active' : '' }}">
@@ -149,6 +155,12 @@
         <a href="{{ path('session_enrollment.enroll') }}"
            class="nav-link {{ current_route starts with 'session_enrollment' ? 'is-active' : '' }}">
           {{ 'Enroll'|t }}
+        </a>
+      {% endif %}
+      {% if logged_in and is_company_user %}
+        <a href="{{ path('company_invite.invite_form') }}"
+           class="nav-link {{ current_route starts with 'company_invite' ? 'is-active' : '' }}">
+          {{ 'Invite member'|t }}
         </a>
       {% endif %}
       {% if is_admin %}

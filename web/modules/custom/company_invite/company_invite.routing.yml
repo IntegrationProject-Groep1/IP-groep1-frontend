@@ -1,0 +1,24 @@
+company_invite.invite_form:
+  path: '/company/invite'
+  defaults:
+    _controller: '\Drupal\company_invite\Controller\InviteDashboardController::page'
+    _title: 'Team members'
+  requirements:
+    _role: 'company_admin'
+
+company_invite.delete_invite:
+  path: '/company/invite/{token}/delete'
+  defaults:
+    _controller: '\Drupal\company_invite\Controller\InviteDeleteController::delete'
+  requirements:
+    _role: 'company_admin'
+    token: '[a-f0-9]{64}'
+
+company_invite.register_invited:
+  path: '/register/invite/{token}'
+  defaults:
+    _controller: '\Drupal\company_invite\Controller\InviteRegistrationController::page'
+    _title: 'Complete your registration'
+  requirements:
+    _access: 'TRUE'
+    token: '[a-f0-9]{64}'

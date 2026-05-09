@@ -121,6 +121,13 @@ function event_theme_preprocess_page(array &$variables): void {
     $firstName = (string) $fullUser->get('field_first_name')->value;
   }
   $variables['current_first_name'] = $firstName ?: $account->getDisplayName();
+
+  $isCompanyUser = false;
+  if ($account->isAuthenticated()) {
+    $storedFlag = \Drupal::service('user.data')->get('registration_form', (int) $account->id(), 'is_company');
+    $isCompanyUser = (bool) $storedFlag;
+  }
+  $variables['is_company_user'] = $isCompanyUser;
 }
 
 /**
