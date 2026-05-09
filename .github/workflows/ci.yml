@@ -24,6 +24,14 @@ jobs:
     name: Lint, validate and smoke test
     runs-on: ubuntu-latest
 
+    env:
+      DRUPAL_DB_NAME: drupal
+      DRUPAL_DB_USER: drupal_user
+      DRUPAL_DB_PASS: drupal_pass
+      DRUPAL_DB_ROOT_PASS: root_pass
+      DRUPAL_DB_HOST: frontend_db
+      FRONTEND_HTTP_PORT: 8080
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
