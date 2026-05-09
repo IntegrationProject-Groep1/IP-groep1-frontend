@@ -12,7 +12,7 @@ RUN docker-php-ext-install sockets
 # Add php-amqplib to Drupal's project root vendor.
 # Drupal's runtime autoload resolves through /opt/drupal/autoload.php.
 WORKDIR /opt/drupal
-RUN composer require php-amqplib/php-amqplib:^3.7 --no-interaction --optimize-autoloader
+RUN composer require php-amqplib/php-amqplib:^3.7 drush/drush --no-interaction --optimize-autoloader
 
 # Copy custom modules and themes into the Drupal web root
 COPY web/modules/custom /var/www/html/modules/custom
