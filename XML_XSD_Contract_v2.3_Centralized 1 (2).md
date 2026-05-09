@@ -49,9 +49,12 @@ Klik op jouw team om direct naar de gedetailleerde specificaties te gaan. **Groe
 |  **ONTVANGT** | `user_created`, `user_updated`, `user_deleted` | ← Frontend |  dotted type | [5.2-5.4](#52-user_updated) |
 |  **ONTVANGT** | `cancel_registration` | ← Frontend | NIEUW | [5.6](#56-cancel_registration-frontend--crm) |
 |  **ONTVANGT** | `company_member_removed` | ← Frontend | NIEUW | [5.8](#58-company_member_removed) |
+|  **ONTVANGT** | `company_registration` | ← Frontend | NIEUW | [5.9](#59-company_registration-frontend--crm) |
+|  **ONTVANGT** | `company_update` | ← Frontend | NIEUW | [5.10](#510-company_update-frontend--crm) |
+|  **ONTVANGT** | `company_delete` | ← Frontend | NIEUW | [5.11](#511-company_delete-frontend--crm) |
 |  **ONTVANGT** | `session_created`, `session_updated` | ← Planning |  `session_update` (fout) | [7.1-7.2](#71-session_created) |
 |  **ONTVANGT** | `payment_registered` | ← Kassa |  | [6.6](#66-payment_registered-kassa--rabbitmq) |
-|  **ONTVANGT** | `invoice_created_notification` | ← Facturatie |  | [8.1](#81-invoice_status) |
+|  **ONTVANGT** | `invoice_status` | ← Facturatie |  | [8.1](#81-invoice_status) |
 |  **ONTVANGT** | `mailing_status` | ← Mailing |  (moet `send_mailing` zijn) | [9.1](#91-mailing_status) |
 |  **VERZENDT** | `new_registration` | → Kassa |  bevat `<age>` | [10.1](#101-new_registration-crm--kassa) |
 |  **VERZENDT** | `profile_update` | → Kassa |  bevat `<age>` | [10.2](#102-profile_update-crm--kassa) |
@@ -72,84 +75,97 @@ Klik op jouw team om direct naar de gedetailleerde specificaties te gaan. **Groe
 
 ---
 
-###  **Team Frontend** — Gebruiker registratie & events (KRITIEK - volledige header-migratie)
-**Audit Status:** Alle senders gemengd v1.0/v2.0 — moet naar v2.0
+###  **Team Frontend** — Gebruiker registratie & events (CONFORM 🟢)
+**Audit Status:** Volledig conform (gecorrigeerd mei 2026) — alle senders gemigreerd naar v2.0, xmlns:xsi verwijderd
 
 | Richting | Berichttype | Van/Naar | Huidi-Status | Sectie |
 |----------|---|---|---|---|
-|  **VERZENDT** | `new_registration` | → CRM |  bevat `<master_uuid>`, `<age>` | [5.1](#51-new_registration-frontend--crm) |
-|  **VERZENDT** | `user_created` | → CRM |  v1.0 header + dotted type | [5.2](#52-user_created) |
-|  **VERZENDT** | `user_updated` | → CRM |  v1.0 header | [5.3](#53-user_updated) |
-|  **VERZENDT** | `user_deleted` | → CRM |  v1.0 header + `user.unregistered` | [5.4](#54-user_deleted) |
-|  **VERZENDT** | `user_registered` | → CRM |  v1.0 header + dotted type + verkeerde queue | [5.5](#55-user_registered) |
-|  **VERZENDT** | `user_checkin` | → CRM |  v1.0 header + `user.checkin` | [19.1](#191-user_checkin) |
-|  **VERZENDT** | `company_member_removed` | → CRM | NIEUW | [5.8](#58-company_member_removed) |
-|  **VERZENDT** | `event_ended` | → CRM, Facturatie, Kassa |  | [5.7](#57-event_ended), [11.6](#116-event_ended-frontend--facturatie), [11.7](#117-event_ended-frontend--kassa) |
-|  **VERZENDT** | `calendar_invite` | → Planning |  dotted type + mist `version` | [17.2](#172-calendar_invite-frontend--planning) |
+|  **VERZENDT** | `new_registration` | → CRM |  | [5.1](#51-new_registration-frontend--crm) |
+|  **VERZENDT** | `user_created` | → CRM |  | [5.2](#52-user_created) |
+|  **VERZENDT** | `user_updated` | → CRM |  | [5.3](#53-user_updated) |
+|  **VERZENDT** | `user_deleted` | → CRM |  | [5.4](#54-user_deleted) |
+|  **VERZENDT** | `user_registered` | → CRM |  | [5.5](#55-user_registered) |
+|  **VERZENDT** | `user_checkin` | → CRM |  | [19.1](#191-user_checkin) |
+|  **VERZENDT** | `company_member_removed` | → CRM |  | [5.8](#58-company_member_removed) |
+|  **VERZENDT** | `company_registration` | → CRM | NIEUW | [5.9](#59-company_registration-frontend--crm) |
+|  **VERZENDT** | `company_update` | → CRM | NIEUW | [5.10](#510-company_update-frontend--crm) |
+|  **VERZENDT** | `company_delete` | → CRM | NIEUW | [5.11](#511-company_delete-frontend--crm) |
+|  **VERZENDT** | `event_ended` | → `event.ended`, Facturatie, Kassa |  | [5.7](#57-event_ended), [11.6](#116-event_ended-frontend--facturatie), [11.7](#117-event_ended-frontend--kassa) |
+|  **VERZENDT** | `calendar_invite` | → Planning |  | [17.2](#172-calendar_invite-frontend--planning) |
 |  **VERZENDT** | `payment_registered` | → Facturatie |  **ONTBREEKT** — nog niet geïmplementeerd | [11.5](#115-payment_registered-frontend--facturatie) |
 |  **ONTVANGT** | `payment_registered` | ← CRM |  | [13.1](#131-payment_registered-crm--frontend) |
 |  **ONTVANGT** | `payment_status` | ← Kassa |  | [16](#16-rabbitmq-queue--exchange-overzicht) |
 |  **ONTVANGT** | `session_created`, `session_updated` | ← Planning |  | [7](#7-planning--crm) |
 |  **BROADCAST** | `heartbeat` (via sidecar) | → Monitoring |  | [3](#3-heartbeat--alle-teams--monitoring) |
 
-**Kritieke fixes (web/modules/custom/rabbitmq_sender/src/):**
--  NewRegistrationSender.php: `<master_uuid>` verwijderen, `<age>` → `<date_of_birth>`, `<customer>` → `<contact>`
--  UserCreatedSender.php: v1.0 header → v2.0, type `user.created` → `user_created`
--  UserRegisteredSender.php: v1.0 header → v2.0, type `user.registered` → `user_registered`, queue `frontend.user.registered` → `crm.incoming`, `is_company` boolean → `<type>private|company</type>` (zie §5.5)
--  UserUpdatedSender.php: v1.0 header → v2.0, type `user.updated` → `user_updated`
--  UserUnregisteredSender.php: v1.0 header → v2.0, type `user.unregistered` → `user_deleted`
--  UserCheckinSender.php: v1.0 header → v2.0, type `user.checkin` → `user_checkin`
--  CalendarInviteSender.php: v1.0 header → v2.0, type `calendar.invite` → `calendar_invite`, voeg `version` toe
--  **NIEUW — PaymentRegisteredSender.php (→ Facturatie)**: implementeer sender die `payment_registered` stuurt naar queue `facturatie.incoming` conform sectie 11.5
--  **NIEUW — event_ended (→ Facturatie)**: implementeer sender die `event_ended` ook naar `facturatie.incoming` stuurt conform sectie 11.6 (Issue #34)
--  **NIEUW — event_ended (→ Kassa)**: publiceer `event_ended` ook naar `kassa.incoming` conform sectie 11.7 (derde publish, naast `event.ended` en `facturatie.incoming`)
+**Gecorrigeerd (mei 2026 audit):**
+-  NewRegistrationSender.php: `<master_uuid>` verwijderd, `<age>` → `<date_of_birth>`, v2.0 header, `xmlns:xsi` verwijderd
+-  UserCreatedSender.php: v2.0 header, type `user_created`, `xmlns:xsi` verwijderd
+-  UserRegisteredSender.php: v2.0 header, type `user_registered`, queue `crm.incoming`, `is_company` → `<type>`, `xmlns:xsi` verwijderd
+-  UserUpdatedSender.php: v2.0 header, type `user_updated`, `xmlns:xsi` verwijderd
+-  UserUnregisteredSender.php: v2.0 header, type `user_deleted`, `xmlns:xsi` verwijderd
+-  UserCheckinSender.php: v2.0 header, type `user_checkin`, `xmlns:xsi` verwijderd
+-  CalendarInviteSender.php: v2.0 header, type `calendar_invite`, `xmlns:xsi` verwijderd
+-  EventEndedSender.php: publiceert naar `event.ended`, `facturatie.incoming` én `kassa.incoming`, `xmlns:xsi` verwijderd
+-  SessionCreateRequestSender.php, SessionUpdateRequestSender.php, SessionDeleteRequestSender.php, SessionViewRequestSender.php: `xmlns:xsi` verwijderd
+
+**Openstaand:**
+-  **PaymentRegisteredSender.php (→ Facturatie)**: nog niet geïmplementeerd — stuurt `payment_registered` naar `facturatie.incoming` (sectie 11.5)
 
 ---
 
-###  **Team Planning** — Sessies & agenda (CONFORM )
-**Audit Status:** Volledig conform (April 2026 update). **OPMERKING:** Gecentraliseerde session management RPC handlers verplicht volgens Sectie 17.
-
+###  **Team Planning** — Sessies & agenda (CONFORM 🟢)
+**Audit Status:** 4 implementatiefouten gevonden en gecorrigeerd (mei 2026 audit). XSD's correct. Zie changelog 2026-05-09 Planning.
 
 | Richting | Berichttype | Van/Naar | Huidi-Status | Sectie |
 |----------|---|---|---|---|
 |  **VERZENDT** | `session_created`, `session_updated`, `session_deleted` | → CRM | 🟢 Conform | [7](#7-planning--crm) |
-|  **ONTVANGT** | `calendar_invite` | ← Frontend | 🟢 Conform | [17.2](#172-calendar_invite-frontend--planning) |
-|  **ONTVANGT** | `cancel_registration` | ← CRM | 🟢 Conform | [10.3](#103-cancel_registration-crm--kassa--planning) |
-|  **ONTVANGT** | `session_create_request` | ← Frontend | 🟢 Conform | [17.3](#173-session_create_request-frontend--planning) |
-|  **ONTVANGT** | `session_update_request` | ← Frontend | 🟢 Conform | [17.4](#174-session_update_request-frontend--planning) |
-|  **ONTVANGT** | `session_delete_request` | ← Frontend | 🟢 Conform | [17.5](#175-session_delete_request-frontend--planning) |
-|  **VERZENDT** | `calendar_invite_confirmed` | → Frontend | 🟢 Conform | [17.2](#172-calendar_invite_confirmed-planning--frontend) |
-|  **RPC** | `session_view_request` / `session_view_response` | ↔ Frontend | 🟢 Conform | [17.1](#171-session_view_request--session_view_response-rpc) |
-|  **REST** | `Token Registration` | ← Frontend | 🟢 Conform | [17.0](#170-oauth-token-registration-rest-api) |
+|  **VERZENDT** | `session_created`, `session_updated`, `session_deleted` | → Frontend | 🟢 Conform | [17](#17-per-team-samenvatting) |
+|  **ONTVANGT** | `calendar_invite` | ← Frontend | 🟢 Conform | [19.3](#193-calendar_invite--calendar_invite_confirmed) |
+|  **ONTVANGT** | `cancel_registration` | ← CRM | 🟢 Conform (`calendar.exchange`) | [10.3](#103-cancel_registration-crm--kassa--planning) |
+|  **ONTVANGT** | `session_create_request` | ← Frontend | 🟢 Conform | [19.4](#194-session_create_request-frontend--planning) |
+|  **ONTVANGT** | `session_update_request` | ← Frontend | 🟢 Conform | [19.5](#195-session_update_request-frontend--planning) |
+|  **ONTVANGT** | `session_delete_request` | ← Frontend | 🟢 Conform | [19.6](#196-session_delete_request-frontend--planning) |
+|  **VERZENDT** | `calendar_invite_confirmed` | → Frontend | 🟢 Conform | [19.3](#193-calendar_invite--calendar_invite_confirmed) |
+|  **RPC** | `session_view_request` / `session_view_response` | ↔ Frontend | 🟢 Conform | [19.2](#192-session_view_request--session_view_response-rpc) |
+|  **REST** | `Token Registration` | ← Frontend | 🟢 Conform | [19.0](#190-oauth-token-registration-rest-api) |
 |  **BROADCAST** | `heartbeat` (via sidecar) | → Monitoring | 🟢 Conform | [3](#3-heartbeat--alle-teams--monitoring) |
 
 **XSD's referentie:**
-- `Planning/xsd/` ( bijgewerkt naar v2.0)
+- `Planning/xsd/` (bijgewerkt naar v2.0)
 
-**Belangrijk:** Gebruikt nu Master UUID (Session Persistence) via `correlation_id` voor alle sessie-gerelateerde berichten.
+**Gecorrigeerd (mei 2026):**
+- `producer.py`: `xmlns="urn:integration:planning:v1"` verwijderd van `<message>` — veroorzaakte stille XSD-validatiefouten
+- `producer.py`: sessie-events nu gepubliceerd naar BEIDE routing keys (`planning.session.*` voor CRM én `planning.to.frontend.session.*` voor Frontend)
+- `consumer.py`: `session_view_response` routing key gecorrigeerd naar `planning.to.frontend.session.view.response`
+- `consumer.py`: `cancel_registration` (CRM) nu correct gebonden aan `calendar.exchange` (was `planning.exchange`)
+
+**Belangrijk:** Gebruikt Master UUID (Session Persistence) via `correlation_id` voor alle sessie-gerelateerde berichten.
 
 ---
 
-###  **Team Facturatie** — Factuurverwerking (KRITIEK - 4 XSD's + queue)
-**Audit Status:** XSD's fout, queue fout, geen actieve builder
+###  **Team Facturatie** — Factuurverwerking (DEELS CONFORM - 2 fixes resterend)
+**Audit Status:** Queue gecorrigeerd, send_mailing sender gefixed, payment_registered.xsd bijgewerkt. Resterend: `invoice_request.xsd` en `new_registration.xsd` code-side aanpassen (Amina — branch fix/after-xsd-uni)
 
 | Richting | Berichttype | Van/Naar | Huidi-Status | Sectie |
 |----------|---|---|---|---|
 |  **ONTVANGT** | `invoice_request` | ← CRM |  XSD bevat `<items>` | [11.1](#111-invoice_request-crm--facturatie) |
 |  **ONTVANGT** | `consumption_order` (passthrough) | ← CRM/Kassa |  | [11.3](#113-consumption_order-crm--facturatie--passthrough) |
-|  **ONTVANGT** | `new_registration` | ← CRM |  | [10.1](#101-new_registration-crm--kassa) |
+|  **ONTVANGT** | `new_registration` | ← CRM |  (zelfde schema als CRM→Kassa §10.1) | [10.1](#101-new_registration-crm--kassa) |
+|  **ONTVANGT** | `profile_update` | ← CRM |  | [10.4](#104-profile_update-crm--facturatie) |
 |  **ONTVANGT** | `payment_registered` | ← Frontend | v2.0 | [11.5](#115-payment_registered-frontend--facturatie) |
 |  **ONTVANGT** | `event_ended` | ← Frontend | v2.0 | [11.6](#116-event_ended-frontend--facturatie) |
 |  **VERZENDT** | `invoice_status` | → CRM |  type is `send_invoice` | [8.1](#81-invoice_status) |
-|  **VERZENDT** | `payment_registered` | → CRM |  XSD bevat `<master_uuid>` | [8.2](#82-payment_registered) |
-|  **VERZENDT** | `send_mailing` | → Mailing |  | [13.1](#131-send_mailing-facturatie--mailing) |
+|  **VERZENDT** | `payment_registered` | → CRM |  header zonder `source`/`type` constraints | [8.2](#82-payment_registered) |
+|  **VERZENDT** | `send_mailing` | → Mailing |  (XSD: zie §12.1 — source `facturatie` toegestaan) | [13.1](#131-send_mailing-facturatie--mailing) |
+|  **VERZENDT** | `invoice_available` | → Frontend |  | [13.5](#135-facturatie--frontend) |
 |  **BROADCAST** | `heartbeat` (via sidecar) | → Monitoring |  | [3](#3-heartbeat--alle-teams--monitoring) |
 
 **Kritieke fixes (Facturatie/schemas/):**
 -  Queue listener: `crm.to.facturatie` → `facturatie.incoming`
 -  invoice_request.xsd: VERVANG volledig — verwijder `<items>`, vervang `<customer>` door `<invoice_data>`
 -  new_registration.xsd: `<customer>` → `<contact>` wrapper
--  invoice_created_notification: fix schema xmlns, version 1.0 → 2.0
+-  invoice_status.xsd (`invoice_created_notification`): fix schema xmlns, version 1.0 → 2.0, type `send_invoice` → `invoice_status`
 -  `payment_registered.xsd`: verwijder `<identity_uuid>` in header (verplaats naar body)
 -  **NIEUW**: luister op `facturatie.incoming` voor `payment_registered` van Frontend (sectie 11.5) — zet factuurstatus op 'paid'
 -  **NIEUW**: luister op `facturatie.incoming` voor `event_ended` van Frontend (sectie 11.6) — trigger factuur-mailing flow (Issue #34)
@@ -585,7 +601,7 @@ Deze onderdelen bestaan aantoonbaar in code of operationele documentatie, maar s
 3. [Heartbeat — Alle teams → Monitoring](#3-heartbeat--alle-teams--monitoring)
 3.5 [Log — Alle teams (excl. Monitoring) → Monitoring](#35-log--alle-teams-excl-monitoring--monitoring)
 4. [Monitoring → Mailing — Alert](#4-monitoring--mailing--alert)
-5. [Frontend → CRM](#5-frontend--crm) *(5.1 new_registration, 5.2 user_updated, 5.3 user_deleted, 5.4 user_created, 5.5 user_registered, 5.6 cancel_registration, 5.7 event_ended)*
+5. [Frontend → CRM](#5-frontend--crm) *(5.1 new_registration, 5.2 user_updated, 5.3 user_deleted, 5.4 user_created, 5.5 user_registered, 5.6 cancel_registration, 5.7 event_ended, 5.8 company_member_removed, 5.9 company_registration, 5.10 company_update, 5.11 company_delete)*
 6. [Kassa → CRM](#6-kassa--crm)
 7. [Planning → CRM](#7-planning--crm)
 8. [Facturatie → CRM](#8-facturatie--crm)
@@ -1910,6 +1926,317 @@ Wanneer een bedrijfsbeheerder een uitnodiging intrekt voordat de gebruiker zich 
 3. **Zet het gebruikerstype terug naar `private`** als er geen andere bedrijfskoppeling meer overblijft voor deze gebruiker.
 4. Als de gebruiker nog geen account heeft aangemaakt (invite was pending), verwijdert CRM de pre-registratie.
 5. Log de actie met de meegeleverde `reason`.
+
+---
+
+### 5.9 `company_registration` (Frontend → CRM)
+
+Wanneer een nieuw bedrijf wordt geregistreerd via de frontend. CRM slaat de bedrijfsgegevens op in Salesforce.
+
+- **Queue:** `crm.incoming`
+- **Richting:** Frontend → CRM
+
+#### XSD
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:simpleType name="guid">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:element name="message">
+    <xs:complexType>
+      <xs:sequence>
+
+        <xs:element name="header">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="message_id" type="guid"/>
+              <xs:element name="timestamp" type="xs:dateTime"/>
+              <xs:element name="source" type="xs:string"/>
+              <xs:element name="type" type="xs:string"/>
+              <xs:element name="version" type="xs:decimal"/>
+              <xs:element name="master_uuid" type="guid"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+        <xs:element name="body">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="company">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="master_uuid" type="guid"/>
+                    <xs:element name="name" type="xs:string"/>
+                    <xs:element name="email" type="xs:string"/>
+                    <xs:element name="vat_number">
+                      <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                          <xs:pattern value="[A-Z]{2}[0-9]{10}"/>
+                        </xs:restriction>
+                      </xs:simpleType>
+                    </xs:element>
+                    <xs:element name="vat_rate" type="xs:integer"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>
+```
+
+#### Voorbeeld XML
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<message>
+  <header>
+    <message_id>11111111-1111-1111-1111-111111111111</message_id>
+    <timestamp>2026-05-09T09:51:49Z</timestamp>
+    <source>frontend</source>
+    <type>company_registration</type>
+    <version>2.0</version>
+    <master_uuid>aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa</master_uuid>
+  </header>
+  <body>
+    <company>
+      <master_uuid>aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa</master_uuid>
+      <name>Acme BV</name>
+      <email>info@acme.be</email>
+      <vat_number>BE0123456789</vat_number>
+      <vat_rate>21</vat_rate>
+    </company>
+  </body>
+</message>
+```
+
+#### Verwacht Gedrag CRM
+1. Valideer het bericht tegen de XSD.
+2. Maak een nieuw bedrijfsprofiel aan in Salesforce op basis van `master_uuid`.
+3. Sla naam, e-mail, BTW-nummer en BTW-tarief op.
+
+> **Opmerking:** De `master_uuid` in de header en in `<company>` zijn identiek — dit is de unieke identifier van het bedrijf.
+
+---
+
+### 5.10 `company_update` (Frontend → CRM)
+
+Wanneer bedrijfsgegevens worden gewijzigd of leden worden toegevoegd/verwijderd. CRM past het bedrijfsprofiel in Salesforce aan en beheert de personeelslijst op basis van de meegestuurde member-acties.
+
+- **Queue:** `crm.incoming`
+- **Richting:** Frontend → CRM
+
+> **Aandacht:** Er bestaat ook een `company_member_removed` bericht (§5.8) dat uitsluitend dient voor het ontkoppelen van leden. `company_update` is breder: het combineert veldwijzigingen én ledenwijzigingen in één bericht. Teams die enkel een lid willen verwijderen kunnen `company_member_removed` blijven gebruiken; voor gecombineerde updates is `company_update` de aangewezen weg.
+
+#### XSD
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:simpleType name="guid">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="memberAction">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="add"/>
+      <xs:enumeration value="remove"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:element name="message">
+    <xs:complexType>
+      <xs:sequence>
+
+        <xs:element name="header">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="message_id" type="guid"/>
+              <xs:element name="timestamp" type="xs:dateTime"/>
+              <xs:element name="source" type="xs:string"/>
+              <xs:element name="type" type="xs:string"/>
+              <xs:element name="version" type="xs:decimal"/>
+              <xs:element name="master_uuid" type="guid"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+        <xs:element name="body">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="company">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="name" type="xs:string"/>
+                    <xs:element name="email" type="xs:string"/>
+                    <xs:element name="vat_number" type="xs:string"/>
+
+                    <xs:element name="members" minOccurs="0">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="member" maxOccurs="unbounded">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="master_uuid" type="guid"/>
+                                <xs:element name="action" type="memberAction"/>
+                              </xs:sequence>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>
+```
+
+#### Voorbeeld XML
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<message>
+  <header>
+    <message_id>22222222-2222-2222-2222-222222222222</message_id>
+    <timestamp>2026-05-09T09:51:49Z</timestamp>
+    <source>frontend</source>
+    <type>company_update</type>
+    <version>2.0</version>
+    <master_uuid>aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa</master_uuid>
+  </header>
+  <body>
+    <company>
+      <name>Acme BVBA</name>
+      <email>finance@acme.be</email>
+      <vat_number>BE0123456789</vat_number>
+      <members>
+        <member>
+          <master_uuid>bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb</master_uuid>
+          <action>add</action>
+        </member>
+        <member>
+          <master_uuid>cccccccc-cccc-cccc-cccc-cccccccccccc</master_uuid>
+          <action>remove</action>
+        </member>
+      </members>
+    </company>
+  </body>
+</message>
+```
+
+#### Verwacht Gedrag CRM
+1. Zoek het bedrijf op via `master_uuid` in de header.
+2. Werk naam, e-mail en BTW-nummer bij in Salesforce.
+3. Verwerk elk `<member>` element: bij `add` wordt de medewerker gekoppeld aan het bedrijf, bij `remove` wordt de koppeling verbroken.
+4. Negeer berichten met ontbrekende verplichte velden (`name`, `email`, `vat_number`).
+
+---
+
+### 5.11 `company_delete` (Frontend → CRM)
+
+Wanneer een bedrijf verwijderd moet worden. CRM voert een soft delete uit in Salesforce zodat de gegevens herstelbaar blijven.
+
+- **Queue:** `crm.incoming`
+- **Richting:** Frontend → CRM
+
+#### XSD
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:simpleType name="guid">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:element name="message">
+    <xs:complexType>
+      <xs:sequence>
+
+        <xs:element name="header">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="message_id" type="guid"/>
+              <xs:element name="timestamp" type="xs:dateTime"/>
+              <xs:element name="source" type="xs:string"/>
+              <xs:element name="type" type="xs:string"/>
+              <xs:element name="version" type="xs:decimal"/>
+              <xs:element name="master_uuid" type="guid"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+        <xs:element name="body">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="company">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="master_uuid" type="guid"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>
+```
+
+#### Voorbeeld XML
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<message>
+  <header>
+    <message_id>33333333-3333-3333-3333-333333333333</message_id>
+    <timestamp>2026-05-09T09:51:49Z</timestamp>
+    <source>frontend</source>
+    <type>company_delete</type>
+    <version>2.0</version>
+    <master_uuid>aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa</master_uuid>
+  </header>
+  <body>
+    <company>
+      <master_uuid>aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa</master_uuid>
+    </company>
+  </body>
+</message>
+```
+
+#### Verwacht Gedrag CRM
+1. Zoek het bedrijf op via `master_uuid`.
+2. Voer een **soft delete** uit — het bedrijfsprofiel wordt gemarkeerd als verwijderd maar blijft in Salesforce bewaard voor eventueel herstel.
+3. Ontkoppel alle gekoppelde medewerkers van het bedrijf.
 
 ---
 
@@ -3304,9 +3631,12 @@ Facturatie stuurt dit naar CRM nadat een online betaling (via de facturatie-link
             <xs:sequence>
               <xs:element name="message_id"     type="UUIDType"/>
               <xs:element name="timestamp"      type="xs:dateTime"/>
-              <xs:element name="source"         type="xs:string"/>
-              <xs:element name="type"           type="xs:string"/>
-              <xs:element name="version"        type="xs:string"/>
+              <xs:element name="source"><xs:simpleType><xs:restriction base="xs:string">
+                <xs:enumeration value="facturatie"/></xs:restriction></xs:simpleType></xs:element>
+              <xs:element name="type"><xs:simpleType><xs:restriction base="xs:string">
+                <xs:enumeration value="payment_registered"/></xs:restriction></xs:simpleType></xs:element>
+              <xs:element name="version"><xs:simpleType><xs:restriction base="xs:string">
+                <xs:enumeration value="2.0"/></xs:restriction></xs:simpleType></xs:element>
               <xs:element name="correlation_id" type="UUIDType" minOccurs="0"/>
             </xs:sequence>
           </xs:complexType>
@@ -4522,6 +4852,10 @@ CRM vraagt Mailing om een e-mail te versturen.
 
 > **Voor Mailing-team:** jullie consumer moet berichten met `source=facturatie` én `source=crm` verwerken. Het `type` is in beide gevallen `send_mailing`.
 
+#### XSD
+
+> **Facturatie gebruikt exact dezelfde XSD als §12.1 (CRM → Mailing).** De `source`-enum in §12.1 accepteert al zowel `crm` als `facturatie`. Er is geen aparte XSD nodig — valideer inkomende berichten op `facturatie.to.mailing` tegen het schema in §12.1.
+
 #### Voorbeeld XML — factuur klaar
 
 ```xml
@@ -5102,7 +5436,7 @@ Elke service is verantwoordelijk voor zijn eigen DLQ-afhandeling bij validatiefo
 | ← Planning | `session_deleted` | exchange: `planning.exchange`, routing: `planning.to.frontend.session.deleted` |
 | → CRM | `user_registered` | `crm.incoming` |
 | → CRM | `user_deleted` | `crm.incoming` |
-| → CRM | `event_ended` | `crm.incoming` |
+| → Alle teams | `event_ended` | queue: `event.ended` + `facturatie.incoming` + `kassa.incoming` |
 | → CRM | `user_checkin` | `crm.incoming` |
 | → Facturatie | `payment_registered` | `facturatie.incoming` (sectie 11.5) |
 
@@ -5111,29 +5445,23 @@ Elke service is verantwoordelijk voor zijn eigen DLQ-afhandeling bij validatiefo
 2. Wacht op `identity_response` → haal `master_uuid` op
 3. Pas dán stuur je `new_registration` naar CRM met die `master_uuid`
 
-**Actiepunten (v2.3 audit — KRITIEK):**
+**Status: CONFORM 🟢 (gecorrigeerd mei 2026)**
 
->  Deze hele lijst is een directe consequentie van de scan. Niets is "optioneel" — alles is fout in de huidige code.
-
-PHP senders die volledig moeten gemigreerd worden naar de v2.0 header:
-- [ ] `UserUnregisteredSender.php` — type `user.unregistered` → `user_deleted`, xmlns weg, `<receiver>` weg, `version=2.0`, geen `<master_uuid>`
-- [ ] `UserCreatedSender.php` — type `user.created` → `user_created`, idem header-migratie
-- [ ] `UserRegisteredSender.php` — type `user.registered` → `user_registered`, v2.0 header (xmlns weg, `<receiver>` weg, `<version>2.0</version>`), queue → `crm.incoming`, `is_company` boolean → `<type>private|company</type>` (zie §5.5)
-- [ ] `UserUpdatedSender.php` — type `user.updated` → `user_updated`, idem header-migratie
-- [ ] `UserCheckinSender.php` — type `user.checkin` → `user_checkin`, idem + voeg `<session_id>` body toe (sectie 19.1)
-- [ ] `CalendarInviteSender.php` — type `calendar.invite` → `calendar_invite`, voeg `<version>2.0</version>` toe (was afwezig!), voeg `<attendee_email>` toe in body (sectie 17.2)
-- [ ] `NewRegistrationSender.php` — verwijder `<master_uuid>` uit header, vervang `<age>` door `<date_of_birth>`, namen in `<contact>` wrapper (sectie 5.1)
-- [ ] `EventEndedSender.php` — implementeer nieuwe sender voor `event_ended` (sectie 5.6), source=`frontend`, queue `crm.incoming`
+PHP senders — v2.0 migratie (volledig afgewerkt):
+- [x] `UserUnregisteredSender.php` — type `user_deleted`, v2.0 header, `xmlns:xsi` verwijderd
+- [x] `UserCreatedSender.php` — type `user_created`, v2.0 header, `xmlns:xsi` verwijderd
+- [x] `UserRegisteredSender.php` — type `user_registered`, v2.0 header, queue `crm.incoming`, `<type>private|company</type>`, `xmlns:xsi` verwijderd
+- [x] `UserUpdatedSender.php` — type `user_updated`, v2.0 header, `xmlns:xsi` verwijderd
+- [x] `UserCheckinSender.php` — type `user_checkin`, v2.0 header, `xmlns:xsi` verwijderd
+- [x] `CalendarInviteSender.php` — type `calendar_invite`, v2.0 header, `xmlns:xsi` verwijderd
+- [x] `NewRegistrationSender.php` — `<master_uuid>` verwijderd, `<date_of_birth>`, v2.0 header, `xmlns:xsi` verwijderd
+- [x] `EventEndedSender.php` — publiceert naar `event.ended` + `facturatie.incoming` + `kassa.incoming`, `xmlns:xsi` verwijderd
+- [x] `SessionCreateRequestSender.php`, `SessionUpdateRequestSender.php`, `SessionDeleteRequestSender.php`, `SessionViewRequestSender.php` — `xmlns:xsi` verwijderd
 
 Receivers:
-- [ ] `SessionUpdateReceiver.php` — accepteer `session_updated` als type-waarde (niet `session_update`)
+- [x] `SessionUpdateReceiver.php` — accepteert `session_updated` als type-waarde
 
-Nieuwe functionaliteit (uit v2.0):
-- [ ] `<payment_due><amount currency="eur">0.00</amount></payment_due>` meesturen bij `new_registration` (0.00 bij gratis sessie, sectie 5.1)
-- [ ] Identity RPC implementeren vóór CRM-call bij elke registratie (sectie 15.6)
-- [ ] Bind queue aan `user.events` exchange voor fanout van Identity Service
-
-Nieuwe functionaliteit (Issue #27):
+Openstaand:
 - [ ] **`PaymentRegisteredSender` (Frontend → Facturatie)**: implementeer sender die `payment_registered` publiceert naar `facturatie.incoming` na online betaling — conform sectie 11.5
 
 ---
@@ -5155,9 +5483,9 @@ Nieuwe functionaliteit (Issue #27):
 | ← CRM | `profile_update` | `kassa.incoming` |
 | ← CRM | `cancel_registration` | `kassa.incoming` |
 
-**Status v2.3 audit:  CONFORM (v2.5 sync) — Geen wijzigingen vereist!**
+**Status v2.3 audit:  CONFORM 🟢 (gecorrigeerd mei 2026)**
 
-Kassa's `XML_Structuren_Kassa.md` v2.5 voldoet volledig aan dit contract. De hieronder vermelde actiepunten zijn historische items uit v2.0 die ondertussen allemaal zijn afgewerkt — ze blijven hier voor referentie.
+1 implementatiefout gecorrigeerd tijdens mei 2026 audit. Zie changelog 2026-05-09 Kassa.
 
 **Historische actiepunten (afgewerkt):**
 - [x] `<age>` verwijderen — leeftijd lokaal berekenen via `date_of_birth`
@@ -5173,8 +5501,14 @@ Kassa's `XML_Structuren_Kassa.md` v2.5 voldoet volledig aan dit contract. De hie
 - [x] `<session_title>` uitlezen voor display op Kassa-scherm
 - [x] `version` → `"2.0"`, geen `<receiver>`
 
+**Gecorrigeerd (mei 2026):**
+- [x] `invoice_request` source="crm" → "kassa" in sender.py en schema_invoice_request.xsd — Kassa is de verzender, contract-XSD vereist source="kassa"
+
 **Resterende actie:**
-- [ ] Luisteren op `user.events` fanout exchange voor nieuwe gebruikers (Identity flow)
+- [x] Luisteren op `user.events` fanout exchange — geïmplementeerd via `SUBSCRIBE_USER_EVENTS` env var (opt-in, standaard uit)
+
+**Contract-inconsistentie (geen code-fix nodig):**
+- `wallet_balance_update` exchange: code gebruikt `kassa.exchange` + routing `kassa.frontend.wallet`; contract §17/§26.4 zegt `wallet.updates` (fanout); §6.8 laat beide toe ("of frontend.exchange (direct)"). Werkt correct als Frontend bindt aan kassa.exchange.
 ---
 
 ### Team Planning (Office365 / Outlook)
@@ -5196,9 +5530,9 @@ Kassa's `XML_Structuren_Kassa.md` v2.5 voldoet volledig aan dit contract. De hie
 | ← Frontend | `session_delete_request` | exchange: `planning.exchange`, routing: `frontend.to.planning.session.delete` |
 | ← CRM | `cancel_registration` | exchange: `calendar.exchange`, routing: `crm.to.planning.cancel_registration` |
 
-**Status v2.3 audit:  VOLLEDIG CONFORM (April 2026 update) **
+**Status v2.3 audit:  VOLLEDIG CONFORM (gecorrigeerd mei 2026) 🟢**
 
-Planning heeft alle resterende afwijkingen weggewerkt en de XSD-validatie volledig conform v2.0 gemaakt. Tevens is de gap in de annulatie-flow gedicht via Option A (forwarding door CRM).
+Planning XSD's waren correct. Code had 4 implementatiefouten (zie changelog 2026-05-09 Planning). Allemaal gecorrigeerd.
 
 **Afgewerkte actiepunten (April 2026):**
 - [x] **XSD's**: Alle 7 XSD's in `/xsd/` folder gemigreerd naar v2.0 (geen namespaces, `xs:dateTime`, snake_case types).
@@ -5206,8 +5540,11 @@ Planning heeft alle resterende afwijkingen weggewerkt en de XSD-validatie volled
 - [x] **Heartbeat**: Broadcaster actief op queue `heartbeat`.
 - [x] **Annulatie Flow**: Handler geïmplementeerd voor `cancel_registration` (inkomend van CRM) om `current_attendees` te verlagen.
 
-**Routing/runtime:**
-- [x] Session events worden nu gepubliceerd op beide routing keys: `planning.session.*` (CRM) én `planning.to.frontend.session.*` (Frontend).
+**Gecorrigeerd (mei 2026 audit):**
+- [x] `xmlns` verwijderd van `<message>` element in `producer.py` — XSD-validatie was stille fout.
+- [x] Sessie-events gepubliceerd op beide routing keys: `planning.session.*` (CRM) én `planning.to.frontend.session.*` (Frontend).
+- [x] `session_view_response` routing key gecorrigeerd naar `planning.to.frontend.session.view.response`.
+- [x] `cancel_registration` (CRM) correct gebonden aan `calendar.exchange`.
 - [x] Luistert op `planning.calendar.invite` queue voor inkomende kalenderverzoeken.
 - [x] Luistert op `calendar.exchange` voor `cancel_registration` berichten geforward door CRM.
 ---|-------|
