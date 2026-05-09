@@ -18,6 +18,9 @@ RUN composer require php-amqplib/php-amqplib:^3.7 drush/drush --no-interaction -
 COPY web/modules/custom /var/www/html/modules/custom
 COPY web/themes/custom  /var/www/html/themes/custom
 
+# Copy XSD validation schemas — resolves to /opt/drupal/xsd/ which is 5 levels above src/
+COPY xsd /opt/drupal/xsd
+
 # Copy settings.php — uses getenv() so credentials come from environment variables
 COPY web/sites/default/settings.php /var/www/html/sites/default/settings.php
 
