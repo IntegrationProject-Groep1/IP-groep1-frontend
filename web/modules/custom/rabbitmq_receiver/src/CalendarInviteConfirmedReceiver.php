@@ -15,6 +15,7 @@ use PhpAmqpLib\Wire\AMQPTable;
 class CalendarInviteConfirmedReceiver
 {
     use XmlValidationTrait;
+    use ReceiverLogTrait;
 
     private const EXCHANGE      = 'calendar.exchange';
     private const EXCHANGE_TYPE = 'topic';
@@ -35,6 +36,10 @@ class CalendarInviteConfirmedReceiver
     public function processMessageFromXml(string $xmlString): array
     {
         $this->validateXml($xmlString, self::XSD_PATH);
+        $this->logReceiverSuccess(
+            $this->extractXmlValue($xmlString, 'type') ?: 'calendar_invite_confirmed',
+            $this->extractXmlValue($xmlString, 'source') ?: 'Planning'
+        );
         
         $xml = $this->parseXml($xmlString);
 
@@ -99,6 +104,7 @@ class CalendarInviteConfirmedReceiver
                     $this->processMessageFromXml($msg->body);
                     $msg->ack();
                 } catch (\Throwable $e) {
+                    $this->logReceiverError($e, self::QUEUE, $msg->body);
                     $msg->nack(false, false);
                 }
             }

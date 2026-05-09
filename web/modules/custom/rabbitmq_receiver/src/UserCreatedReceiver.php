@@ -15,6 +15,7 @@ use PhpAmqpLib\Wire\AMQPTable;
 class UserCreatedReceiver
 {
     use XmlValidationTrait;
+    use ReceiverLogTrait;
 
     private const QUEUE    = 'frontend.crm.user.created';
     private const DLQ      = 'frontend.crm.user.created.dlq';
@@ -34,6 +35,10 @@ class UserCreatedReceiver
     public function processMessageFromXml(string $xmlString): array
     {
         $this->validateXml($xmlString, self::XSD_PATH);
+        $this->logReceiverSuccess(
+            $this->extractXmlValue($xmlString, 'type'),
+            $this->extractXmlValue($xmlString, 'source')
+        );
         libxml_use_internal_errors(true);
         $xml = simplexml_load_string($xmlString);
         libxml_clear_errors();
@@ -92,6 +97,7 @@ class UserCreatedReceiver
                     $this->processMessageFromXml($msg->body);
                     $msg->ack();
                 } catch (\Throwable $e) {
+                    $this->logReceiverError($e, self::QUEUE, $msg->body);
                     $msg->nack(false, false);
                 }
             }

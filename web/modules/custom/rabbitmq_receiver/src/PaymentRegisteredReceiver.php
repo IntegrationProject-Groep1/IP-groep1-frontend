@@ -15,11 +15,12 @@ use PhpAmqpLib\Wire\AMQPTable;
 class PaymentRegisteredReceiver
 {
     use XmlValidationTrait;
+    use ReceiverLogTrait;
 
     private const QUEUE = 'frontend.crm.payment.registered';
     private const DLQ   = 'frontend.crm.payment.registered.dlq';
     private const DLX   = 'frontend.crm.dlx';
-    private const XSD_PATH = __DIR__ . '/../../../../../xsd/payment_registered.xsd';
+    private const XSD_PATH = __DIR__ . '/../../../../../xsd/payment_registered_receiver.xsd';
 
     public function __construct(private readonly RabbitMQClient $client) {}
 
@@ -32,6 +33,10 @@ class PaymentRegisteredReceiver
     public function processMessageFromXml(string $xmlString): mixed
     {
         $this->validateXml($xmlString, self::XSD_PATH);
+        $this->logReceiverSuccess(
+            $this->extractXmlValue($xmlString, 'type') ?: 'payment_registered',
+            $this->extractXmlValue($xmlString, 'source') ?: 'CRM'
+        );
         
         $xmlString = preg_replace('/ xmlns="[^"]*"/', '', $xmlString) ?? $xmlString;
         libxml_use_internal_errors(true);
@@ -79,6 +84,7 @@ class PaymentRegisteredReceiver
                     $this->processMessageFromXml($msg->body);
                     $msg->ack();
                 } catch (\Throwable $e) {
+                    $this->logReceiverError($e, self::QUEUE, $msg->body);
                     $msg->nack(false, false);
                 }
             }
