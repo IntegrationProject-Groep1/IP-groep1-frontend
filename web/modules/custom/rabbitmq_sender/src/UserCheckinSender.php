@@ -65,7 +65,6 @@ class UserCheckinSender
         $dom->formatOutput = false;
 
         $message = $dom->createElement('message');
-        $message->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
         $dom->appendChild($message);
 
         $header = $dom->createElement('header');

@@ -69,7 +69,7 @@ class EventEndedSender
         $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z');
 
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
-        $xml .= '<message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">';
+        $xml .= '<message>';
         $xml .= '<header>';
         $xml .= "<message_id>{$messageId}</message_id>";
         $xml .= "<timestamp>{$timestamp}</timestamp>";

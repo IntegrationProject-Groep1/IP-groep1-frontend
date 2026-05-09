@@ -84,7 +84,6 @@ class NewRegistrationSender
         $xml->formatOutput = false;
 
         $message = $xml->createElement('message');
-        $message->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
         $xml->appendChild($message);
 
         // Header order per contract §5.1: message_id, timestamp, source, type, version, correlation_id

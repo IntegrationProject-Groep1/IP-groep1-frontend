@@ -68,7 +68,6 @@ class UserRegisteredSender
         $dom->formatOutput = false;
 
         $message = $dom->createElement('message');
-        $message->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
         $dom->appendChild($message);
 
         // Header order per contract §5.5: message_id, timestamp, source, type, version, correlation_id (optional, last)
