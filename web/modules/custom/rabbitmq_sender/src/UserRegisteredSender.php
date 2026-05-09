@@ -55,6 +55,7 @@ class UserRegisteredSender
                 'content_type'  => 'application/xml',
             ]);
             $this->resolveClient()->getChannel()->basic_publish($msg, '', self::QUEUE_NAME);
+            $this->logOutboundSuccess(self::TYPE, self::QUEUE_NAME, $xml);
         });
     }
 

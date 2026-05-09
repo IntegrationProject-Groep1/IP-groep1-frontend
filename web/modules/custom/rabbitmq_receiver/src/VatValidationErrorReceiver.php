@@ -15,6 +15,7 @@ use PhpAmqpLib\Wire\AMQPTable;
 class VatValidationErrorReceiver
 {
     use XmlValidationTrait;
+    use ReceiverLogTrait;
 
     private const QUEUE    = 'frontend.crm.vat.validation.error';
     private const DLQ      = 'frontend.crm.vat.validation.error.dlq';
@@ -32,6 +33,10 @@ class VatValidationErrorReceiver
     public function processMessageFromXml(string $xmlString): mixed
     {
         $this->validateXml($xmlString, self::XSD_PATH);
+        $this->logReceiverSuccess(
+            $this->extractXmlValue($xmlString, 'type'),
+            $this->extractXmlValue($xmlString, 'source')
+        );
         $xmlString = preg_replace('/ xmlns="[^"]*"/', '', $xmlString) ?? $xmlString;
         libxml_use_internal_errors(true);
         $xml = simplexml_load_string($xmlString);
@@ -77,6 +82,7 @@ class VatValidationErrorReceiver
                     $this->processMessageFromXml($msg->body);
                     $msg->ack();
                 } catch (\Throwable $e) {
+                    $this->logReceiverError($e, self::QUEUE, $msg->body);
                     $msg->nack(false, false);
                 }
             }

@@ -9,6 +9,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\rabbitmq_sender\IdentityServiceClient;
 use Drupal\rabbitmq_sender\NewRegistrationSender;
 use Drupal\rabbitmq_sender\UserCreatedSender;
+use Drupal\rabbitmq_sender\MonitoringLogSender;
 use Drupal\user\Entity\User;
 
 /**
@@ -27,6 +28,7 @@ class RegistrationService
         private readonly ?RegistrationCrmPayloadBuilder $crmPayloadBuilder = null,
         private readonly ?IdentityServiceClient $identityClient = null,
         private readonly ?UserCreatedSender $userCreatedSender = null,
+        private readonly ?MonitoringLogSender $monitoringLogger = null,
     ) {}
 
     /**
@@ -115,6 +117,11 @@ class RegistrationService
             $logger->info('Registration sent to RabbitMQ for @email.', [
                 '@email' => $data['email'],
             ]);
+
+            // Notify Monitoring team of successful registration
+            if ($this->monitoringLogger !== null) {
+                $this->monitoringLogger->send('info', 'registration', "New user registered: {$data['email']}");
+            }
         } else {
             $logger->warning('Registration stored locally for @email, but CRM synchronization is pending.', [
                 '@email' => $data['email'],

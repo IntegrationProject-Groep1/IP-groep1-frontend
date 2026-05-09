@@ -46,6 +46,7 @@ class SessionViewRequestSender
         $this->sendWithRetry(function () use ($xml): void {
             $this->resolveClient()->declareExchange(self::EXCHANGE, self::EXCHANGE_TYPE);
             $this->resolveClient()->publishToExchange(self::EXCHANGE, self::ROUTING_KEY, $xml);
+            $this->logOutboundSuccess(self::TYPE, self::ROUTING_KEY, $xml);
         });
     }
 

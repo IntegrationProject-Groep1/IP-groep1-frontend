@@ -15,3 +15,4 @@ services:
       - '@registration_form.crm_payload_builder'
       - '@rabbitmq_sender.identity_service_client'
       - '@rabbitmq_sender.user_created_sender'
+      - '@?rabbitmq_sender.monitoring_log_sender'

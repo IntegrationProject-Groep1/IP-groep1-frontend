@@ -7,6 +7,7 @@ namespace Drupal\session_management\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\rabbitmq_sender\EventEndedSender;
+use Drupal\rabbitmq_sender\MonitoringLogSender;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -17,12 +18,14 @@ class SessionEndForm extends FormBase
 {
     public function __construct(
         private readonly EventEndedSender $eventEndedSender,
+        private readonly ?MonitoringLogSender $monitoringLogger = null,
     ) {}
 
     public static function create(ContainerInterface $container): static
     {
         return new static(
             $container->get('rabbitmq_sender.event_ended_sender'),
+            $container->get('rabbitmq_sender.monitoring_log_sender'),
         );
     }
 
@@ -73,6 +76,11 @@ class SessionEndForm extends FormBase
         try {
             $this->eventEndedSender->send(['session_id' => $sessionId]);
             $this->messenger()->addStatus($this->t('Session @id has been marked as ended.', ['@id' => $sessionId]));
+
+            // Notify Monitoring team of session ending
+            if ($this->monitoringLogger !== null) {
+                $this->monitoringLogger->send('info', 'session', "Session {$sessionId} marked as ended.");
+            }
         } catch (\InvalidArgumentException $e) {
             $this->messenger()->addError($e->getMessage());
         } catch (\Throwable $e) {
