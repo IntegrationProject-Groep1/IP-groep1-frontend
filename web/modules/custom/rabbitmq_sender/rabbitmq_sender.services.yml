@@ -34,3 +34,6 @@ services:
 
   rabbitmq_sender.user_unregistered_sender:
     class: Drupal\rabbitmq_sender\UserUnregisteredSender
+
+  rabbitmq_sender.monitoring_log_sender:
+    class: Drupal\rabbitmq_sender\MonitoringLogSender

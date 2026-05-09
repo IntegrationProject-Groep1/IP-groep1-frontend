@@ -30,6 +30,15 @@ trait ReceiverLogTrait
                 'exception' => $e,
                 'xml_snippet' => substr($xml, 0, 1000),
             ]);
+
+            // 3. Send to Monitoring Team (RabbitMQ logs queue)
+            try {
+                /** @var \Drupal\rabbitmq_sender\MonitoringLogSender $sender */
+                $sender = \Drupal::service('rabbitmq_sender.monitoring_log_sender');
+                $sender->send('error', 'system_error', $message);
+            } catch (\Throwable $e_monitoring) {
+                // Silently ignore monitoring failures to prevent recursive loops
+            }
         }
     }
 }

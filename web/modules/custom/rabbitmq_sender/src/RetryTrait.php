@@ -55,6 +55,17 @@ trait RetryTrait
     {
         if (class_exists('\Drupal')) {
             \Drupal::logger('rabbitmq_sender')->{$level}($message, $context);
+
+            // Send critical errors to Monitoring Team
+            if ($level === 'error') {
+                try {
+                    /** @var \Drupal\rabbitmq_sender\MonitoringLogSender $sender */
+                    $sender = \Drupal::service('rabbitmq_sender.monitoring_log_sender');
+                    $sender->send('error', 'system_error', $message . ': ' . ($context['error'] ?? ''));
+                } catch (\Throwable $e_monitoring) {
+                    // Ignore failures
+                }
+            }
         }
     }
 }
