@@ -36,6 +36,10 @@ class CalendarInviteConfirmedReceiver
     public function processMessageFromXml(string $xmlString): array
     {
         $this->validateXml($xmlString, self::XSD_PATH);
+        $this->logReceiverSuccess(
+            $this->extractXmlValue($xmlString, 'type') ?: 'calendar_invite_confirmed',
+            $this->extractXmlValue($xmlString, 'source') ?: 'Planning'
+        );
         
         $xml = $this->parseXml($xmlString);
 

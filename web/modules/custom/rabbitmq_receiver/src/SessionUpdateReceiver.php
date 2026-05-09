@@ -36,6 +36,10 @@ class SessionUpdateReceiver
     public function processMessageFromXml(string $xmlString): array
     {
         $this->validateXml($xmlString, self::XSD_PATH);
+        $this->logReceiverSuccess(
+            $this->extractXmlValue($xmlString, 'type'),
+            $this->extractXmlValue($xmlString, 'source')
+        );
         
         $xml = $this->parseXml($xmlString);
         $body = $xml->body;

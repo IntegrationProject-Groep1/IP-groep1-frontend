@@ -36,6 +36,10 @@ class SessionCreatedReceiver
     public function processMessageFromXml(string $xmlString): array
     {
         $this->validateXml($xmlString, self::XSD_PATH);
+        $this->logReceiverSuccess(
+            $this->extractXmlValue($xmlString, 'type') ?: 'session_created',
+            $this->extractXmlValue($xmlString, 'source') ?: 'Planning'
+        );
         
         $xml = $this->parseXml($xmlString);
         $body = $xml->body;

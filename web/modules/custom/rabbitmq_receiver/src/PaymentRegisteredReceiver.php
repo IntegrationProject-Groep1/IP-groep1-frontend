@@ -33,6 +33,10 @@ class PaymentRegisteredReceiver
     public function processMessageFromXml(string $xmlString): mixed
     {
         $this->validateXml($xmlString, self::XSD_PATH);
+        $this->logReceiverSuccess(
+            $this->extractXmlValue($xmlString, 'type') ?: 'payment_registered',
+            $this->extractXmlValue($xmlString, 'source') ?: 'CRM'
+        );
         
         $xmlString = preg_replace('/ xmlns="[^"]*"/', '', $xmlString) ?? $xmlString;
         libxml_use_internal_errors(true);

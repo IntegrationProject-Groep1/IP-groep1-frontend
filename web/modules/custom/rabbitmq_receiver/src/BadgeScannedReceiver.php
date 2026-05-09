@@ -48,6 +48,10 @@ class BadgeScannedReceiver
     public function processMessageFromXml(string $xmlString): mixed
     {
         $this->validateXml($xmlString, self::XSD_PATH);
+        $this->logReceiverSuccess(
+            $this->extractXmlValue($xmlString, 'type') ?: 'badge_scanned',
+            $this->extractXmlValue($xmlString, 'source') ?: 'CRM'
+        );
         
         $xmlString = preg_replace('/ xmlns="[^"]*"/', '', $xmlString) ?? $xmlString;
         libxml_use_internal_errors(true);
@@ -72,11 +76,6 @@ class BadgeScannedReceiver
             throw new \InvalidArgumentException('scanned_at is required');
         }
 
-        $location = trim((string) $body->location);
-        if ($location === '') {
-            throw new \InvalidArgumentException('location is required');
-        }
-
         return true;
     }
 
@@ -94,16 +93,10 @@ class BadgeScannedReceiver
             'x-dead-letter-routing-key' => self::DLQ,
         ]);
 
-            $badgeId   = (string) $xml->body->badge_id;
-            $location  = (string) $xml->body->location;
-            $scannedAt = (string) $xml->body->scanned_at;
-
-            if (empty($badgeId)) {
-                throw new \InvalidArgumentException('badge_id is required');
-            }
-
-            // Placeholder for updating the badge scan in Drupal storage.
-            echo "Badge scanned: {$badgeId} at {$location} — {$scannedAt}\n";
+        $msg = $channel->basic_get(self::QUEUE);
+        if (!$msg) {
+            return false;
+        }
 
         try {
             $this->processMessageFromXml($msg->body);

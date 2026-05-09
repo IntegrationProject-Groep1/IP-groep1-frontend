@@ -47,12 +47,15 @@ class EventEndedSender
             ]);
             $client->declareQueue(self::QUEUE_NAME);
             $client->getChannel()->basic_publish($msg, '', self::QUEUE_NAME);
+            $this->logOutboundSuccess(self::TYPE, self::QUEUE_NAME, $xml);
 
             $client->declareQueue(self::QUEUE_FACTURATIE);
             $client->getChannel()->basic_publish($msg, '', self::QUEUE_FACTURATIE);
+            $this->logOutboundSuccess(self::TYPE, self::QUEUE_FACTURATIE, $xml);
 
             $client->declareQueue(self::QUEUE_KASSA);
             $client->getChannel()->basic_publish($msg, '', self::QUEUE_KASSA);
+            $this->logOutboundSuccess(self::TYPE, self::QUEUE_KASSA, $xml);
         });
     }
 

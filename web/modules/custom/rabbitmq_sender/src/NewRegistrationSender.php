@@ -67,6 +67,7 @@ class NewRegistrationSender
                 ]);
 
                 $this->resolveClient()->getChannel()->basic_publish($msg, '', self::QUEUE_NAME);
+                $this->logOutboundSuccess(self::MESSAGE_TYPE, self::QUEUE_NAME, $xml);
             });
         } catch (\Throwable $e) {
             // logging gebeurt in RabbitMQClient

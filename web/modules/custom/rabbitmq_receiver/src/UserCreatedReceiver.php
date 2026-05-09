@@ -35,6 +35,10 @@ class UserCreatedReceiver
     public function processMessageFromXml(string $xmlString): array
     {
         $this->validateXml($xmlString, self::XSD_PATH);
+        $this->logReceiverSuccess(
+            $this->extractXmlValue($xmlString, 'type'),
+            $this->extractXmlValue($xmlString, 'source')
+        );
         libxml_use_internal_errors(true);
         $xml = simplexml_load_string($xmlString);
         libxml_clear_errors();
