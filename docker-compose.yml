@@ -29,9 +29,14 @@ services:
       sh -c "mkdir -p /var/www/html/sites/default/files
       && chown -R www-data:www-data /var/www/html/sites/default/files
       && chmod -R 775 /var/www/html/sites/default/files
-      && timeout 60 /opt/drupal/vendor/bin/drush --root=/var/www/html en qr_code --yes || true
-      && timeout 60 /opt/drupal/vendor/bin/drush --root=/var/www/html cr || true
-      && exec apache2-foreground"
+      && (sleep 15
+      && timeout 90 /opt/drupal/vendor/bin/drush --root=/var/www/html en
+         rabbitmq_sender rabbitmq_receiver registration_form session_enrollment
+         session_management company_invite qr_code --yes
+      && timeout 60 /opt/drupal/vendor/bin/drush --root=/var/www/html updb --yes
+      && timeout 60 /opt/drupal/vendor/bin/drush --root=/var/www/html cr
+      || true) &
+      exec apache2-foreground"
     ports:
       - "${FRONTEND_HTTP_PORT:-30020}:80"
     environment:
