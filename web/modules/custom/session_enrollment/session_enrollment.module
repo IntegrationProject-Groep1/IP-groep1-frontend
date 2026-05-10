@@ -81,7 +81,15 @@ function session_enrollment_cron(): void
             }
         }
 
-        // 5. Request a fresh session list from Planning — the response will be processed next cron run.
+        // 5. Process wallet_balance_update messages from Kassa and store balance per user (up to 20 per cron run).
+        $walletReceiver = new \Drupal\rabbitmq_receiver\WalletBalanceReceiver($client);
+        for ($i = 0; $i < 20; $i++) {
+            if (!$walletReceiver->pollOnce()) {
+                break;
+            }
+        }
+
+        // 6. Request a fresh session list from Planning — the response will be processed next cron run.
         $viewSender = new \Drupal\rabbitmq_sender\SessionViewRequestSender($client);
         $viewSender->send();
 

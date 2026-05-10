@@ -27,3 +27,6 @@ services:
 
   rabbitmq_receiver.vat_validation_error_receiver:
     class: Drupal\rabbitmq_receiver\VatValidationErrorReceiver
+
+  rabbitmq_receiver.wallet_balance_receiver:
+    class: Drupal\rabbitmq_receiver\WalletBalanceReceiver
