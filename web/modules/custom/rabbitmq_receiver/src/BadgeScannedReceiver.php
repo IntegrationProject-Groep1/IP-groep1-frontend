@@ -62,18 +62,31 @@ class BadgeScannedReceiver
             throw new \InvalidArgumentException('Invalid XML received');
         }
 
-        $badgeId   = (string) $xml->body->badge_id;
-        $location  = (string) $xml->body->location;
-        $scannedAt = (string) $xml->body->scanned_at;
+        $badgeId      = (string) $xml->body->badge_id;
+        $identityUuid = (string) $xml->body->identity_uuid;
+        $location     = (string) $xml->body->location;
+        $scannedAt    = (string) $xml->body->scanned_at;
 
-        if (empty($badgeId)) {
-            throw new \InvalidArgumentException('badge_id is required');
+        if (empty($badgeId) && empty($identityUuid)) {
+            throw new \InvalidArgumentException('Either badge_id or identity_uuid is required');
         }
         if (empty($location)) {
             throw new \InvalidArgumentException('location is required');
         }
         if (empty($scannedAt)) {
             throw new \InvalidArgumentException('scanned_at is required');
+        }
+
+        if (!empty($identityUuid) && $this->userCheckinSender !== null) {
+            $uid = $this->findUidByMasterUuid($identityUuid);
+            if ($uid === null) {
+                throw new \InvalidArgumentException('No user found for identity_uuid: ' . $identityUuid);
+            }
+            $this->userCheckinSender->send([
+                'user_id'    => $identityUuid,
+                'badge_id'   => $identityUuid,
+                'checkin_at' => $scannedAt,
+            ]);
         }
 
         return true;
@@ -144,6 +157,25 @@ class BadgeScannedReceiver
         while ($channel->is_consuming()) {
             $channel->wait();
         }
+    }
+
+    private function findUidByMasterUuid(string $masterUuid): ?int
+    {
+        $rows = \Drupal::database()
+            ->select('users_data', 'ud')
+            ->fields('ud', ['uid', 'value'])
+            ->condition('module', 'registration_form')
+            ->condition('name', 'master_uuid')
+            ->execute()
+            ->fetchAll();
+
+        foreach ($rows as $row) {
+            if (unserialize($row->value) === $masterUuid) {
+                return (int) $row->uid;
+            }
+        }
+
+        return null;
     }
 
     private function resolveClient(): RabbitMQClient
