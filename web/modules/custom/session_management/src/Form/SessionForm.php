@@ -45,11 +45,10 @@ class SessionForm extends FormBase
             '#title'   => $this->t('Session type'),
             '#required' => true,
             '#options' => [
-                'keynote'  => $this->t('Keynote'),
-                'workshop' => $this->t('Workshop'),
-                'panel'    => $this->t('Panel discussion'),
-                'breakout' => $this->t('Breakout session'),
-                'other'    => $this->t('Other'),
+                'keynote'   => $this->t('Keynote'),
+                'workshop'  => $this->t('Workshop'),
+                'reception' => $this->t('Reception'),
+                'other'     => $this->t('Other'),
             ],
             '#empty_option' => $this->t('— Select a type —'),
         ];
