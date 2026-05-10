@@ -26,7 +26,7 @@ services:
     container_name: frontend_drupal
     restart: unless-stopped
     command: >
-      sh -lc "mkdir -p /var/www/html/sites/default/files
+      sh -c "mkdir -p /var/www/html/sites/default/files
       && chown -R www-data:www-data /var/www/html/sites/default/files
       && chmod -R 775 /var/www/html/sites/default/files
       && /opt/drupal/vendor/bin/drush --root=/var/www/html en qr_code --yes 2>/dev/null || true
