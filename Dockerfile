@@ -24,6 +24,9 @@ COPY xsd /opt/drupal/xsd
 # Copy settings.php — uses getenv() so credentials come from environment variables
 COPY web/sites/default/settings.php /var/www/html/sites/default/settings.php
 
+# Suppress the "Could not reliably determine the server's fully qualified domain name" warning
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
 # Create the public files directory and set correct ownership
 RUN mkdir -p /var/www/html/sites/default/files \
     && chown -R www-data:www-data \
