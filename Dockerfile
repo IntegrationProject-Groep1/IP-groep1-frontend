@@ -1,4 +1,4 @@
-FROM drupal:10.4-apache
+FROM drupal:10-apache
 
 RUN apt-get update && apt-get install -y \
     git \
