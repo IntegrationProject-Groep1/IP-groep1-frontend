@@ -22,12 +22,21 @@ class QrCodeController extends ControllerBase
         $walletBalance = $userData->get('registration_form', $uid, 'wallet_balance');
 
         if ($masterUuid === '') {
+            \Drupal::logger('qr_code')->warning(
+                'QR code page: uid @uid has no master_uuid — registration with Identity Service may be incomplete.',
+                ['@uid' => $uid]
+            );
             return [
                 '#markup' => '<div class="qr-code-page">'
                     . '<p>' . $this->t('Geen QR code beschikbaar. Voltooi eerst uw registratie.') . '</p>'
                     . '</div>',
             ];
         }
+
+        \Drupal::logger('qr_code')->info(
+            'QR code page served for uid @uid (balance: @balance).',
+            ['@uid' => $uid, '@balance' => $walletBalance ?? 'none']
+        );
 
         $balanceHtml = '';
         if ($walletBalance !== null && $walletBalance !== '') {

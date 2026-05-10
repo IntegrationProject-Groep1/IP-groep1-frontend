@@ -15,11 +15,13 @@ trait ReceiverLogTrait
     protected function logReceiverSuccess(string $type, string $source): void
     {
         $message = "Received [{$type}] from [{$source}]. Validation: [Success].";
-        
-        // 1. Log to Container Logs
+
         error_log("RabbitMQ Receiver INFO: " . $message);
 
-        // 2. Send to Monitoring Team
+        if (class_exists('\Drupal')) {
+            \Drupal::logger('rabbitmq_receiver')->info($message);
+        }
+
         $this->sendToMonitoring('info', 'xml_validation', $message);
     }
 

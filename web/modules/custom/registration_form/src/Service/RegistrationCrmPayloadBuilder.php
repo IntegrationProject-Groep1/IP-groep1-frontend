@@ -43,4 +43,5 @@ class RegistrationCrmPayloadBuilder
             'badge_id'       => (string) ($data['badge_id'] ?? ''),
         ];
     }
+
 }

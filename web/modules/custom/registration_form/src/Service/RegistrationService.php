@@ -56,6 +56,12 @@ class RegistrationService
         if ($masterUuid !== '') {
             $this->storeMasterUuidOnUser((int) $user->id(), $masterUuid);
             $data['master_uuid'] = $masterUuid;
+        } elseif ($this->identityClient !== null && $this->mustRequireRabbitMqSync()) {
+            // Identity Service is configured but did not return a UUID. Sending a
+            // registration to CRM without a real identity_uuid would create corrupt data,
+            // so we abort and roll back the local user.
+            $user->delete();
+            throw new \InvalidArgumentException('Registratie tijdelijk niet beschikbaar omdat de Identity Service niet bereikbaar is. Probeer het over enkele minuten opnieuw.');
         }
 
         $isCompany = (bool) ($data['is_company'] ?? false);

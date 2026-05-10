@@ -77,16 +77,43 @@ class BadgeScannedReceiver
             throw new \InvalidArgumentException('scanned_at is required');
         }
 
-        if (!empty($identityUuid) && $this->userCheckinSender !== null) {
-            $uid = $this->findUidByMasterUuid($identityUuid);
-            if ($uid === null) {
-                throw new \InvalidArgumentException('No user found for identity_uuid: ' . $identityUuid);
+        if (!empty($identityUuid)) {
+            \Drupal::logger('rabbitmq_receiver')->info(
+                'badge_scanned: QR path — looking up user for identity_uuid @uuid at @location.',
+                ['@uuid' => $identityUuid, '@location' => $location]
+            );
+
+            if ($this->userCheckinSender !== null) {
+                $uid = $this->findUidByMasterUuid($identityUuid);
+                if ($uid === null) {
+                    \Drupal::logger('rabbitmq_receiver')->error(
+                        'badge_scanned: No Drupal user found for identity_uuid @uuid — message rejected.',
+                        ['@uuid' => $identityUuid]
+                    );
+                    throw new \InvalidArgumentException('No user found for identity_uuid: ' . $identityUuid);
+                }
+
+                \Drupal::logger('rabbitmq_receiver')->info(
+                    'badge_scanned: Found uid @uid for identity_uuid @uuid — sending user_checkin.',
+                    ['@uid' => $uid, '@uuid' => $identityUuid]
+                );
+
+                $this->userCheckinSender->send([
+                    'user_id'    => $identityUuid,
+                    'badge_id'   => $identityUuid,
+                    'checkin_at' => $scannedAt,
+                ]);
+
+                \Drupal::logger('rabbitmq_receiver')->info(
+                    'badge_scanned: user_checkin sent for uid @uid at @location.',
+                    ['@uid' => $uid, '@location' => $location]
+                );
             }
-            $this->userCheckinSender->send([
-                'user_id'    => $identityUuid,
-                'badge_id'   => $identityUuid,
-                'checkin_at' => $scannedAt,
-            ]);
+        } else {
+            \Drupal::logger('rabbitmq_receiver')->info(
+                'badge_scanned: Physical badge path — badge_id @id at @location (no checkin forwarded).',
+                ['@id' => $badgeId, '@location' => $location]
+            );
         }
 
         return true;

@@ -62,12 +62,26 @@ class WalletBalanceReceiver
             throw new \InvalidArgumentException('wallet_balance is required');
         }
 
+        \Drupal::logger('rabbitmq_receiver')->info(
+            'wallet_balance_update: looking up user for identity_uuid @uuid.',
+            ['@uuid' => $identityUuid]
+        );
+
         $uid = $this->findUidByMasterUuid($identityUuid);
         if ($uid === null) {
+            \Drupal::logger('rabbitmq_receiver')->error(
+                'wallet_balance_update: No Drupal user found for identity_uuid @uuid — message rejected.',
+                ['@uuid' => $identityUuid]
+            );
             throw new \InvalidArgumentException('No user found for identity_uuid: ' . $identityUuid);
         }
 
         \Drupal::service('user.data')->set('registration_form', $uid, 'wallet_balance', $balance);
+
+        \Drupal::logger('rabbitmq_receiver')->info(
+            'wallet_balance_update: stored balance €@balance for uid @uid (identity_uuid @uuid).',
+            ['@balance' => $balance, '@uid' => $uid, '@uuid' => $identityUuid]
+        );
 
         return true;
     }
