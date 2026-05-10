@@ -29,6 +29,8 @@ services:
       sh -lc "mkdir -p /var/www/html/sites/default/files
       && chown -R www-data:www-data /var/www/html/sites/default/files
       && chmod -R 775 /var/www/html/sites/default/files
+      && /opt/drupal/vendor/bin/drush --root=/var/www/html en qr_code --yes 2>/dev/null || true
+      && /opt/drupal/vendor/bin/drush --root=/var/www/html cr 2>/dev/null || true
       && exec apache2-foreground"
     ports:
       - "${FRONTEND_HTTP_PORT:-30020}:80"
