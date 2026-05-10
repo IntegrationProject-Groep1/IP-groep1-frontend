@@ -63,8 +63,9 @@ $settings['trusted_host_patterns'][] = '^integrationproject-2526s2-dag01\.westeu
 // desiderius.me — via nginx ingress controller
 $settings['trusted_host_patterns'][] = '^(.+\.)?desiderius\.me$';
 
-// The nginx ingress runs on --http-port=8080, so it forwards X-Forwarded-Port: 8080
-// to Drupal. Hardcode $base_url so redirects (login, register) use the correct public URL.
-if (!empty($_SERVER['HTTP_HOST']) && str_contains($_SERVER['HTTP_HOST'], 'desiderius.me')) {
+// Always override $base_url for desiderius.me regardless of what DRUPAL_BASE_URL is set to.
+// The ingress terminates HTTPS and forwards HTTP internally, so DRUPAL_BASE_URL in the secret
+// may contain a stale port (e.g. :8080). This ensures redirects always use the correct public URL.
+if (getenv('DRUPAL_BASE_URL') !== false && str_contains((string) getenv('DRUPAL_BASE_URL'), 'desiderius.me')) {
   $base_url = 'https://desiderius.me';
 }
