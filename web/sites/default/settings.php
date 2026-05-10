@@ -60,5 +60,11 @@ if (getenv('DRUPAL_REVERSE_PROXY') === 'true') {
 $settings['trusted_host_patterns'][] = '^integrationproject-2526s2-dag01\.westeurope\.cloudapp\.azure\.com$';
 $settings['trusted_host_patterns'][] = '^integrationproject-2526s2-dag01\.westeurope\.cloudapp\.azure\.com:30020$';
 
-// Cloudflare Tunnel — desiderius.me
-$settings['trusted_host_patterns'][] = '^(.+\\.)?desiderius\\.me(:\\d+)?$';
+// desiderius.me — via nginx ingress controller
+$settings['trusted_host_patterns'][] = '^(.+\.)?desiderius\.me$';
+
+// The nginx ingress runs on --http-port=8080, so it forwards X-Forwarded-Port: 8080
+// to Drupal. Hardcode $base_url so redirects (login, register) use the correct public URL.
+if (!empty($_SERVER['HTTP_HOST']) && str_contains($_SERVER['HTTP_HOST'], 'desiderius.me')) {
+  $base_url = 'https://desiderius.me';
+}
