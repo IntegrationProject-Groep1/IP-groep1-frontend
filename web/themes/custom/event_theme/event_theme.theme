@@ -128,6 +128,15 @@ function event_theme_preprocess_page(array &$variables): void {
     $isCompanyUser = (bool) $storedFlag;
   }
   $variables['is_company_user'] = $isCompanyUser;
+
+  $variables['wallet_balance'] = null;
+  if ($account->isAuthenticated()) {
+    $variables['wallet_balance'] = \Drupal::service('user.data')->get(
+      'registration_form',
+      (int) $account->id(),
+      'wallet_balance'
+    );
+  }
 }
 
 /**

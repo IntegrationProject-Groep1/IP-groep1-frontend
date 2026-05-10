@@ -7,3 +7,11 @@ global:
     js/menu.js: { minified: false }
   dependencies:
     - core/drupal
+
+# QR code page: renders the attendee's master_uuid as a scannable QR code.
+qr_code:
+  js:
+    js/qrcode.min.js: { minified: true }
+    js/qr-code.js: { minified: false }
+  dependencies:
+    - core/drupal

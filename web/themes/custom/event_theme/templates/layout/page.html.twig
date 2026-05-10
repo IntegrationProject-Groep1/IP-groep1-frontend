@@ -2,7 +2,8 @@
   page.html.twig — Page-level layout (nav + main + footer).
   Variables injected by event_theme_preprocess_page():
     site_name, tagline, nav_show_register, nav_show_enroll,
-    footer_text, social_*, current_route, logo, logged_in.
+    footer_text, social_*, current_route, logo, logged_in,
+    wallet_balance (nullable string, badge wallet saldo in EUR).
 #}
 
 {# ════════════════════════════════════════════════════════════ HEADER #}
@@ -90,6 +91,19 @@
                         d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z"/>
                 </svg>
                 {{ 'Mijn gegevens'|t }}
+              </a>
+              <div style="border-top:1px solid var(--color-border);"></div>
+              <a href="{{ path('qr_code.page') }}"
+                 class="flex items-center gap-2.5 px-4 py-3 text-sm transition-colors hover:opacity-80"
+                 style="color:var(--color-text);" role="menuitem">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 4H4v8h8V4zM4 4v8M12 4v8M4 12h8M20 4h-8v8h8V4zM12 4v8M20 4v8M12 12h8M4 20h8v-8H4v8zM4 12v8M12 12v8M4 20h8"/>
+                </svg>
+                <span>{{ 'Mijn QR Code'|t }}</span>
+                {% if wallet_balance %}
+                  <span class="ml-auto text-xs font-medium" style="color:var(--color-muted);">€{{ wallet_balance }}</span>
+                {% endif %}
               </a>
               <div style="border-top:1px solid var(--color-border);"></div>
               <a href="{{ path('entity.user.cancel_form', {'user': current_uid}) }}"
@@ -185,6 +199,17 @@
                     d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z"/>
             </svg>
             {{ 'Mijn gegevens'|t }}
+          </a>
+          <a href="{{ path('qr_code.page') }}"
+             class="nav-link flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 4H4v8h8V4zM4 4v8M12 4v8M4 12h8M20 4h-8v8h8V4zM12 4v8M20 4v8M12 12h8M4 20h8v-8H4v8zM4 12v8M12 12v8M4 20h8"/>
+            </svg>
+            {{ 'Mijn QR Code'|t }}
+            {% if wallet_balance %}
+              <span class="ml-auto text-xs font-medium" style="color:var(--color-muted);">€{{ wallet_balance }}</span>
+            {% endif %}
           </a>
           <a href="{{ path('entity.user.cancel_form', {'user': current_uid}) }}"
              class="nav-link flex items-center gap-2" style="color:#ef4444;">
