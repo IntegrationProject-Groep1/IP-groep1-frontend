@@ -1,0 +1,7 @@
+qr_code.page:
+  path: '/user/qr-code'
+  defaults:
+    _controller: '\Drupal\qr_code\Controller\QrCodeController::page'
+    _title: 'Mijn QR Code'
+  requirements:
+    _user_is_logged_in: 'TRUE'
