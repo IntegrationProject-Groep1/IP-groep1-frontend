@@ -74,21 +74,38 @@ class RabbitMQClient
     public function declareQueue(string $queueName, bool $durable = true): void
     {
         try {
-            // passive=true: use the queue if it already exists, don't recreate it.
-            // This prevents AMQP 406 PRECONDITION_FAILED when another service (e.g. CRM)
-            // already declared the queue with different parameters.
-            $this->getChannel()->queue_declare($queueName, true, $durable, false, false);
+            // Try active declare first. This succeeds when:
+            // - The queue does not yet exist (creates it), or
+            // - The queue already exists with identical parameters (no-op).
+            $this->getChannel()->queue_declare($queueName, false, $durable, false, false);
 
             \Drupal::logger('rabbitmq_sender')->info('Queue declared', [
                 'queue' => $queueName,
             ]);
-
         } catch (\Throwable $e) {
-            \Drupal::logger('rabbitmq_sender')->error('Failed to declare queue', [
-                'queue' => $queueName,
+            // AMQP 406 PRECONDITION_FAILED: queue exists with different parameters
+            // (declared by another service such as CRM). The channel is now closed by
+            // the broker. Reopen it and use passive=true to attach to the existing queue.
+            \Drupal::logger('rabbitmq_sender')->warning('Queue declare failed (possibly already exists with different params), retrying passive: @error', [
                 'error' => $e->getMessage(),
             ]);
-            throw $e;
+
+            // Reset the closed channel so getChannel() opens a fresh one.
+            $this->channel = null;
+
+            try {
+                $this->getChannel()->queue_declare($queueName, true, $durable, false, false);
+
+                \Drupal::logger('rabbitmq_sender')->info('Queue attached (passive)', [
+                    'queue' => $queueName,
+                ]);
+            } catch (\Throwable $e2) {
+                \Drupal::logger('rabbitmq_sender')->error('Failed to declare queue', [
+                    'queue' => $queueName,
+                    'error' => $e2->getMessage(),
+                ]);
+                throw $e2;
+            }
         }
     }
 
