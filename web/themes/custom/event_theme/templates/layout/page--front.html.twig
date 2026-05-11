@@ -28,24 +28,26 @@
 
       <div class="landing-nav-cta">
         {% if logged_in %}
-          {% if nav_show_enroll %}
-            <a href="{{ path('session_enrollment.enroll') }}"
+          {% if nav_show_enroll and enroll_url %}
+            <a href="{{ enroll_url }}"
                style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--line-2);border-radius:10px;font-size:13px;font-weight:600;color:var(--ink);text-decoration:none;">
               {{ 'Sessies bekijken'|t }}
             </a>
           {% endif %}
-          <a href="{{ path('qr_code.page') }}"
-             style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--ink);color:white;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;">
-            {{ 'Mijn badge'|t }}
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-          </a>
+          {% if qr_url %}
+            <a href="{{ qr_url }}"
+               style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--ink);color:white;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;">
+              {{ 'Mijn badge'|t }}
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+            </a>
+          {% endif %}
         {% else %}
           <a href="{{ path('user.login') }}"
              style="display:inline-flex;align-items:center;padding:8px 16px;border:1px solid var(--line-2);border-radius:10px;font-size:13px;font-weight:600;color:var(--ink);text-decoration:none;">
             {{ 'Inloggen'|t }}
           </a>
-          {% if nav_show_register %}
-            <a href="{{ path('registration_form.register') }}"
+          {% if nav_show_register and register_url %}
+            <a href="{{ register_url }}"
                style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--ink);color:white;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;">
               {{ 'Badge aanvragen'|t }}
               <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
@@ -96,20 +98,22 @@
 
         <div class="hero-ctas">
           {% if logged_in %}
-            {% if nav_show_enroll %}
-              <a href="{{ path('session_enrollment.enroll') }}"
+            {% if nav_show_enroll and enroll_url %}
+              <a href="{{ enroll_url }}"
                  style="display:inline-flex;align-items:center;gap:8px;padding:13px 22px;background:var(--ink);color:white;border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;">
                 {{ 'Sessies inschrijven'|t }}
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
               </a>
             {% endif %}
-            <a href="{{ path('qr_code.page') }}"
-               style="display:inline-flex;align-items:center;gap:8px;padding:13px 22px;background:transparent;color:var(--ink);border:1px solid var(--line-2);border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;">
-              {{ 'Mijn badge'|t }}
-            </a>
+            {% if qr_url %}
+              <a href="{{ qr_url }}"
+                 style="display:inline-flex;align-items:center;gap:8px;padding:13px 22px;background:transparent;color:var(--ink);border:1px solid var(--line-2);border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;">
+                {{ 'Mijn badge'|t }}
+              </a>
+            {% endif %}
           {% else %}
-            {% if nav_show_register %}
-              <a href="{{ path('registration_form.register') }}"
+            {% if nav_show_register and register_url %}
+              <a href="{{ register_url }}"
                  style="display:inline-flex;align-items:center;gap:8px;padding:13px 22px;background:var(--ink);color:white;border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;">
                 {{ 'Registreer voor het festival'|t }}
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
