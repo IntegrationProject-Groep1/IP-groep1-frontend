@@ -1,344 +1,360 @@
 {#
   page--front.html.twig — Shift Festival 2026 landing page.
-  Variables: hero_enabled, hero_title, hero_subtitle, hero_cta_label, hero_cta_url,
-             site_name, nav_show_register, nav_show_enroll, footer_text,
-             social_*, logged_in, is_admin, is_company_user, current_first_name,
-             current_uid, wallet_balance, logo.
+  Uses the same sf-header as page.html.twig so navigation is consistent.
 #}
 
-<div class="landing">
+{# ════════════════════════════════════════════════════════════ HEADER #}
+<header class="sf-header">
 
-  {# ════════════════════════════════════════ NAV #}
-  <header>
-    <nav class="landing-nav">
-      <a href="{{ path('<front>') }}" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;">
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-          <rect x="2" y="2" width="24" height="24" rx="7" fill="var(--ink)"/>
-          <path d="M9 18.5L14 9.5L19 18.5" stroke="var(--bg)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="14" cy="14" r="1.6" fill="var(--accent)"/>
-        </svg>
-        <span style="font-weight:700;font-size:16px;color:var(--ink);">{{ site_name }}</span>
+  <a href="{{ path('<front>') }}" class="sf-header-brand">
+    <svg width="26" height="26" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+      <rect x="2" y="2" width="24" height="24" rx="7" fill="white"/>
+      <path d="M9 18.5L14 9.5L19 18.5" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="14" cy="14" r="1.6" fill="var(--accent)"/>
+    </svg>
+    <span>{{ site_name }}</span>
+  </a>
+
+  <nav class="sf-header-nav" aria-label="{{ 'Hoofdnavigatie'|t }}">
+    <a href="{{ path('<front>') }}" class="sf-nav-link is-active">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      {{ 'Home'|t }}
+    </a>
+    {% if not logged_in and nav_show_register and register_url %}
+      <a href="{{ register_url }}" class="sf-nav-link">{{ 'Registreren'|t }}</a>
+    {% endif %}
+    {% if logged_in and nav_show_enroll and enroll_url %}
+      <a href="{{ enroll_url }}" class="sf-nav-link">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        {{ 'Sessies'|t }}
       </a>
+    {% endif %}
+    {% if logged_in and is_company_user and invite_url %}
+      <a href="{{ invite_url }}" class="sf-nav-link">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        {{ 'Team'|t }}
+      </a>
+    {% endif %}
+    {% if is_admin and session_create_url %}
+      <a href="{{ session_create_url }}" class="sf-nav-link">{{ 'Sessie aanmaken'|t }}</a>
+    {% endif %}
+    {% if is_admin and session_end_url %}
+      <a href="{{ session_end_url }}" class="sf-nav-link">{{ 'Sessie beëindigen'|t }}</a>
+    {% endif %}
+  </nav>
 
-      <div class="landing-nav-links">
-        <a href="#program">{{ 'Programma'|t }}</a>
-        <a href="#venue">{{ 'Locatie'|t }}</a>
-        <a href="#info">{{ 'Info'|t }}</a>
+  <div class="sf-header-actions">
+    {% if logged_in %}
+      {% if wallet_balance and qr_url %}
+        <a href="{{ qr_url }}"
+           style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid rgba(255,255,255,.15);border-radius:100px;font-size:12px;color:rgba(255,255,255,.8);text-decoration:none;">
+          <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          €{{ wallet_balance }}
+        </a>
+      {% endif %}
+      {% if qr_url %}
+        <a href="{{ qr_url }}"
+           style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid rgba(255,255,255,.2);border-radius:8px;color:rgba(255,255,255,.7);text-decoration:none;"
+           title="{{ 'Mijn QR Badge'|t }}">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4H4v8h8V4zM4 4v8M12 4v8M4 12h8M20 4h-8v8h8V4zM12 4v8M20 4v8M12 12h8M4 20h8v-8H4v8zM4 12v8M12 12v8M4 20h8"/>
+          </svg>
+        </a>
+      {% endif %}
+      <div style="position:relative;" id="sf-account-wrapper">
+        <button id="sf-account-toggle" class="sf-account-btn"
+                aria-haspopup="true" aria-expanded="false" aria-controls="sf-account-dropdown">
+          <span class="sf-account-avatar">{{ current_first_name|slice(0,1)|upper }}</span>
+          <span>{{ current_first_name }}</span>
+          <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="sf-account-chevron">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+        <div id="sf-account-dropdown" class="sf-dropdown" style="display:none;" role="menu">
+          <a href="{{ path('entity.user.edit_form', {'user': current_uid}) }}" class="sf-dropdown-item" role="menuitem">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z"/></svg>
+            {{ 'Mijn gegevens'|t }}
+          </a>
+          {% if qr_url %}
+            <a href="{{ qr_url }}" class="sf-dropdown-item" role="menuitem">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4H4v8h8V4zM4 4v8M12 4v8M4 12h8M20 4h-8v8h8V4z"/></svg>
+              {{ 'Mijn QR Code'|t }}
+              {% if wallet_balance %}<span style="margin-left:auto;font-size:11px;color:var(--muted);">€{{ wallet_balance }}</span>{% endif %}
+            </a>
+          {% endif %}
+          <hr class="sf-dropdown-divider">
+          <a href="{{ path('entity.user.cancel_form', {'user': current_uid}) }}" class="sf-dropdown-item danger" role="menuitem">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            {{ 'Account verwijderen'|t }}
+          </a>
+          <hr class="sf-dropdown-divider">
+          <a href="{{ path('user.logout') }}" class="sf-dropdown-item" role="menuitem" style="color:var(--muted);">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            {{ 'Afmelden'|t }}
+          </a>
+        </div>
       </div>
+    {% else %}
+      <a href="{{ path('user.login') }}" class="sf-login-btn">{{ 'Inloggen'|t }}</a>
+      {% if nav_show_register and register_url %}
+        <a href="{{ register_url }}"
+           style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--accent);color:white;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
+          {{ 'Registreren'|t }}
+        </a>
+      {% endif %}
+    {% endif %}
 
-      <div class="landing-nav-cta landing-nav-cta--desktop">
+    {# Hamburger #}
+    <button id="sf-menu-toggle"
+            style="display:none;background:transparent;border:none;cursor:pointer;padding:6px;color:rgba(255,255,255,.7);"
+            aria-label="{{ 'Menu openen'|t }}" aria-expanded="false" aria-controls="sf-mobile-menu">
+      <svg id="sf-icon-open" width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+      <svg id="sf-icon-close" width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:none;">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+
+</header>
+
+{# Mobile menu #}
+<div id="sf-mobile-menu" class="sf-mobile-menu">
+  <a href="{{ path('<front>') }}" class="sf-nav-link">{{ 'Home'|t }}</a>
+  {% if not logged_in and nav_show_register and register_url %}
+    <a href="{{ register_url }}" class="sf-nav-link">{{ 'Registreren'|t }}</a>
+  {% endif %}
+  {% if logged_in and nav_show_enroll and enroll_url %}
+    <a href="{{ enroll_url }}" class="sf-nav-link">{{ 'Sessies'|t }}</a>
+  {% endif %}
+  {% if logged_in and is_company_user and invite_url %}
+    <a href="{{ invite_url }}" class="sf-nav-link">{{ 'Team'|t }}</a>
+  {% endif %}
+  {% if is_admin and session_create_url %}
+    <a href="{{ session_create_url }}" class="sf-nav-link">{{ 'Sessie aanmaken'|t }}</a>
+  {% endif %}
+  {% if is_admin and session_end_url %}
+    <a href="{{ session_end_url }}" class="sf-nav-link">{{ 'Sessie beëindigen'|t }}</a>
+  {% endif %}
+  {% if logged_in %}
+    <hr style="border:none;border-top:1px solid rgba(255,255,255,.08);margin:6px 0;">
+    {% if qr_url %}
+      <a href="{{ qr_url }}" class="sf-nav-link">{{ 'Mijn QR Badge'|t }}</a>
+    {% endif %}
+    <a href="{{ path('entity.user.edit_form', {'user': current_uid}) }}" class="sf-nav-link">{{ 'Mijn gegevens'|t }}</a>
+    <a href="{{ path('user.logout') }}" class="sf-nav-link" style="color:rgba(255,255,255,.5);">{{ 'Afmelden'|t }}</a>
+  {% else %}
+    <a href="{{ path('user.login') }}" class="sf-nav-link">{{ 'Inloggen'|t }}</a>
+  {% endif %}
+</div>
+
+{# ════════════════════════════════════════════════════════════ HERO #}
+{% if hero_enabled %}
+<section class="hero">
+  <div class="hero-grid">
+    <div class="hero-lhs">
+      <div class="hero-eyebrow">
+        <span class="hero-dot"></span>
+        {{ 'Registratie is open'|t }}
+      </div>
+      <h1 class="hero-title">
+        {% if hero_title %}
+          <span class="hero-line">{{ hero_title }}</span>
+        {% else %}
+          <span class="hero-line">{{ 'Drie dagen.'|t }}</span>
+          <span class="hero-line">{{ 'Twaalf podia.'|t }}</span>
+          <span class="hero-line hero-line-accent">{{ 'Één geïntegreerde ervaring.'|t }}</span>
+        {% endif %}
+      </h1>
+      <p class="hero-sub">
+        {% if hero_subtitle %}{{ hero_subtitle }}{% else %}{{ 'Het festival waar technologie, creativiteit en samenwerking samenkomen. Schrijf je in voor sessies, scan je badge en ontdek het programma.'|t }}{% endif %}
+      </p>
+      <div class="hero-meta">
+        <div><span class="hero-meta-k">{{ 'Wanneer'|t }}</span><span class="hero-meta-v">{{ 'Mei 2026'|t }}</span></div>
+        <div><span class="hero-meta-k">{{ 'Locatie'|t }}</span><span class="hero-meta-v">{{ 'Desiderius Campus'|t }}</span></div>
+        <div><span class="hero-meta-k">{{ 'Sessies'|t }}</span><span class="hero-meta-v">{{ '12 podia · 84 sessies'|t }}</span></div>
+      </div>
+      <div class="hero-ctas">
         {% if logged_in %}
           {% if nav_show_enroll and enroll_url %}
             <a href="{{ enroll_url }}"
-               style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--line-2);border-radius:10px;font-size:13px;font-weight:600;color:var(--ink);text-decoration:none;">
-              {{ 'Sessies bekijken'|t }}
+               style="display:inline-flex;align-items:center;gap:8px;padding:13px 22px;background:var(--ink);color:white;border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;">
+              {{ 'Sessies inschrijven'|t }}
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
             </a>
           {% endif %}
           {% if qr_url %}
             <a href="{{ qr_url }}"
-               style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--ink);color:white;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;">
+               style="display:inline-flex;align-items:center;gap:8px;padding:13px 22px;background:transparent;color:var(--ink);border:1px solid var(--line-2);border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;">
               {{ 'Mijn badge'|t }}
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
             </a>
           {% endif %}
         {% else %}
-          <a href="{{ path('user.login') }}"
-             style="display:inline-flex;align-items:center;padding:8px 16px;border:1px solid var(--line-2);border-radius:10px;font-size:13px;font-weight:600;color:var(--ink);text-decoration:none;">
-            {{ 'Inloggen'|t }}
-          </a>
           {% if nav_show_register and register_url %}
             <a href="{{ register_url }}"
-               style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--ink);color:white;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;">
-              {{ 'Badge aanvragen'|t }}
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+               style="display:inline-flex;align-items:center;gap:8px;padding:13px 22px;background:var(--ink);color:white;border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;">
+              {{ 'Registreer voor het festival'|t }}
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
             </a>
           {% endif %}
+          <a href="{{ path('user.login') }}"
+             style="display:inline-flex;align-items:center;gap:8px;padding:13px 22px;background:transparent;color:var(--ink);border:1px solid var(--line-2);border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;">
+            {{ 'Ik heb al een badge'|t }}
+          </a>
         {% endif %}
       </div>
-      {# Hamburger — visible on mobile only #}
-      <button id="landing-menu-toggle" class="landing-hamburger"
-              aria-label="{{ 'Menu'|t }}" aria-expanded="false"
-              aria-controls="landing-mobile-menu">
-        <svg id="landing-icon-open" width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-        </svg>
-        <svg id="landing-icon-close" width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:none;">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
-    </nav>
-
-    {# Mobile menu panel #}
-    <div id="landing-mobile-menu" class="landing-mobile-menu" aria-hidden="true">
-      <a href="#program" class="landing-mobile-link">{{ 'Programma'|t }}</a>
-      <a href="#venue" class="landing-mobile-link">{{ 'Locatie'|t }}</a>
-      <a href="#info" class="landing-mobile-link">{{ 'Info'|t }}</a>
-      <hr class="landing-mobile-divider">
-      {% if logged_in %}
-        {% if nav_show_enroll and enroll_url %}
-          <a href="{{ enroll_url }}" class="landing-mobile-link">{{ 'Sessies bekijken'|t }}</a>
-        {% endif %}
-        {% if qr_url %}
-          <a href="{{ qr_url }}" class="landing-mobile-cta">{{ 'Mijn badge'|t }}</a>
-        {% endif %}
-      {% else %}
-        <a href="{{ path('user.login') }}" class="landing-mobile-link">{{ 'Inloggen'|t }}</a>
-        {% if nav_show_register and register_url %}
-          <a href="{{ register_url }}" class="landing-mobile-cta">{{ 'Badge aanvragen'|t }}</a>
-        {% endif %}
-      {% endif %}
     </div>
-  </header>
 
-  {# ════════════════════════════════════════ HERO #}
-  <section class="hero">
-    <div class="hero-grid">
-      <div class="hero-lhs">
-        <div class="hero-eyebrow">
-          <span class="hero-dot"></span>
-          {{ 'Registratie is open'|t }}
-        </div>
-        <h1 class="hero-title">
-          {% if hero_enabled and hero_title %}
-            <span class="hero-line">{{ hero_title }}</span>
-          {% else %}
-            <span class="hero-line">{{ 'Drie dagen.'|t }}</span>
-            <span class="hero-line">{{ 'Twaalf podia.'|t }}</span>
-            <span class="hero-line hero-line-accent">{{ 'Één geïntegreerde ervaring.'|t }}</span>
-          {% endif %}
-        </h1>
-        {% if hero_subtitle %}
-          <p class="hero-sub">{{ hero_subtitle }}</p>
-        {% else %}
-          <p class="hero-sub">{{ 'Het festival waar technologie, creativiteit en samenwerking samenkomen. Schrijf je in voor sessies, scan je badge en ontdek het programma.'|t }}</p>
-        {% endif %}
-
-        <div class="hero-meta">
-          <div>
-            <span class="hero-meta-k">{{ 'Wanneer'|t }}</span>
-            <span class="hero-meta-v">{{ 'Mei 2026'|t }}</span>
+    <div class="hero-rhs">
+      <div class="badge-mock">
+        <div class="badge-strap"></div>
+        <div class="badge-clip"></div>
+        <div class="badge-card">
+          <div class="badge-card-top">
+            <span class="badge-event">SHIFT · 2026</span>
+            <span class="badge-day">DAG 01</span>
           </div>
-          <div>
-            <span class="hero-meta-k">{{ 'Locatie'|t }}</span>
-            <span class="hero-meta-v">{{ 'Desiderius Campus'|t }}</span>
+          <div class="badge-name">{{ logged_in ? current_first_name : site_name }}</div>
+          <div class="badge-role">{{ logged_in ? 'Deelnemer'|t : 'Festival Attendee'|t }}</div>
+          <div class="badge-qr">
+            <svg width="120" height="120" viewBox="0 0 120 120" fill="none" aria-label="{{ 'QR code voorbeeld'|t }}">
+              <rect width="120" height="120" fill="white"/>
+              <rect x="10" y="10" width="32" height="32" rx="3" fill="var(--ink)"/>
+              <rect x="15" y="15" width="22" height="22" rx="2" fill="white"/>
+              <rect x="19" y="19" width="14" height="14" fill="var(--ink)"/>
+              <rect x="78" y="10" width="32" height="32" rx="3" fill="var(--ink)"/>
+              <rect x="83" y="15" width="22" height="22" rx="2" fill="white"/>
+              <rect x="87" y="19" width="14" height="14" fill="var(--ink)"/>
+              <rect x="10" y="78" width="32" height="32" rx="3" fill="var(--ink)"/>
+              <rect x="15" y="83" width="22" height="22" rx="2" fill="white"/>
+              <rect x="19" y="87" width="14" height="14" fill="var(--ink)"/>
+              <rect x="48" y="10" width="6" height="6" fill="var(--ink)"/>
+              <rect x="56" y="10" width="6" height="6" fill="var(--ink)"/>
+              <rect x="64" y="10" width="6" height="6" fill="var(--ink)"/>
+              <rect x="48" y="18" width="6" height="6" fill="var(--ink)"/>
+              <rect x="64" y="18" width="6" height="6" fill="var(--ink)"/>
+              <rect x="48" y="26" width="6" height="6" fill="var(--ink)"/>
+              <rect x="56" y="26" width="6" height="6" fill="var(--ink)"/>
+              <rect x="64" y="26" width="6" height="6" fill="var(--ink)"/>
+              <rect x="10" y="48" width="6" height="6" fill="var(--ink)"/>
+              <rect x="18" y="48" width="6" height="6" fill="var(--ink)"/>
+              <rect x="10" y="56" width="6" height="6" fill="var(--ink)"/>
+              <rect x="10" y="64" width="6" height="6" fill="var(--ink)"/>
+              <rect x="18" y="64" width="6" height="6" fill="var(--ink)"/>
+              <rect x="48" y="48" width="6" height="6" fill="var(--accent)"/>
+              <rect x="56" y="48" width="6" height="6" fill="var(--ink)"/>
+              <rect x="64" y="48" width="6" height="6" fill="var(--ink)"/>
+              <rect x="72" y="48" width="6" height="6" fill="var(--ink)"/>
+              <rect x="48" y="56" width="6" height="6" fill="var(--ink)"/>
+              <rect x="64" y="56" width="6" height="6" fill="var(--ink)"/>
+              <rect x="72" y="56" width="6" height="6" fill="var(--ink)"/>
+              <rect x="48" y="64" width="6" height="6" fill="var(--ink)"/>
+              <rect x="56" y="64" width="6" height="6" fill="var(--ink)"/>
+              <rect x="72" y="64" width="6" height="6" fill="var(--ink)"/>
+              <rect x="78" y="48" width="6" height="6" fill="var(--ink)"/>
+              <rect x="86" y="48" width="6" height="6" fill="var(--ink)"/>
+              <rect x="104" y="48" width="6" height="6" fill="var(--ink)"/>
+              <rect x="78" y="56" width="6" height="6" fill="var(--ink)"/>
+              <rect x="94" y="56" width="6" height="6" fill="var(--ink)"/>
+              <rect x="104" y="56" width="6" height="6" fill="var(--ink)"/>
+              <rect x="86" y="64" width="6" height="6" fill="var(--ink)"/>
+              <rect x="94" y="64" width="6" height="6" fill="var(--ink)"/>
+              <rect x="48" y="78" width="6" height="6" fill="var(--ink)"/>
+              <rect x="64" y="78" width="6" height="6" fill="var(--ink)"/>
+              <rect x="72" y="78" width="6" height="6" fill="var(--ink)"/>
+              <rect x="56" y="86" width="6" height="6" fill="var(--ink)"/>
+              <rect x="72" y="86" width="6" height="6" fill="var(--ink)"/>
+              <rect x="48" y="94" width="6" height="6" fill="var(--ink)"/>
+              <rect x="56" y="94" width="6" height="6" fill="var(--ink)"/>
+              <rect x="64" y="94" width="6" height="6" fill="var(--ink)"/>
+              <rect x="78" y="78" width="6" height="6" fill="var(--ink)"/>
+              <rect x="94" y="78" width="6" height="6" fill="var(--ink)"/>
+              <rect x="86" y="86" width="6" height="6" fill="var(--ink)"/>
+              <rect x="94" y="94" width="6" height="6" fill="var(--ink)"/>
+              <rect x="104" y="86" width="6" height="6" fill="var(--ink)"/>
+            </svg>
           </div>
-          <div>
-            <span class="hero-meta-k">{{ 'Sessies'|t }}</span>
-            <span class="hero-meta-v">{{ '12 podia · 84 sessies'|t }}</span>
-          </div>
-        </div>
-
-        <div class="hero-ctas">
-          {% if logged_in %}
-            {% if nav_show_enroll and enroll_url %}
-              <a href="{{ enroll_url }}"
-                 style="display:inline-flex;align-items:center;gap:8px;padding:13px 22px;background:var(--ink);color:white;border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;">
-                {{ 'Sessies inschrijven'|t }}
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-              </a>
-            {% endif %}
-            {% if qr_url %}
-              <a href="{{ qr_url }}"
-                 style="display:inline-flex;align-items:center;gap:8px;padding:13px 22px;background:transparent;color:var(--ink);border:1px solid var(--line-2);border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;">
-                {{ 'Mijn badge'|t }}
-              </a>
-            {% endif %}
-          {% else %}
-            {% if nav_show_register and register_url %}
-              <a href="{{ register_url }}"
-                 style="display:inline-flex;align-items:center;gap:8px;padding:13px 22px;background:var(--ink);color:white;border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;">
-                {{ 'Registreer voor het festival'|t }}
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-              </a>
-            {% endif %}
-            <a href="{{ path('user.login') }}"
-               style="display:inline-flex;align-items:center;gap:8px;padding:13px 22px;background:transparent;color:var(--ink);border:1px solid var(--line-2);border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;">
-              {{ 'Ik heb al een badge'|t }}
-            </a>
-          {% endif %}
-        </div>
-      </div>
-
-      <div class="hero-rhs">
-        {# Badge mockup #}
-        <div class="badge-mock">
-          <div class="badge-strap"></div>
-          <div class="badge-clip"></div>
-          <div class="badge-card">
-            <div class="badge-card-top">
-              <span class="badge-event">SHIFT · 2026</span>
-              <span class="badge-day">DAG 01</span>
-            </div>
-            <div class="badge-name">{{ logged_in ? current_first_name : site_name }}</div>
-            <div class="badge-role">{{ logged_in ? 'Deelnemer'|t : 'Festival Attendee'|t }}</div>
-            <div class="badge-qr">
-              <svg width="120" height="120" viewBox="0 0 120 120" fill="none" aria-label="{{ 'QR code voorbeeld'|t }}">
-                <rect width="120" height="120" fill="white"/>
-                <rect x="10" y="10" width="32" height="32" rx="3" fill="var(--ink)"/>
-                <rect x="15" y="15" width="22" height="22" rx="2" fill="white"/>
-                <rect x="19" y="19" width="14" height="14" fill="var(--ink)"/>
-                <rect x="78" y="10" width="32" height="32" rx="3" fill="var(--ink)"/>
-                <rect x="83" y="15" width="22" height="22" rx="2" fill="white"/>
-                <rect x="87" y="19" width="14" height="14" fill="var(--ink)"/>
-                <rect x="10" y="78" width="32" height="32" rx="3" fill="var(--ink)"/>
-                <rect x="15" y="83" width="22" height="22" rx="2" fill="white"/>
-                <rect x="19" y="87" width="14" height="14" fill="var(--ink)"/>
-                <rect x="48" y="10" width="6" height="6" fill="var(--ink)"/>
-                <rect x="56" y="10" width="6" height="6" fill="var(--ink)"/>
-                <rect x="64" y="10" width="6" height="6" fill="var(--ink)"/>
-                <rect x="48" y="18" width="6" height="6" fill="var(--ink)"/>
-                <rect x="64" y="18" width="6" height="6" fill="var(--ink)"/>
-                <rect x="48" y="26" width="6" height="6" fill="var(--ink)"/>
-                <rect x="56" y="26" width="6" height="6" fill="var(--ink)"/>
-                <rect x="64" y="26" width="6" height="6" fill="var(--ink)"/>
-                <rect x="10" y="48" width="6" height="6" fill="var(--ink)"/>
-                <rect x="18" y="48" width="6" height="6" fill="var(--ink)"/>
-                <rect x="10" y="56" width="6" height="6" fill="var(--ink)"/>
-                <rect x="10" y="64" width="6" height="6" fill="var(--ink)"/>
-                <rect x="18" y="64" width="6" height="6" fill="var(--ink)"/>
-                <rect x="48" y="48" width="6" height="6" fill="var(--accent)"/>
-                <rect x="56" y="48" width="6" height="6" fill="var(--ink)"/>
-                <rect x="64" y="48" width="6" height="6" fill="var(--ink)"/>
-                <rect x="72" y="48" width="6" height="6" fill="var(--ink)"/>
-                <rect x="48" y="56" width="6" height="6" fill="var(--ink)"/>
-                <rect x="64" y="56" width="6" height="6" fill="var(--ink)"/>
-                <rect x="72" y="56" width="6" height="6" fill="var(--ink)"/>
-                <rect x="48" y="64" width="6" height="6" fill="var(--ink)"/>
-                <rect x="56" y="64" width="6" height="6" fill="var(--ink)"/>
-                <rect x="72" y="64" width="6" height="6" fill="var(--ink)"/>
-                <rect x="78" y="48" width="6" height="6" fill="var(--ink)"/>
-                <rect x="86" y="48" width="6" height="6" fill="var(--ink)"/>
-                <rect x="104" y="48" width="6" height="6" fill="var(--ink)"/>
-                <rect x="78" y="56" width="6" height="6" fill="var(--ink)"/>
-                <rect x="94" y="56" width="6" height="6" fill="var(--ink)"/>
-                <rect x="104" y="56" width="6" height="6" fill="var(--ink)"/>
-                <rect x="86" y="64" width="6" height="6" fill="var(--ink)"/>
-                <rect x="94" y="64" width="6" height="6" fill="var(--ink)"/>
-                <rect x="48" y="78" width="6" height="6" fill="var(--ink)"/>
-                <rect x="64" y="78" width="6" height="6" fill="var(--ink)"/>
-                <rect x="72" y="78" width="6" height="6" fill="var(--ink)"/>
-                <rect x="56" y="86" width="6" height="6" fill="var(--ink)"/>
-                <rect x="72" y="86" width="6" height="6" fill="var(--ink)"/>
-                <rect x="48" y="94" width="6" height="6" fill="var(--ink)"/>
-                <rect x="56" y="94" width="6" height="6" fill="var(--ink)"/>
-                <rect x="64" y="94" width="6" height="6" fill="var(--ink)"/>
-                <rect x="78" y="78" width="6" height="6" fill="var(--ink)"/>
-                <rect x="94" y="78" width="6" height="6" fill="var(--ink)"/>
-                <rect x="86" y="86" width="6" height="6" fill="var(--ink)"/>
-                <rect x="94" y="94" width="6" height="6" fill="var(--ink)"/>
-                <rect x="104" y="86" width="6" height="6" fill="var(--ink)"/>
-              </svg>
-            </div>
-            <div class="badge-foot">
-              <span>BDG-2026</span>
-              <span>Desiderius Campus</span>
-            </div>
+          <div class="badge-foot">
+            <span>BDG-2026</span>
+            <span>Desiderius Campus</span>
           </div>
         </div>
       </div>
-    </div>
-  </section>
-
-  {# ════════════════════════════════════════ STATS STRIP #}
-  <div class="strip">
-    <div class="strip-item">
-      <span class="strip-num">2.400+</span>
-      <span class="strip-lbl">{{ 'Verwachte deelnemers'|t }}</span>
-    </div>
-    <div class="strip-item">
-      <span class="strip-num">84</span>
-      <span class="strip-lbl">{{ 'Sessies over drie dagen'|t }}</span>
-    </div>
-    <div class="strip-item">
-      <span class="strip-num">12</span>
-      <span class="strip-lbl">{{ 'Podia en labs op campus'|t }}</span>
-    </div>
-    <div class="strip-item">
-      <span class="strip-num">37</span>
-      <span class="strip-lbl">{{ 'Partnerorganisaties'|t }}</span>
     </div>
   </div>
+</section>
+{% endif %}
 
-  {# ════════════════════════════════════════ PROGRAM / CONTENT #}
-  <section class="program" id="program">
-    {% if page.content %}
-      {{ page.content }}
-    {% else %}
-      <div class="section-head">
-        <span class="section-eyebrow">{{ 'Dag één · Dinsdag'|t }}</span>
-        <h2>{{ 'Een festivalprogramma, geen conferentieagenda.'|t }}</h2>
-        <p>{{ 'Een voorproefje van wat er op het programma staat. Na registratie kun je je inschrijven voor sessies met nog beschikbare plaatsen.'|t }}</p>
-      </div>
-      <div class="program-grid">
-        <article class="program-card">
-          <div class="program-card-top">
-            <span class="tag tag-primary">{{ 'keynote'|t }}</span>
-            <span class="program-card-time">09:00</span>
-          </div>
-          <h3>{{ 'Integratie in de praktijk'|t }}</h3>
-          <p>{{ 'Hoe systemen met elkaar communiceren in een moderne digitale omgeving — van API-design tot event-driven architectuur.'|t }}</p>
-          <div class="program-card-foot">
-            <span>Hoofdpodium</span>
-          </div>
-        </article>
-        <article class="program-card">
-          <div class="program-card-top">
-            <span class="tag tag-accent">{{ 'workshop'|t }}</span>
-            <span class="program-card-time">10:30</span>
-          </div>
-          <h3>{{ 'Hands-on: message brokers'|t }}</h3>
-          <p>{{ 'Aan de slag met RabbitMQ en Kafka. Leer hoe je betrouwbaar berichten verstuurt en verwerkt in gedistribueerde systemen.'|t }}</p>
-          <div class="program-card-foot">
-            <span>Lab A</span>
-          </div>
-        </article>
-        <article class="program-card">
-          <div class="program-card-top">
-            <span class="tag">{{ 'talk'|t }}</span>
-            <span class="program-card-time">13:00</span>
-          </div>
-          <h3>{{ 'Digitale badges & identiteit'|t }}</h3>
-          <p>{{ 'QR-codes, wallets en check-in systemen: hoe het festival zijn eigen backend in productie heeft gebracht.'|t }}</p>
-          <div class="program-card-foot">
-            <span>Studio B</span>
-          </div>
-        </article>
-        <article class="program-card">
-          <div class="program-card-top">
-            <span class="tag tag-ok">{{ 'panel'|t }}</span>
-            <span class="program-card-time">15:00</span>
-          </div>
-          <h3>{{ 'Toekomst van samenwerking'|t }}</h3>
-          <p>{{ 'Vijf experts bespreken hoe teams de integratie van technologie en organisatie aanpakken in 2026 en daarna.'|t }}</p>
-          <div class="program-card-foot">
-            <span>Auditorium</span>
-          </div>
-        </article>
-      </div>
-    {% endif %}
-  </section>
+{# ════════════════════════════════════════════════════════════ STATS STRIP #}
+<div class="strip">
+  <div class="strip-item"><span class="strip-num">2.400+</span><span class="strip-lbl">{{ 'Verwachte deelnemers'|t }}</span></div>
+  <div class="strip-item"><span class="strip-num">84</span><span class="strip-lbl">{{ 'Sessies over drie dagen'|t }}</span></div>
+  <div class="strip-item"><span class="strip-num">12</span><span class="strip-lbl">{{ 'Podia en labs op campus'|t }}</span></div>
+  <div class="strip-item"><span class="strip-num">37</span><span class="strip-lbl">{{ 'Partnerorganisaties'|t }}</span></div>
+</div>
 
-  {# ════════════════════════════════════════ FOOTER #}
-  <footer class="landing-foot" id="venue">
-    <div style="display:inline-flex;align-items:center;gap:10px;">
-      <svg width="22" height="22" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+{# ════════════════════════════════════════════════════════════ PROGRAM #}
+<section class="program" id="program">
+  {% if page.content %}
+    {{ page.content }}
+  {% else %}
+    <div class="section-head">
+      <span class="section-eyebrow">{{ 'Dag één · Dinsdag'|t }}</span>
+      <h2>{{ 'Een festivalprogramma, geen conferentieagenda.'|t }}</h2>
+      <p>{{ 'Een voorproefje van wat er op het programma staat. Na registratie kun je je inschrijven voor sessies met nog beschikbare plaatsen.'|t }}</p>
+    </div>
+    <div class="program-grid">
+      <article class="program-card">
+        <div class="program-card-top"><span class="tag tag-primary">{{ 'keynote'|t }}</span><span class="program-card-time">09:00</span></div>
+        <h3>{{ 'Integratie in de praktijk'|t }}</h3>
+        <p>{{ 'Hoe systemen met elkaar communiceren in een moderne digitale omgeving — van API-design tot event-driven architectuur.'|t }}</p>
+        <div class="program-card-foot"><span>Hoofdpodium</span></div>
+      </article>
+      <article class="program-card">
+        <div class="program-card-top"><span class="tag tag-accent">{{ 'workshop'|t }}</span><span class="program-card-time">10:30</span></div>
+        <h3>{{ 'Hands-on: message brokers'|t }}</h3>
+        <p>{{ 'Aan de slag met RabbitMQ en Kafka. Leer hoe je betrouwbaar berichten verstuurt en verwerkt in gedistribueerde systemen.'|t }}</p>
+        <div class="program-card-foot"><span>Lab A</span></div>
+      </article>
+      <article class="program-card">
+        <div class="program-card-top"><span class="tag">{{ 'talk'|t }}</span><span class="program-card-time">13:00</span></div>
+        <h3>{{ 'Digitale badges & identiteit'|t }}</h3>
+        <p>{{ 'QR-codes, wallets en check-in systemen: hoe het festival zijn eigen backend in productie heeft gebracht.'|t }}</p>
+        <div class="program-card-foot"><span>Studio B</span></div>
+      </article>
+      <article class="program-card">
+        <div class="program-card-top"><span class="tag tag-ok">{{ 'panel'|t }}</span><span class="program-card-time">15:00</span></div>
+        <h3>{{ 'Toekomst van samenwerking'|t }}</h3>
+        <p>{{ 'Vijf experts bespreken hoe teams de integratie van technologie en organisatie aanpakken in 2026 en daarna.'|t }}</p>
+        <div class="program-card-foot"><span>Auditorium</span></div>
+      </article>
+    </div>
+  {% endif %}
+</section>
+
+{# ════════════════════════════════════════════════════════════ FOOTER #}
+<footer style="border-top:1px solid var(--line);background:var(--surface);padding:24px 40px;" id="venue">
+  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div style="display:inline-flex;align-items:center;gap:8px;">
+      <svg width="20" height="20" viewBox="0 0 28 28" fill="none" aria-hidden="true">
         <rect x="2" y="2" width="24" height="24" rx="7" fill="var(--ink)"/>
         <path d="M9 18.5L14 9.5L19 18.5" stroke="var(--bg)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
         <circle cx="14" cy="14" r="1.6" fill="var(--accent)"/>
       </svg>
-      <span style="font-weight:700;font-size:14px;color:var(--ink);">{{ site_name }} 2026</span>
+      <span style="font-weight:600;font-size:13px;color:var(--ink);">{{ site_name }} 2026</span>
     </div>
-    <div class="landing-foot-meta">
-      {% if footer_text %}
-        {{ footer_text }}
-      {% else %}
-        <span>Desiderius Campus</span>
-        <span class="dot-sep">·</span>
-        <span>{{ 'Mei 2026'|t }}</span>
-        <span class="dot-sep">·</span>
-        <span>{{ 'Een integratieproject van Desideriushogeschool'|t }}</span>
-      {% endif %}
-    </div>
-  </footer>
+    <p style="font-size:13px;color:var(--muted);margin:0;">
+      {% if footer_text %}{{ footer_text }}{% else %}© 2026 {{ site_name }}{% endif %}
+    </p>
+  </div>
+</footer>
 
-</div>{# end .landing #}
+<style>
+@media (max-width: 900px) {
+  #sf-menu-toggle { display: flex !important; }
+  .sf-header-nav { display: none !important; }
+  #sf-account-wrapper { display: none !important; }
+  .sf-login-btn { display: none !important; }
+}
+</style>
