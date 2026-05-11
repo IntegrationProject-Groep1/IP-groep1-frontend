@@ -40,3 +40,6 @@ services:
     
   rabbitmq_sender.monitoring_log_sender:
     class: Drupal\rabbitmq_sender\MonitoringLogSender
+
+  rabbitmq_sender.user_sessions_request_sender:
+    class: Drupal\rabbitmq_sender\UserSessionsRequestSender

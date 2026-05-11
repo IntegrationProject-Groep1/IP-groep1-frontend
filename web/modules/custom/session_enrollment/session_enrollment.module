@@ -19,6 +19,13 @@ function session_enrollment_theme(): array
                 'sessions' => [],
             ],
         ],
+        'my_sessions' => [
+            'variables' => [
+                'name'     => '',
+                'sessions' => [],
+                'notice'   => null,
+            ],
+        ],
     ];
 }
 
@@ -88,20 +95,8 @@ function session_enrollment_cron(): void
         }
         $logger->info('Cron: processed @n session_updated message(s).', ['@n' => $count]);
 
-        // 4. Process badge_scanned messages and forward as user_checkin to CRM (up to 50 per cron run).
-        /** @var \Drupal\rabbitmq_sender\UserCheckinSender $checkinSender */
-        $checkinSender = \Drupal::service('rabbitmq_sender.user_checkin_sender');
-        $badgeReceiver = new \Drupal\rabbitmq_receiver\BadgeScannedReceiver($client, $checkinSender);
-        $count = 0;
-        for ($i = 0; $i < 50; $i++) {
-            if (!$badgeReceiver->pollOnce()) {
-                break;
-            }
-            $count++;
-        }
-        $logger->info('Cron: processed @n badge_scanned message(s).', ['@n' => $count]);
-
-        // 5. Process wallet_balance_update messages from Kassa and store balance per user (up to 20 per cron run).
+        // 4. Process wallet_balance_update messages from Kassa and store balance per user (up to 20 per cron run).
+        // NOTE: badge_scanned is consumed by Kassa (kassa.incoming), NOT by Frontend — see contract §6.3.
         $walletReceiver = new \Drupal\rabbitmq_receiver\WalletBalanceReceiver($client);
         $count = 0;
         for ($i = 0; $i < 20; $i++) {
@@ -116,6 +111,29 @@ function session_enrollment_cron(): void
         $viewSender = new \Drupal\rabbitmq_sender\SessionViewRequestSender($client);
         $viewSender->send();
         $logger->info('Cron: session_view_request sent to Planning.');
+
+        // 7. Process any pending user_sessions_response messages (up to 20 per cron run).
+        //    Responses are stored in Drupal state keyed by identity_uuid for use by MySessionsController.
+        $userSessionsReceiver = new \Drupal\rabbitmq_receiver\UserSessionsResponseReceiver($client);
+        $count = 0;
+        for ($i = 0; $i < 20; $i++) {
+            $result = $userSessionsReceiver->pollOnce();
+            if ($result === null) {
+                break;
+            }
+            // Store the result in Drupal state keyed by identity_uuid.
+            $identityUuid = $result['identity_uuid'] ?? '';
+            if ($identityUuid !== '') {
+                \Drupal::state()->set('user_sessions.' . $identityUuid, [
+                    'sessions'       => $result['sessions'],
+                    'status'         => $result['status'],
+                    'correlation_id' => $result['correlation_id'],
+                    'fetched_at'     => time(),
+                ]);
+            }
+            $count++;
+        }
+        $logger->info('Cron: processed @n user_sessions_response message(s).', ['@n' => $count]);
 
         $logger->info('Cron: RabbitMQ queue polling completed successfully.');
     } catch (\Throwable $e) {
