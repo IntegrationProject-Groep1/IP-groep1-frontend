@@ -52,8 +52,14 @@ class QrCodeController extends ControllerBase
             return [
                 '#markup' => \Drupal\Core\Render\Markup::create($noQrHtml),
                 '#attached' => ['library' => ['event_theme/qr_code']],
+                '#cache' => [
+                    'contexts' => ['user'],
+                    'tags' => $fullUser ? $fullUser->getCacheTags() : [],
+                ],
             ];
         }
+
+        $email        = $fullUser ? (string) ($fullUser->getEmail() ?? '') : '';
 
         \Drupal::logger('qr_code')->info(
             'QR code page served for uid @uid.',
@@ -91,7 +97,7 @@ class QrCodeController extends ControllerBase
         </div>
         <div class="badge-display-name">' . $e($displayName) . '</div>
         <div class="badge-display-role">' . $e($roleLabel) . '</div>
-        <div class="badge-display-qr" id="qr-code-wrapper" data-uuid="' . $e($masterUuid) . '">
+        <div class="badge-display-qr" id="qr-code-wrapper" data-uuid="' . $e($masterUuid) . '" data-email="' . $e($email) . '">
           <div id="qr-code-canvas"></div>
         </div>
         <div class="badge-display-foot">
@@ -134,6 +140,10 @@ class QrCodeController extends ControllerBase
         return [
             '#markup' => \Drupal\Core\Render\Markup::create($html),
             '#attached' => ['library' => ['event_theme/qr_code']],
+            '#cache' => [
+                'contexts' => ['user'],
+                'tags' => $fullUser->getCacheTags(),
+            ],
         ];
     }
 }
