@@ -26,7 +26,7 @@
         <a href="#info">{{ 'Info'|t }}</a>
       </div>
 
-      <div class="landing-nav-cta">
+      <div class="landing-nav-cta landing-nav-cta--desktop">
         {% if logged_in %}
           {% if nav_show_enroll and enroll_url %}
             <a href="{{ enroll_url }}"
@@ -55,7 +55,39 @@
           {% endif %}
         {% endif %}
       </div>
+      {# Hamburger — visible on mobile only #}
+      <button id="landing-menu-toggle" class="landing-hamburger"
+              aria-label="{{ 'Menu'|t }}" aria-expanded="false"
+              aria-controls="landing-mobile-menu">
+        <svg id="landing-icon-open" width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+        <svg id="landing-icon-close" width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:none;">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
     </nav>
+
+    {# Mobile menu panel #}
+    <div id="landing-mobile-menu" class="landing-mobile-menu" aria-hidden="true">
+      <a href="#program" class="landing-mobile-link">{{ 'Programma'|t }}</a>
+      <a href="#venue" class="landing-mobile-link">{{ 'Locatie'|t }}</a>
+      <a href="#info" class="landing-mobile-link">{{ 'Info'|t }}</a>
+      <hr class="landing-mobile-divider">
+      {% if logged_in %}
+        {% if nav_show_enroll and enroll_url %}
+          <a href="{{ enroll_url }}" class="landing-mobile-link">{{ 'Sessies bekijken'|t }}</a>
+        {% endif %}
+        {% if qr_url %}
+          <a href="{{ qr_url }}" class="landing-mobile-cta">{{ 'Mijn badge'|t }}</a>
+        {% endif %}
+      {% else %}
+        <a href="{{ path('user.login') }}" class="landing-mobile-link">{{ 'Inloggen'|t }}</a>
+        {% if nav_show_register and register_url %}
+          <a href="{{ register_url }}" class="landing-mobile-cta">{{ 'Badge aanvragen'|t }}</a>
+        {% endif %}
+      {% endif %}
+    </div>
   </header>
 
   {# ════════════════════════════════════════ HERO #}

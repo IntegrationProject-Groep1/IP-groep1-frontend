@@ -6,6 +6,53 @@
 
   document.addEventListener('DOMContentLoaded', function () {
 
+    // ── Landing page hamburger (landing-menu-toggle) ─────────────────────────
+    var landingToggle     = document.getElementById('landing-menu-toggle');
+    var landingMenu       = document.getElementById('landing-mobile-menu');
+    var landingIconOpen   = document.getElementById('landing-icon-open');
+    var landingIconClose  = document.getElementById('landing-icon-close');
+
+    if (landingToggle && landingMenu) {
+      landingToggle.addEventListener('click', function () {
+        var isOpen = landingMenu.classList.contains('is-open');
+        if (isOpen) {
+          landingMenu.classList.remove('is-open');
+          landingMenu.setAttribute('aria-hidden', 'true');
+          if (landingIconOpen)  landingIconOpen.style.display  = '';
+          if (landingIconClose) landingIconClose.style.display = 'none';
+          landingToggle.setAttribute('aria-expanded', 'false');
+        } else {
+          landingMenu.classList.add('is-open');
+          landingMenu.setAttribute('aria-hidden', 'false');
+          if (landingIconOpen)  landingIconOpen.style.display  = 'none';
+          if (landingIconClose) landingIconClose.style.display = '';
+          landingToggle.setAttribute('aria-expanded', 'true');
+        }
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && landingMenu.classList.contains('is-open')) {
+          landingMenu.classList.remove('is-open');
+          landingMenu.setAttribute('aria-hidden', 'true');
+          if (landingIconOpen)  landingIconOpen.style.display  = '';
+          if (landingIconClose) landingIconClose.style.display = 'none';
+          landingToggle.setAttribute('aria-expanded', 'false');
+          landingToggle.focus();
+        }
+      });
+
+      // Close when a menu link is clicked (smooth scroll / navigation).
+      landingMenu.querySelectorAll('a').forEach(function (link) {
+        link.addEventListener('click', function () {
+          landingMenu.classList.remove('is-open');
+          landingMenu.setAttribute('aria-hidden', 'true');
+          if (landingIconOpen)  landingIconOpen.style.display  = '';
+          if (landingIconClose) landingIconClose.style.display = 'none';
+          landingToggle.setAttribute('aria-expanded', 'false');
+        });
+      });
+    }
+
     // ── Shift Festival mobile hamburger (sf-menu-toggle) ────────────────────
     var sfToggle    = document.getElementById('sf-menu-toggle');
     var sfMenu      = document.getElementById('sf-mobile-menu');

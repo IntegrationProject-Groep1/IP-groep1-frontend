@@ -7,9 +7,9 @@
     if (!uuid || typeof QRCode === 'undefined') { return; }
     new QRCode(document.getElementById('qr-code-canvas'), {
       text: uuid,
-      width: 256,
-      height: 256,
-      colorDark: '#000000',
+      width: 260,
+      height: 260,
+      colorDark: '#0c1135',
       colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.M
     });

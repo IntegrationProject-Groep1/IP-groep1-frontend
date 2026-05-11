@@ -966,9 +966,65 @@ h1.page-title, .page-title {
 }
 .sf-mobile-menu.is-open { display: flex; }
 
+/* ── Landing hamburger ────────────────────────────────────── */
+.landing-hamburger {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: var(--ink);
+  line-height: 0;
+}
+.landing-mobile-menu {
+  display: none;
+  flex-direction: column;
+  background: white;
+  border-top: 1px solid var(--line);
+  padding: 12px 24px 20px;
+  box-shadow: var(--shadow);
+}
+.landing-mobile-menu.is-open { display: flex; }
+.landing-mobile-link {
+  display: block;
+  padding: 11px 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line);
+}
+.landing-mobile-link:hover { color: var(--primary); text-decoration: none; }
+.landing-mobile-divider { border: none; border-top: 1px solid var(--line); margin: 8px 0; }
+.landing-mobile-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+  padding: 11px 18px;
+  background: var(--ink);
+  color: white;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.landing-mobile-cta:hover { opacity: .9; text-decoration: none; color: white; }
+
+/* ── Badge page responsive ────────────────────────────────── */
+@media (max-width: 860px) {
+  .badge-page { grid-template-columns: 1fr; }
+  .badge-actions { grid-template-columns: 1fr; }
+  .badge-display { width: 100%; }
+}
+
+/* ── Global responsive ────────────────────────────────────── */
 @media (max-width: 900px) {
   .landing-nav { padding: 18px 24px; }
   .landing-nav-links { display: none; }
+  .landing-nav-cta--desktop { display: none; }
+  .landing-hamburger { display: flex; }
   .sf-header { padding: 0 16px; }
   .sf-content { padding: 24px 16px; }
   .sf-header-nav { display: none; }
