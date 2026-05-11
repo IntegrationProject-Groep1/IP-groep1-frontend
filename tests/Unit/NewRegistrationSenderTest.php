@@ -81,7 +81,6 @@ class NewRegistrationSenderTest extends TestCase
             'identity_uuid' => '12345',
             'date_of_birth' => '1990-05-15',
             'registration_date' => '2026-03-31',
-            'session_id' => '550e8400-e29b-41d4-a716-446655440001',
             'is_company' => false,
         ]);
 

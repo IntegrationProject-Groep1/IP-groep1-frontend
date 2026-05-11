@@ -43,9 +43,8 @@ class RegistrationService
         $this->validateRegistrationInput($data);
         $this->assertEmailNotInUse((string) $data['email']);
 
-        $logger->info('Registration attempt for @email on session @session', [
+        $logger->info('Registration attempt for @email', [
             '@email'   => $data['email'] ?? 'unknown',
-            '@session' => $data['session_id'] ?? 'unknown',
         ]);
 
         $user = $this->createLocalUser($data);

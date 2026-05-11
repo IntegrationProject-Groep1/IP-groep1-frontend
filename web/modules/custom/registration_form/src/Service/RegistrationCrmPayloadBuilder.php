@@ -25,9 +25,6 @@ class RegistrationCrmPayloadBuilder
             'last_name'      => (string) ($data['last_name'] ?? ''),
             'date_of_birth'  => (string) ($data['date_of_birth'] ?? ''),
             'registration_date' => $registrationDate,
-            'session_id'     => is_array($data['session_ids'] ?? null)
-                ? implode(',', $data['session_ids'])
-                : (string) ($data['session_id'] ?? ''),
             // identity_uuid preferred; fall back to local Drupal ID
             'identity_uuid'  => (string) ($data['master_uuid'] ?? $userId),
             'user_id'        => $userId,
