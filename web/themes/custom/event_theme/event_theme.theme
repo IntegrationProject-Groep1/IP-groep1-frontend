@@ -20,13 +20,13 @@ function event_theme_preprocess_html(array &$variables): void {
     'pill'    => '9999px',
   ];
 
-  $primary  = theme_get_setting('event_theme_color_primary')  ?: '#2563eb';
-  $accent   = theme_get_setting('event_theme_color_accent')   ?: '#7c3aed';
-  $bg       = theme_get_setting('event_theme_color_bg')       ?: '#f8fafc';
+  $primary  = theme_get_setting('event_theme_color_primary')  ?: '#1f3a8a';
+  $accent   = theme_get_setting('event_theme_color_accent')   ?: '#0e7c66';
+  $bg       = theme_get_setting('event_theme_color_bg')       ?: '#f4f5fa';
   $surface  = theme_get_setting('event_theme_color_surface')  ?: '#ffffff';
-  $navBg    = theme_get_setting('event_theme_color_nav_bg')   ?: '#ffffff';
-  $heroBg   = theme_get_setting('event_theme_color_hero_bg')  ?: '#1e3a8a';
-  $text     = theme_get_setting('event_theme_color_text')     ?: '#1e293b';
+  $navBg    = theme_get_setting('event_theme_color_nav_bg')   ?: '#0c1135';
+  $heroBg   = theme_get_setting('event_theme_color_hero_bg')  ?: '#0c1135';
+  $text     = theme_get_setting('event_theme_color_text')     ?: '#0c1135';
   $radiusKey = theme_get_setting('event_theme_border_radius') ?: 'default';
   $radius   = $radiusMap[$radiusKey] ?? '0.5rem';
   $font     = theme_get_setting('event_theme_font')           ?: 'Inter';
@@ -36,7 +36,26 @@ function event_theme_preprocess_html(array &$variables): void {
 
   // All values come from trusted admin input; sanitise as hex colour strings.
   $css = sprintf(
-    ':root{--color-primary:%s;--color-primary-dark:%s;--color-accent:%s;--color-bg:%s;--color-surface:%s;--color-border:#e2e8f0;--color-text:%s;--color-muted:#64748b;--color-error:#dc2626;--color-success:#16a34a;--color-warning:#d97706;--color-nav-bg:%s;--color-hero-bg:%s;--radius:%s;--font-family:\'%s\',system-ui,sans-serif;}',
+    ':root{'
+    . '--color-primary:%s;--color-primary-dark:%s;--color-accent:%s;'
+    . '--color-bg:%s;--color-surface:%s;--color-border:#e7e9f1;'
+    . '--color-text:%s;--color-muted:#5b6480;--color-error:#d63a4a;'
+    . '--color-success:#0f8b66;--color-warning:#c97a08;'
+    . '--color-nav-bg:%s;--color-hero-bg:%s;'
+    . '--radius:%s;--font-family:\'%s\',system-ui,sans-serif;'
+    . '--bg:%s;--surface:%s;--surface-2:#fafbfd;'
+    . '--ink:%s;--ink-2:#1a1f4a;--muted:#5b6480;--muted-2:#8b93a8;'
+    . '--line:#e7e9f1;--line-2:#dfe2ee;'
+    . '--primary:%s;--primary-dark:%s;'
+    . '--accent:%s;--ok:#0f8b66;--warn:#c97a08;--hot:#d63a4a;'
+    . '--radius-lg:18px;--radius-sm:8px;'
+    . '--shadow-sm:0 1px 2px rgba(15,18,60,.04),0 1px 1px rgba(15,18,60,.03);'
+    . '--shadow:0 4px 14px rgba(15,18,60,.06),0 1px 2px rgba(15,18,60,.04);'
+    . '--shadow-lg:0 12px 40px rgba(15,18,60,.10),0 2px 6px rgba(15,18,60,.05);'
+    . '--font:\'%s\',system-ui,-apple-system,sans-serif;'
+    . '--font-display:\'%s\',system-ui,sans-serif;'
+    . '--font-mono:\'JetBrains Mono\',ui-monospace,monospace;'
+    . '}',
     _event_theme_safe_hex($primary),
     _event_theme_safe_hex($primaryDark),
     _event_theme_safe_hex($accent),
@@ -46,6 +65,14 @@ function event_theme_preprocess_html(array &$variables): void {
     _event_theme_safe_hex($navBg),
     _event_theme_safe_hex($heroBg),
     Html::escape($radius),
+    Html::escape($font),
+    _event_theme_safe_hex($bg),
+    _event_theme_safe_hex($surface),
+    _event_theme_safe_hex($text),
+    _event_theme_safe_hex($primary),
+    _event_theme_safe_hex($primaryDark),
+    _event_theme_safe_hex($accent),
+    Html::escape($font),
     Html::escape($font)
   );
 
@@ -136,6 +163,25 @@ function event_theme_preprocess_page(array &$variables): void {
       (int) $account->id(),
       'wallet_balance'
     );
+  }
+
+  // Generate URLs safely — routes may not exist if a module is not installed.
+  $urlGenerator = \Drupal::urlGenerator();
+  $safeRoutes = [
+    'qr_url'          => 'qr_code.page',
+    'enroll_url'      => 'session_enrollment.enroll',
+    'invite_url'      => 'company_invite.invite_form',
+    'session_create_url' => 'session_management.create',
+    'session_end_url'    => 'session_management.end',
+    'register_url'    => 'registration_form.register',
+  ];
+  foreach ($safeRoutes as $varName => $routeName) {
+    try {
+      $variables[$varName] = $urlGenerator->generateFromRoute($routeName);
+    }
+    catch (\Exception $e) {
+      $variables[$varName] = '';
+    }
   }
 }
 

@@ -24,12 +24,21 @@ if (file_exists($app_root . '/sites/development.services.yml')) {
   $settings['container_yamls'][] = $app_root . '/sites/development.services.yml';
 }
 
+// Load per-site services.yml (disables Twig cache, enables auto_reload).
+if (file_exists($app_root . '/sites/default/services.yml')) {
+  $settings['container_yamls'][] = $app_root . '/sites/default/services.yml';
+}
+
 $settings['file_scan_ignore_directories'] = [
   'node_modules',
   'bower_components',
 ];
 
 $settings['entity_update_batch_size'] = 50;
+
+// Disable CSS/JS aggregation so style.css is served directly (no stale bundle).
+$config['system.performance']['css']['preprocess'] = FALSE;
+$config['system.performance']['js']['preprocess']  = FALSE;
 
 // Trusted hosts (fix voor Docker + CI)
 $settings['trusted_host_patterns'] = [

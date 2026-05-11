@@ -41,13 +41,13 @@ function event_theme_form_system_theme_settings_alter(array &$form, FormStateInt
     '#group' => 'event_theme_tabs',
   ];
   $colorSettings = [
-    'event_theme_color_primary'  => [t('Primary color'),            '#2563eb'],
-    'event_theme_color_accent'   => [t('Accent color'),             '#7c3aed'],
-    'event_theme_color_bg'       => [t('Page background'),          '#f8fafc'],
+    'event_theme_color_primary'  => [t('Primary color'),            '#1f3a8a'],
+    'event_theme_color_accent'   => [t('Accent color'),             '#0e7c66'],
+    'event_theme_color_bg'       => [t('Page background'),          '#f4f5fa'],
     'event_theme_color_surface'  => [t('Card / surface color'),     '#ffffff'],
-    'event_theme_color_nav_bg'   => [t('Navigation background'),    '#ffffff'],
-    'event_theme_color_hero_bg'  => [t('Hero background'),          '#1e3a8a'],
-    'event_theme_color_text'     => [t('Body text color'),          '#1e293b'],
+    'event_theme_color_nav_bg'   => [t('Navigation background'),    '#0c1135'],
+    'event_theme_color_hero_bg'  => [t('Hero background'),          '#0c1135'],
+    'event_theme_color_text'     => [t('Body text color'),          '#0c1135'],
   ];
   foreach ($colorSettings as $key => [$label, $default]) {
     $form['colors'][$key] = [
