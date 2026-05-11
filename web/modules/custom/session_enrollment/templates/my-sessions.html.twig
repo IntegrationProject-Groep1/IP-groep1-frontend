@@ -1,0 +1,80 @@
+{#
+  Template: my-sessions.html.twig
+  Variables:
+    - name:     First name of the current user
+    - sessions: Array of session arrays (see UserSessionsResponseReceiver for structure)
+    - notice:   Optional string message to display instead of the session list
+#}
+<div class="my-sessions">
+  <div class="my-sessions-header">
+    <h1>{{ 'My Sessions'|t }}</h1>
+    {% if name %}
+      <p class="my-sessions-greeting">{{ 'Welcome, @name!'|t({'@name': name}) }}</p>
+    {% endif %}
+  </div>
+
+  {% if notice %}
+    <div class="my-sessions-notice messages messages--warning">
+      <p>{{ notice }}</p>
+    </div>
+  {% elseif sessions is empty %}
+    <div class="my-sessions-empty">
+      <p>{{ 'You are not enrolled in any sessions yet.'|t }}</p>
+      <a href="/sessions/enroll" class="button">{{ 'Browse available sessions'|t }}</a>
+    </div>
+  {% else %}
+    <div class="my-sessions-list">
+      {% for session in sessions %}
+        <div class="session-card">
+          <h2 class="session-title">{{ session.title }}</h2>
+
+          <dl class="session-meta">
+            {% if session.date %}
+              <dt>{{ 'Date'|t }}</dt>
+              <dd>{{ session.date }}</dd>
+            {% endif %}
+
+            {% if session.end_date %}
+              <dt>{{ 'End'|t }}</dt>
+              <dd>{{ session.end_date }}</dd>
+            {% endif %}
+
+            {% if session.location %}
+              <dt>{{ 'Location'|t }}</dt>
+              <dd>{{ session.location }}</dd>
+            {% endif %}
+
+            {% if session.session_type %}
+              <dt>{{ 'Type'|t }}</dt>
+              <dd>{{ session.session_type }}</dd>
+            {% endif %}
+
+            {% if session.status %}
+              <dt>{{ 'Status'|t }}</dt>
+              <dd class="session-status session-status--{{ session.status|lower|replace({' ': '-'}) }}">
+                {{ session.status }}
+              </dd>
+            {% endif %}
+          </dl>
+
+          {% if session.description %}
+            <p class="session-description">{{ session.description }}</p>
+          {% endif %}
+
+          {% if session.speaker %}
+            <div class="session-speaker">
+              <h3>{{ 'Speaker'|t }}</h3>
+              <p class="speaker-name">{{ session.speaker.name }}</p>
+              {% if session.speaker.organisation %}
+                <p class="speaker-organisation">{{ session.speaker.organisation }}</p>
+              {% endif %}
+              {% if session.speaker.bio %}
+                <p class="speaker-bio">{{ session.speaker.bio }}</p>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>

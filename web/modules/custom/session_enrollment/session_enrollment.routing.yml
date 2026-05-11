@@ -13,3 +13,11 @@ session_enrollment.confirmation:
     _title: 'Enrollment confirmed'
   requirements:
     _role: 'authenticated'
+
+session_enrollment.my_sessions:
+  path: '/sessions/my'
+  defaults:
+    _controller: '\Drupal\session_enrollment\Controller\MySessionsController::page'
+    _title: 'My Sessions'
+  requirements:
+    _role: 'authenticated'
