@@ -55,6 +55,8 @@ class QrCodeController extends ControllerBase
             ];
         }
 
+        $email        = (string) ($this->currentUser()->getEmail() ?? '');
+
         \Drupal::logger('qr_code')->info(
             'QR code page served for uid @uid.',
             ['@uid' => $uid]
@@ -91,7 +93,7 @@ class QrCodeController extends ControllerBase
         </div>
         <div class="badge-display-name">' . $e($displayName) . '</div>
         <div class="badge-display-role">' . $e($roleLabel) . '</div>
-        <div class="badge-display-qr" id="qr-code-wrapper" data-uuid="' . $e($masterUuid) . '">
+        <div class="badge-display-qr" id="qr-code-wrapper" data-uuid="' . $e($masterUuid) . '" data-email="' . $e($email) . '">
           <div id="qr-code-canvas"></div>
         </div>
         <div class="badge-display-foot">
