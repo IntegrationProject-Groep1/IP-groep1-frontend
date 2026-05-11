@@ -184,7 +184,6 @@ function Invoke-DrupalRegistration {
         password = $RegistrationData.password
         password_confirm = $RegistrationData.password
         date_of_birth = $RegistrationData.date_of_birth
-        session_id = $RegistrationData.session_id
         company_name = $RegistrationData.company_name
         vat_number = $RegistrationData.vat_number
         form_build_id = $formBuildId
@@ -301,7 +300,6 @@ for ($i = 1; $i -le $Count; $i++) {
         email = ("{0}.{1}.{2}.{3}@example.test" -f $firstName.ToLower(), $lastName.ToLower().Replace(' ', ''), $runId, $i)
         password = "Reg!$([Guid]::NewGuid().ToString('N').Substring(0, 12))"
         date_of_birth = (Get-Date '1990-01-01').AddDays($i * 37).ToString('yyyy-MM-dd')
-        session_id = $sessions[($i - 1) % $sessions.Count]
         is_company = $isCompany
         company_name = if ($isCompany) { "$lastName Consulting BV" } else { '' }
         vat_number = if ($isCompany) { ('BE0' + (100000000 + $i).ToString()) } else { '' }
