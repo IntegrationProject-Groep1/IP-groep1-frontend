@@ -52,10 +52,14 @@ class QrCodeController extends ControllerBase
             return [
                 '#markup' => \Drupal\Core\Render\Markup::create($noQrHtml),
                 '#attached' => ['library' => ['event_theme/qr_code']],
+                '#cache' => [
+                    'contexts' => ['user'],
+                    'tags' => $fullUser ? $fullUser->getCacheTags() : [],
+                ],
             ];
         }
 
-        $email        = (string) ($this->currentUser()->getEmail() ?? '');
+        $email        = $fullUser ? (string) ($fullUser->getEmail() ?? '') : '';
 
         \Drupal::logger('qr_code')->info(
             'QR code page served for uid @uid.',
@@ -136,6 +140,10 @@ class QrCodeController extends ControllerBase
         return [
             '#markup' => \Drupal\Core\Render\Markup::create($html),
             '#attached' => ['library' => ['event_theme/qr_code']],
+            '#cache' => [
+                'contexts' => ['user'],
+                'tags' => $fullUser->getCacheTags(),
+            ],
         ];
     }
 }
