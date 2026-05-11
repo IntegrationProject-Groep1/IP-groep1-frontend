@@ -74,7 +74,10 @@ class RabbitMQClient
     public function declareQueue(string $queueName, bool $durable = true): void
     {
         try {
-            $this->getChannel()->queue_declare($queueName, false, $durable, false, false);
+            // passive=true: use the queue if it already exists, don't recreate it.
+            // This prevents AMQP 406 PRECONDITION_FAILED when another service (e.g. CRM)
+            // already declared the queue with different parameters.
+            $this->getChannel()->queue_declare($queueName, true, $durable, false, false);
 
             \Drupal::logger('rabbitmq_sender')->info('Queue declared', [
                 'queue' => $queueName,
