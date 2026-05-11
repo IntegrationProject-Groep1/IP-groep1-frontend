@@ -36,36 +36,40 @@ $settings['trusted_host_patterns'] = [
   '^localhost$',
   '^localhost(:[0-9]+)?$',
   '^127\.0\.0\.1(:[0-9]+)?$',
+  '^(.+\.)?desiderius\.me$',
+  '^integrationproject-2526s2-dag01\.westeurope\.cloudapp\.azure\.com(:[0-9]+)?$',
 ];
-
-// Azure host (optioneel)
-$settings['trusted_host_patterns'][] = '^integrationproject-2526s2-dag01\.westeurope\.cloudapp\.azure\.com(:[0-9]+)?$';
 
 $settings['config_sync_directory'] = 'sites/default/files/config_sync';
 
 // Reverse proxy support
 if (getenv('DRUPAL_REVERSE_PROXY') === 'true') {
   $settings['reverse_proxy'] = TRUE;
-  $settings['reverse_proxy_addresses'] = [$_SERVER['REMOTE_ADDR']];
+  
+  // In K8s/Cloudflare, we often need to trust all internal IPs.
+  // This can be overridden by the DRUPAL_REVERSE_PROXY_ADDRESSES env var.
+  $proxy_ips = getenv('DRUPAL_REVERSE_PROXY_ADDRESSES');
+  if ($proxy_ips) {
+    $settings['reverse_proxy_addresses'] = explode(',', $proxy_ips);
+  } else {
+    // Fallback: trust the immediate sender if nothing else is specified.
+    $settings['reverse_proxy_addresses'] = isset($_SERVER['REMOTE_ADDR']) ? [$_SERVER['REMOTE_ADDR']] : [];
+  }
+
   $settings['reverse_proxy_proto_header'] = 'X-Forwarded-Proto';
   $settings['reverse_proxy_host_header'] = 'X-Forwarded-Host';
   $settings['reverse_proxy_port_header'] = 'X-Forwarded-Port';
 
-  if ($base_url_env = getenv('DRUPAL_BASE_URL')) {
-    $base_url = $base_url_env;
+  // Force HTTPS if the proxy says so.
+  if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+    $_SERVER['HTTPS'] = 'on';
   }
 }
 
-// Add your Azure domain to trusted hosts.
-$settings['trusted_host_patterns'][] = '^integrationproject-2526s2-dag01\.westeurope\.cloudapp\.azure\.com$';
-$settings['trusted_host_patterns'][] = '^integrationproject-2526s2-dag01\.westeurope\.cloudapp\.azure\.com:30020$';
-
-// desiderius.me — via nginx ingress controller
-$settings['trusted_host_patterns'][] = '^(.+\.)?desiderius\.me$';
-
-// Always override $base_url for desiderius.me regardless of what DRUPAL_BASE_URL is set to.
-// The ingress terminates HTTPS and forwards HTTP internally, so DRUPAL_BASE_URL in the secret
-// may contain a stale port (e.g. :8080). This ensures redirects always use the correct public URL.
-if (getenv('DRUPAL_BASE_URL') !== false && str_contains((string) getenv('DRUPAL_BASE_URL'), 'desiderius.me')) {
+// Always override $base_url for desiderius.me to prevent stale port redirection (e.g. :8080).
+// This is critical because Apache inside the container runs on 8080 as non-root.
+if (isset($_SERVER['HTTP_HOST']) && str_contains($_SERVER['HTTP_HOST'], 'desiderius.me')) {
   $base_url = 'https://desiderius.me';
+} elseif ($env_base_url = getenv('DRUPAL_BASE_URL')) {
+  $base_url = $env_base_url;
 }
