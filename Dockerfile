@@ -24,6 +24,9 @@ COPY xsd /opt/drupal/xsd
 # Copy settings.php — uses getenv() so credentials come from environment variables
 COPY web/sites/default/settings.php /var/www/html/sites/default/settings.php
 
+# Custom PHP configuration: disable assert.active (deprecated PHP 8.3) and display_errors
+COPY docker/php/99-custom.ini /usr/local/etc/php/conf.d/99-custom.ini
+
 # Suppress the "Could not reliably determine the server's fully qualified domain name" warning
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
