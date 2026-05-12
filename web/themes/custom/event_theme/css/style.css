@@ -854,6 +854,143 @@ html[data-sidebar="light"] .shell-user .icon-btn { border-color: var(--line-2); 
   background: var(--ink-2) !important;
 }
 
+/* ────────────────────────────────────────────────────────────────
+   ADMIN SESSION MANAGEMENT
+   ──────────────────────────────────────────────────────────────── */
+
+/* Admin head btn override: dark bg on light page */
+.admin-sessions .admin-head .btn-primary {
+  background: var(--ink) !important;
+  color: white !important;
+  border-radius: 10px;
+}
+.admin-sessions .admin-head .btn-primary:hover {
+  background: var(--ink-2) !important;
+}
+.admin-sessions .admin-head .btn-ghost {
+  background: transparent !important;
+  color: var(--ink) !important;
+  border-color: var(--line-2);
+}
+.admin-sessions .admin-head .btn-ghost:hover {
+  background: var(--surface) !important;
+  border-color: var(--ink);
+}
+
+/* Edit / delete form card */
+.admin-form-card { max-width: 760px; }
+
+/* Two-column row inside the edit form */
+.admin-form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 640px) {
+  .admin-form-row-2 { grid-template-columns: 1fr; }
+}
+
+/* Form grid spacing inside admin forms */
+.admin-form-card .form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.admin-form-card .field { display: flex; flex-direction: column; gap: 6px; }
+
+/* Action row (submit + cancel) */
+.admin-form-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.admin-form-actions input[type="submit"],
+.admin-form-actions .button {
+  background: var(--ink) !important;
+  color: white !important;
+  border-radius: 10px;
+  padding: 11px 22px;
+  font-size: 14px;
+}
+.admin-form-actions input[type="submit"]:hover,
+.admin-form-actions .button:hover { background: var(--ink-2) !important; }
+.admin-form-actions .button--ghost,
+.admin-form-actions a.button {
+  background: transparent !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--line-2);
+}
+.admin-form-actions a.button:hover {
+  background: var(--surface) !important;
+  border-color: var(--ink);
+  text-decoration: none;
+}
+
+/* Danger button (delete confirm) */
+.admin-form-actions .button--danger,
+.admin-form-actions input.button--danger {
+  background: var(--hot) !important;
+  color: white !important;
+}
+.admin-form-actions .button--danger:hover,
+.admin-form-actions input.button--danger:hover {
+  background: color-mix(in srgb, var(--hot) 85%, black) !important;
+}
+
+/* Delete confirmation session summary card */
+.session-delete-summary {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.session-delete-summary-row {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 12px;
+  align-items: baseline;
+  font-size: 14px;
+}
+.session-delete-summary-row span {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+}
+.session-delete-summary-row strong { font-weight: 600; }
+
+/* Delete warning banner */
+.admin-delete-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: color-mix(in srgb, var(--hot) 8%, white);
+  border: 1px solid color-mix(in srgb, var(--hot) 22%, white);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 24px;
+}
+.admin-delete-warning svg { color: var(--hot); flex-shrink: 0; margin-top: 2px; }
+.admin-delete-warning p { margin: 0; font-size: 13px; color: var(--hot); }
+
+/* Admin delete card accent */
+.admin-delete-card { border-color: color-mix(in srgb, var(--hot) 30%, white); }
+
+/* Confirm-form buttons (Drupal ConfirmFormBase structure) */
+.admin-sessions .confirm-form-buttons,
+.admin-sessions #edit-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 /* end of append */
 
 /* ════════════════════════════════════════════════════════════════

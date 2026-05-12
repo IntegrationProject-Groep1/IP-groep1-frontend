@@ -1,0 +1,171 @@
+{#
+  Template: admin-sessions.html.twig
+  Variables:
+    - sessions:   Array of session objects from Planning state
+    - create_url: URL to the session create form
+#}
+
+<div class="admin-sessions">
+
+  {# ── Header ── #}
+  <div class="admin-head">
+    <div>
+      <span class="eyebrow">{{ 'Programme tools · Planning service'|t }}</span>
+      <h1>{{ 'Manage sessions'|t }}</h1>
+      <p>{{ 'Create, edit, or delete sessions. Changes are sent to the Planning service via RabbitMQ.'|t }}</p>
+    </div>
+    {% if create_url %}
+      <a href="{{ create_url }}" class="btn btn-primary">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        {{ 'New session'|t }}
+      </a>
+    {% endif %}
+  </div>
+
+  {# ── Session table ── #}
+  {% if sessions is empty %}
+    <div class="empty">
+      <div class="empty-dot"></div>
+      <h3>{{ 'No sessions available.'|t }}</h3>
+      <p>{{ 'No sessions were returned from the Planning service. Create one to get started.'|t }}</p>
+      {% if create_url %}
+        <a href="{{ create_url }}" class="btn btn-primary">{{ 'Create first session'|t }}</a>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="card card-pad-none">
+      <div class="admin-table-head">
+        <div class="section-label-row">
+          <span class="section-label">{{ 'Sessions'|t }}</span>
+          <span class="muted-small">{{ sessions|length }} {{ 'sessions'|t }}</span>
+        </div>
+      </div>
+
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>{{ 'Session'|t }}</th>
+            <th>{{ 'When'|t }}</th>
+            <th>{{ 'Location'|t }}</th>
+            <th>{{ 'Capacity'|t }}</th>
+            <th>{{ 'Status'|t }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in sessions %}
+            {% set sid = s.session_id %}
+
+            {% set type_tone = 'neutral' %}
+            {% if s.session_type == 'keynote' %}{% set type_tone = 'primary' %}
+            {% elseif s.session_type == 'workshop' %}{% set type_tone = 'accent' %}
+            {% elseif s.session_type == 'reception' %}{% set type_tone = 'warm' %}
+            {% endif %}
+
+            {% set pct = 0 %}
+            {% if s.max_attendees > 0 %}
+              {% set pct = ((s.current_attendees / s.max_attendees) * 100)|round %}
+            {% endif %}
+
+            {% set cap_class = 'capacity-cool' %}
+            {% if pct >= 95 %}{% set cap_class = 'capacity-hot' %}
+            {% elseif pct >= 75 %}{% set cap_class = 'capacity-warm' %}
+            {% endif %}
+
+            {% set seat_tone = 'ok' %}
+            {% set seat_label = 'Open'|t %}
+            {% if s.max_attendees > 0 and s.current_attendees >= s.max_attendees %}
+              {% set seat_tone = 'hot' %}
+              {% set seat_label = 'Full'|t %}
+            {% elseif pct >= 90 %}
+              {% set seat_tone = 'warm' %}
+              {% set seat_label = 'Last seats'|t %}
+            {% endif %}
+
+            <tr>
+              <td>
+                <div class="admin-title-cell">
+                  {% if s.session_type %}
+                    <span class="tag tag-{{ type_tone }}">{{ s.session_type }}</span>
+                  {% endif %}
+                  <div>
+                    <div class="admin-title">{{ s.title }}</div>
+                    <div class="admin-sub">
+                      {{ sid }}
+                      {% if s.speaker %}
+                        · {{ [s.speaker.first_name, s.speaker.last_name]|join(' ')|trim }}
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <td class="nowrap">
+                {% if s.start_datetime %}
+                  {% set start_parts = s.start_datetime|split('T') %}
+                  <div>{{ start_parts[0] ?? s.start_datetime }}</div>
+                  {% if start_parts[1] is defined %}
+                    <div class="admin-sub">{{ start_parts[1]|split(':')|slice(0,2)|join(':') }}</div>
+                  {% endif %}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+
+              <td>{{ s.location ?: '—' }}</td>
+
+              <td>
+                <div class="cap-cell">
+                  {% if s.max_attendees > 0 %}
+                    <div class="capacity">
+                      <div class="capacity-bar">
+                        <div class="capacity-fill {{ cap_class }}" style="width:{{ pct }}%"></div>
+                      </div>
+                      <div class="capacity-meta">
+                        <span>{{ s.current_attendees }}&thinsp;/&thinsp;{{ s.max_attendees }}</span>
+                        <span class="capacity-pct">{{ pct }}%</span>
+                      </div>
+                    </div>
+                  {% else %}
+                    <span class="admin-sub">{{ 'Unlimited'|t }}</span>
+                  {% endif %}
+                </div>
+              </td>
+
+              <td>
+                <span class="tag tag-{{ seat_tone }}">{{ seat_label }}</span>
+                {% if s.status and s.status != 'published' %}
+                  <span class="tag" style="margin-left:4px;">{{ s.status }}</span>
+                {% endif %}
+              </td>
+
+              <td class="invites-actions">
+                <a href="/session/{{ sid|url_encode }}/edit"
+                   class="row-act"
+                   title="{{ 'Edit'|t }}"
+                   aria-label="{{ 'Edit session'|t }}">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                  </svg>
+                </a>
+                <a href="/session/{{ sid|url_encode }}/delete"
+                   class="row-act row-act-danger"
+                   title="{{ 'Delete'|t }}"
+                   aria-label="{{ 'Delete session'|t }}">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+
+</div>
