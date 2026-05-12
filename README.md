@@ -288,7 +288,7 @@ Before creating a production tag (`v*`), verify all of the following:
 
 | Name             | Role                |
 |------------------|---------------------|
-| Charles Wong     | Team Lead           |
+| Kainy Zafari     | Team Lead           |
 | Jarno Janssens   | Developer/Tester    |
 | Ilyas Fariss     | Developer/Tester    |
 | Dries Michiels   | Developer/Tester    |
