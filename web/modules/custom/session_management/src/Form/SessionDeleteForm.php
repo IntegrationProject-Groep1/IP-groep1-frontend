@@ -85,7 +85,7 @@ class SessionDeleteForm extends ConfirmFormBase
         return $form;
     }
 
-    public function submitForm(array $form, FormStateInterface $form_state): void
+    public function submitForm(array &$form, FormStateInterface $form_state): void
     {
         $data = ['session_id' => $this->sessionId];
 
