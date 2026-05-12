@@ -1,22 +1,33 @@
 {#
   form--session-enrollment-form.html.twig
-  Session enrollment form styled with Tailwind + CSS variables.
+  Session enrollment form styled to match the Shift Festival sessions browse design.
   Maps to form ID: session_enrollment_form
+
+  The form render array exposes:
+    - form['#sessions_full'] : full session objects from Planning state
+    - form.session_ids       : checkboxes element (individual: form.session_ids[session_id])
+    - form.submit            : submit button
 #}
 
-<div class="card p-8 max-w-xl mx-auto">
+{% set sessions_full = form['#sessions_full'] ?? [] %}
 
-  <div class="mb-8">
-    <h1 class="text-2xl font-bold tracking-tight" style="color:var(--color-text);">
-      {{ 'Enroll in sessions'|t }}
-    </h1>
-    <p class="mt-1 text-sm" style="color:var(--color-muted);">
-      {{ 'Select one or more sessions you want to attend.'|t }}
-    </p>
+<div class="sessions-page">
+
+  {# ── Header ── #}
+  <div class="sessions-head">
+    <div>
+      <h1>{{ 'The programme'|t }}</h1>
+      {% if sessions_full %}
+        <p>{{ '@count sessions available. Select the ones you want to attend and click Enroll.'|t({'@count': sessions_full|length}) }}</p>
+      {% else %}
+        <p>{{ 'Select one or more sessions you want to attend.'|t }}</p>
+      {% endif %}
+    </div>
   </div>
 
+  {# ── Messages ── #}
   {% if message %}
-    <div class="mb-6">{{ message }}</div>
+    <div class="alert alert-error" style="margin-bottom:20px;">{{ message }}</div>
   {% endif %}
 
   <form{{ attributes }}>
@@ -25,19 +36,132 @@
     {{ form.form_id }}
 
     {% if form.notice %}
-      <div class="msg-warning mb-6">{{ form.notice }}</div>
+      <div class="alert alert-error" style="margin-bottom:20px;">{{ form.notice }}</div>
     {% endif %}
 
-    {% if form.session_ids %}
-      <div class="mb-6">
-        <p class="section-label">{{ 'Available sessions'|t }}</p>
-        {{ form.session_ids }}
+    {% if sessions_full is empty %}
+      {# Fallback: no session data — render the raw form element #}
+      {% if form.session_ids %}
+        <div class="card card-pad-lg" style="margin-bottom:20px;">
+          <p class="section-label">{{ 'Available sessions'|t }}</p>
+          {{ form.session_ids }}
+        </div>
+      {% endif %}
+
+    {% else %}
+      {# ── Session cards ── #}
+      <div class="session-list" style="margin-bottom:28px;">
+        {% for session in sessions_full %}
+          {% set sid = session.session_id %}
+
+          {% set pct = 0 %}
+          {% if session.max_attendees > 0 %}
+            {% set pct = ((session.current_attendees / session.max_attendees) * 100)|round %}
+          {% endif %}
+
+          {% set cap_class = 'capacity-cool' %}
+          {% if pct >= 95 %}{% set cap_class = 'capacity-hot' %}
+          {% elseif pct >= 75 %}{% set cap_class = 'capacity-warm' %}
+          {% endif %}
+
+          {% set type_tone = 'neutral' %}
+          {% if session.session_type == 'keynote' %}{% set type_tone = 'primary' %}
+          {% elseif session.session_type == 'workshop' %}{% set type_tone = 'accent' %}
+          {% elseif session.session_type == 'reception' %}{% set type_tone = 'warm' %}
+          {% endif %}
+
+          {% set is_full = session.max_attendees > 0 and session.current_attendees >= session.max_attendees %}
+
+          <article class="session-card{% if is_full %} session-card-full{% endif %}">
+
+            {# Time column #}
+            <div class="session-time-col">
+              {% if session.start_datetime %}
+                {% set start_parts = session.start_datetime|split('T') %}
+                {% set date_part = start_parts[0] ?? session.start_datetime %}
+                {% set time_part = (start_parts[1] ?? '')|split(':')|slice(0,2)|join(':') %}
+                <span class="session-day">{{ date_part }}</span>
+                <span class="session-hour">{{ time_part }}</span>
+              {% endif %}
+              {% if session.session_type %}
+                <span class="session-dur">{{ session.session_type }}</span>
+              {% endif %}
+            </div>
+
+            {# Main content #}
+            <div class="session-main">
+              <div class="session-tags">
+                {% if session.session_type %}
+                  <span class="tag tag-{{ type_tone }}">{{ session.session_type }}</span>
+                {% endif %}
+                {% if session.status and session.status != 'open' %}
+                  <span class="tag">{{ session.status }}</span>
+                {% endif %}
+              </div>
+
+              <h3>{{ session.title }}</h3>
+
+              <div class="session-foot">
+                {% if session.speaker %}
+                  <span>
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    {{ [session.speaker.first_name, session.speaker.last_name]|join(' ')|trim }}
+                    {% if session.speaker.organisation %}· {{ session.speaker.organisation }}{% endif %}
+                  </span>
+                {% endif %}
+                {% if session.location %}
+                  <span>
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    {{ session.location }}
+                  </span>
+                {% endif %}
+                {% if session.price is not null %}
+                  <span>€{{ session.price|number_format(2) }}</span>
+                {% endif %}
+              </div>
+            </div>
+
+            {# Side: capacity + enroll checkbox #}
+            <div class="session-side">
+              {% if session.max_attendees > 0 %}
+                <div class="capacity">
+                  <div class="capacity-bar">
+                    <div class="capacity-fill {{ cap_class }}" style="width:{{ pct }}%"></div>
+                  </div>
+                  <div class="capacity-meta">
+                    <span>{{ session.current_attendees }}&thinsp;/&thinsp;{{ session.max_attendees }}</span>
+                    <span class="capacity-pct">{{ pct }}%</span>
+                  </div>
+                </div>
+              {% endif %}
+
+              {% if is_full %}
+                <span class="btn btn-ghost btn-sm btn-full" style="text-align:center;cursor:not-allowed;opacity:.55;">
+                  {{ 'Full'|t }}
+                </span>
+              {% else %}
+                {# Render individual checkbox for this session #}
+                <div class="session-checkbox-wrap">
+                  {{ form.session_ids[sid] }}
+                </div>
+              {% endif %}
+            </div>
+
+          </article>
+        {% endfor %}
       </div>
+
     {% endif %}
 
-    {% if form.submit %}
-      <div>{{ form.submit }}</div>
-    {% endif %}
+    {# ── Submit ── #}
+    <div class="sessions-submit-row">
+      {{ form.submit }}
+    </div>
+
   </form>
-
 </div>

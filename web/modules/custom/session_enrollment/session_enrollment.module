@@ -21,9 +21,10 @@ function session_enrollment_theme(): array
         ],
         'my_sessions' => [
             'variables' => [
-                'name'     => '',
-                'sessions' => [],
-                'notice'   => null,
+                'name'             => '',
+                'sessions'         => [],
+                'grouped_sessions' => [],
+                'notice'           => null,
             ],
         ],
     ];

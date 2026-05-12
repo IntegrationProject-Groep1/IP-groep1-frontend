@@ -49,20 +49,22 @@ class SessionEnrollForm extends FormBase
             return $form;
         }
 
+        $sessions = \Drupal::state()->get('planning.sessions', []);
+
         $form['session_ids'] = [
-            '#type'        => 'select',
-            '#title'       => $this->t('Available sessions'),
-            '#description' => $this->t('Hold Ctrl / Cmd to select multiple sessions.'),
-            '#options'     => $options,
-            '#multiple'    => true,
-            '#required'    => true,
-            '#size'        => min(count($options) + 1, 10),
+            '#type'     => 'checkboxes',
+            '#title'    => $this->t('Available sessions'),
+            '#options'  => $options,
+            '#required' => true,
         ];
 
         $form['submit'] = [
             '#type'  => 'submit',
             '#value' => $this->t('Enroll'),
         ];
+
+        // Attach full session data for use in the Twig template.
+        $form['#sessions_full'] = $sessions;
 
         return $form;
     }
@@ -176,12 +178,24 @@ class SessionEnrollForm extends FormBase
             }
             $label = $session['title'];
             if (!empty($session['start_datetime'])) {
-                $label .= ' — ' . $session['start_datetime'];
+                $label .= ' — ' . $this->formatDateTime($session['start_datetime']);
             }
             $options[$session['session_id']] = $label;
         }
 
         return $options;
+    }
+
+    /**
+     * Format a datetime string to a human-readable time (H:i).
+     */
+    private function formatDateTime(string $raw): string
+    {
+        try {
+            return (new \DateTimeImmutable($raw))->format('H:i, D d M');
+        } catch (\Throwable) {
+            return $raw;
+        }
     }
 
     /**

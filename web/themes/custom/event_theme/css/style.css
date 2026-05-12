@@ -775,6 +775,85 @@ html[data-sidebar="light"] .shell-user .icon-btn { border-color: var(--line-2); 
    ──────────────────────────────────────────────────────────────── */
 
 .qr-svg { background: white; }
+
+/* ────────────────────────────────────────────────────────────────
+   SESSIONS PAGE (browse / enroll)
+   ──────────────────────────────────────────────────────────────── */
+
+.sessions-page { }
+
+.sessions-submit-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding-top: 8px;
+}
+.sessions-submit-row input[type="submit"],
+.sessions-submit-row .button {
+  background: var(--ink) !important;
+  color: white !important;
+  padding: 13px 24px;
+  font-size: 15px;
+  border-radius: 12px;
+}
+.sessions-submit-row input[type="submit"]:hover,
+.sessions-submit-row .button:hover {
+  background: var(--ink-2) !important;
+}
+
+/* Full sessions are visually dimmed */
+.session-card-full {
+  opacity: .7;
+}
+.session-card-full .session-main h3 {
+  color: var(--muted);
+}
+
+/* Checkbox wrapper in session card — hide default Drupal label, show just the checkbox */
+.session-checkbox-wrap .form-type-checkbox {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  border: none;
+}
+.session-checkbox-wrap .form-type-checkbox label {
+  display: none;   /* title is shown in the card itself */
+}
+.session-checkbox-wrap input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  margin: 0 auto;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+/* When a session checkbox is checked, highlight the card */
+.session-card:has(input[type="checkbox"]:checked) {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ok) 4%, white), white);
+  border-color: color-mix(in srgb, var(--ok) 30%, white);
+}
+
+/* Enroll btn inside the card side */
+.session-side .btn {
+  background: var(--ink);
+  color: white;
+  border-color: var(--ink);
+}
+.session-side .btn:hover { background: var(--ink-2); border-color: var(--ink-2); }
+
+/* My sessions page — btn in header should be dark on light page */
+.my-sessions-head .btn,
+.my-sessions .empty .btn {
+  background: var(--ink) !important;
+  color: white !important;
+}
+.my-sessions-head .btn:hover,
+.my-sessions .empty .btn:hover {
+  background: var(--ink-2) !important;
+}
+
 /* end of append */
 
 /* ════════════════════════════════════════════════════════════════

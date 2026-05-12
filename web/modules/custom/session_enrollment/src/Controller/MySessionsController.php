@@ -53,10 +53,11 @@ class MySessionsController extends ControllerBase
         if ($identityUuid === '') {
             // User has not completed registration via the Identity Service yet.
             return [
-                '#theme'    => 'my_sessions',
-                '#name'     => $firstName,
-                '#sessions' => [],
-                '#notice'   => $this->t('Your account registration is not yet complete. Please finish registration to view your sessions.'),
+                '#theme'             => 'my_sessions',
+                '#name'             => $firstName,
+                '#sessions'         => [],
+                '#grouped_sessions' => [],
+                '#notice'           => $this->t('Your account registration is not yet complete. Please finish registration to view your sessions.'),
             ];
         }
 
@@ -67,11 +68,46 @@ class MySessionsController extends ControllerBase
         $sessions = $this->pollForResponse($identityUuid, $correlationId);
 
         return [
-            '#theme'    => 'my_sessions',
-            '#name'     => $firstName,
-            '#sessions' => $sessions,
-            '#notice'   => null,
+            '#theme'             => 'my_sessions',
+            '#name'              => $firstName,
+            '#sessions'          => $sessions,
+            '#grouped_sessions'  => $this->groupByDay($sessions),
+            '#notice'            => null,
         ];
+    }
+
+    /**
+     * Group sessions by calendar day and add formatted time fields.
+     *
+     * @param list<array<string,mixed>> $sessions
+     * @return array<string, list<array<string,mixed>>>
+     */
+    private function groupByDay(array $sessions): array
+    {
+        $grouped = [];
+        foreach ($sessions as $session) {
+            $startRaw = $session['start_datetime'] ?? '';
+            $endRaw   = $session['end_datetime']   ?? '';
+
+            try {
+                $startDt = new \DateTimeImmutable($startRaw);
+                $dayKey  = $startDt->format('l, d F Y'); // e.g. "Tuesday, 12 May 2026"
+                $session['formatted_start'] = $startDt->format('H:i');
+            } catch (\Throwable) {
+                $dayKey = 'Unscheduled';
+                $session['formatted_start'] = $startRaw;
+            }
+
+            try {
+                $endDt = new \DateTimeImmutable($endRaw);
+                $session['formatted_end'] = $endDt->format('H:i');
+            } catch (\Throwable) {
+                $session['formatted_end'] = $endRaw;
+            }
+
+            $grouped[$dayKey][] = $session;
+        }
+        return $grouped;
     }
 
     /**
