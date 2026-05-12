@@ -206,6 +206,9 @@ function event_theme_preprocess_page__front(array &$variables): void {
   $variables['hero_subtitle']  = theme_get_setting('event_theme_hero_subtitle')  ?: 'Discover, register and manage your sessions.';
   $variables['hero_cta_label'] = theme_get_setting('event_theme_hero_cta_label') ?: 'Register now';
   $variables['hero_cta_url']   = theme_get_setting('event_theme_hero_cta_url')   ?: '/register';
+
+  // Pass live sessions from Planning state to the front page template.
+  $variables['front_sessions'] = \Drupal::state()->get('planning.sessions', []);
 }
 
 /* ── Private helpers ─────────────────────────────────────── */
