@@ -128,6 +128,7 @@ Klik op jouw team om direct naar de gedetailleerde specificaties te gaan. **Groe
 |  **ONTVANGT** | `session_delete_request` | ← Frontend | 🟢 Conform | [19.6](#196-session_delete_request-frontend--planning) |
 |  **VERZENDT** | `calendar_invite_confirmed` | → Frontend | 🟢 Conform | [19.3](#193-calendar_invite--calendar_invite_confirmed) |
 |  **RPC** | `session_view_request` / `session_view_response` | ↔ Frontend | 🟢 Conform | [19.2](#192-session_view_request--session_view_response-rpc) |
+|  **RPC** | `session_view_request_all` / `session_view_response_all` | ↔ Frontend | 🟢 Conform | [19.2](#192-session_view_request--session_view_response-rpc) |
 |  **REST** | `Token Registration` | ← Frontend | 🟢 Conform | [19.0](#190-oauth-token-registration-rest-api) |
 |  **BROADCAST** | `heartbeat` (via sidecar) | → Monitoring | 🟢 Conform | [3](#3-heartbeat--alle-teams--monitoring) |
 
@@ -5959,7 +5960,7 @@ Frontend vraagt sessiedetails op bij Planning. Planning antwoordt synchroon via 
 </xs:schema>
 ```
 
-#### Voorbeeld XML — Request
+#### Voorbeeld XML — Request (Specifiek)
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -5978,7 +5979,25 @@ Frontend vraagt sessiedetails op bij Planning. Planning antwoordt synchroon via 
 </message>
 ```
 
-#### Voorbeeld XML — Response
+#### Voorbeeld XML — Request (Alles)
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<message>
+  <header>
+    <message_id>f9e8d7c6-b5a4-3210-9876-543210fedcba</message_id>
+    <timestamp>2026-05-15T09:05:00Z</timestamp>
+    <source>frontend</source>
+    <type>session_view_request_all</type>
+    <version>2.0</version>
+  </header>
+  <body>
+    <!-- session_id afwezig voor ophalen van alle sessies -->
+  </body>
+</message>
+```
+
+#### Voorbeeld XML — Response (Specifiek)
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -5994,7 +6013,7 @@ Frontend vraagt sessiedetails op bij Planning. Planning antwoordt synchroon via 
   <body>
     <request_message_id>a1b2c3d4-e5f6-7890-abcd-ef1234567890</request_message_id>
     <requested_session_id>sess-keynote-001</requested_session_id>
-    <status>ok</status>   <!-- ok | not_found -->
+    <status>ok</status>
     <session_count>1</session_count>
     <sessions>
       <session>
@@ -6016,6 +6035,39 @@ Frontend vraagt sessiedetails op bij Planning. Planning antwoordt synchroon via 
           <organisation>UZ Brussel</organisation>
           <email>s.leclercq@uzbrussel.be</email>
         </speaker>
+      </session>
+    </sessions>
+  </body>
+</message>
+```
+
+#### Voorbeeld XML — Response (Alles)
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<message>
+  <header>
+    <message_id>d4e5f6a7-b2c3-8901-bcde-f12345678901</message_id>
+    <timestamp>2026-05-15T09:05:01Z</timestamp>
+    <source>planning</source>
+    <type>session_view_response_all</type>
+    <version>2.0</version>
+    <correlation_id>f9e8d7c6-b5a4-3210-9876-543210fedcba</correlation_id>
+  </header>
+  <body>
+    <request_message_id>f9e8d7c6-b5a4-3210-9876-543210fedcba</request_message_id>
+    <status>ok</status>
+    <session_count>2</session_count>
+    <sessions>
+      <session>
+        <session_id>sess-keynote-001</session_id>
+        <title>Keynote: AI in Healthcare</title>
+        <!-- ... -->
+      </session>
+      <session>
+        <session_id>sess-workshop-002</session_id>
+        <title>Workshop: Machine Learning Basics</title>
+        <!-- ... -->
       </session>
     </sessions>
   </body>

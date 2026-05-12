@@ -43,10 +43,12 @@ class SessionViewRequestSender
         $xml = $this->buildXml($data);
         $this->validateXml($xml, self::XSD_PATH);
 
-        $this->sendWithRetry(function () use ($xml): void {
+        $type = empty($data['session_id']) ? 'session_view_request_all' : self::TYPE;
+
+        $this->sendWithRetry(function () use ($xml, $type): void {
             $this->resolveClient()->declareExchange(self::EXCHANGE, self::EXCHANGE_TYPE);
             $this->resolveClient()->publishToExchange(self::EXCHANGE, self::ROUTING_KEY, $xml);
-            $this->logOutboundSuccess(self::TYPE, self::ROUTING_KEY, $xml);
+            $this->logOutboundSuccess($type, self::ROUTING_KEY, $xml);
         });
     }
 
@@ -54,6 +56,7 @@ class SessionViewRequestSender
     {
         $messageId = $this->generateUuidV4();
         $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z');
+        $type = empty($data['session_id']) ? 'session_view_request_all' : self::TYPE;
 
         $dom = new \DOMDocument('1.0', 'UTF-8');
         $dom->formatOutput = false;
@@ -65,7 +68,7 @@ class SessionViewRequestSender
         $header->appendChild($dom->createElement('message_id', $messageId));
         $header->appendChild($dom->createElement('timestamp', $timestamp));
         $header->appendChild($dom->createElement('source', self::SOURCE));
-        $header->appendChild($dom->createElement('type', self::TYPE));
+        $header->appendChild($dom->createElement('type', $type));
         $header->appendChild($dom->createElement('version', self::VERSION));
         $message->appendChild($header);
 
