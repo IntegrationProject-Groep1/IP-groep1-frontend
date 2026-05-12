@@ -139,6 +139,14 @@ class RegistrationForm extends FormBase
             ],
         ];
 
+        $form['terms_accepted'] = [
+            '#type'     => 'checkbox',
+            '#title'    => $this->t(
+                'Ik ga akkoord met de <a href="/algemene-voorwaarden" target="_blank">algemene voorwaarden</a> en het <a href="/privacybeleid" target="_blank">privacybeleid</a>.'
+            ),
+            '#required' => false,
+        ];
+
         $form['submit'] = [
             '#type'  => 'submit',
             '#value' => $this->t('Register'),
@@ -166,7 +174,11 @@ class RegistrationForm extends FormBase
         }
 
         if ($isCompany && empty(trim((string) $form_state->getValue('vat_number')))) {
-            $form_state->setErrorByName('company_fields][vat_number', $this->t('VAT number is required for companies.'));
+            $form_state->setErrorByName('company_fields][vat_number', $this->t('BTW-nummer is verplicht voor bedrijven.'));
+        }
+
+        if (!$form_state->getValue('terms_accepted')) {
+            $form_state->setErrorByName('terms_accepted', $this->t('Je moet akkoord gaan met de algemene voorwaarden en het privacybeleid om je te kunnen registreren.'));
         }
     }
 
