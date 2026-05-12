@@ -129,10 +129,13 @@ class SessionEnrollForm extends FormBase
             $sender->send(); // no session_id = session_view_request_all
 
             $receiver = new \Drupal\rabbitmq_receiver\SessionViewResponseReceiver($client);
-            for ($i = 0; $i < 5; $i++) {
+            for ($i = 0; $i < 10; $i++) {
                 if ($receiver->pollOnce()) {
                     return; // response received and stored in state
                 }
+                // Wait between polls so Planning has time to process the request and publish its response.
+                // Without this delay all polls complete before the response arrives.
+                usleep(500000);
             }
         } catch (\Throwable $e) {
             \Drupal::logger('session_enrollment')->warning(
@@ -197,4 +200,3 @@ class SessionEnrollForm extends FormBase
         return '';
     }
 }
- 
