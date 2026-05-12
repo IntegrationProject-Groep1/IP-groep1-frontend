@@ -1,3 +1,11 @@
+session_management.admin:
+  path: '/session/admin'
+  defaults:
+    _controller: '\Drupal\session_management\Controller\AdminSessionsController::page'
+    _title: 'Manage Sessions'
+  requirements:
+    _permission: 'administer site configuration'
+
 session_management.create:
   path: '/session/create'
   defaults:
@@ -5,6 +13,24 @@ session_management.create:
     _title: 'Create a session'
   requirements:
     _permission: 'administer site configuration'
+
+session_management.edit:
+  path: '/session/{session_id}/edit'
+  defaults:
+    _form: '\Drupal\session_management\Form\SessionEditForm'
+    _title: 'Edit session'
+  requirements:
+    _permission: 'administer site configuration'
+    session_id: '[a-zA-Z0-9\-_]+'
+
+session_management.delete:
+  path: '/session/{session_id}/delete'
+  defaults:
+    _form: '\Drupal\session_management\Form\SessionDeleteForm'
+    _title: 'Delete session'
+  requirements:
+    _permission: 'administer site configuration'
+    session_id: '[a-zA-Z0-9\-_]+'
 
 session_management.confirmation:
   path: '/session/confirmation'

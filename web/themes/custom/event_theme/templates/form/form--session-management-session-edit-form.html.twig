@@ -1,0 +1,68 @@
+{#
+  form--session-management-session-edit-form.html.twig
+  Styled edit form for updating an existing Planning session.
+#}
+
+{% set session = form['#session'] ?? {} %}
+
+<div class="admin-sessions">
+  <div class="admin-head">
+    <div>
+      <span class="eyebrow">{{ 'Planning service'|t }}</span>
+      <h1>{{ 'Edit session'|t }}</h1>
+      {% if session.title %}
+        <p>{{ 'Editing: @title'|t({'@title': session.title}) }}</p>
+      {% endif %}
+    </div>
+    <a href="/session/admin" class="btn btn-ghost btn-sm">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+      {{ 'Back to sessions'|t }}
+    </a>
+  </div>
+
+  <div class="card card-pad-lg admin-form-card">
+    <div class="new-session-head">
+      <span class="section-label">{{ 'Session details'|t }}</span>
+      {% if session.session_id %}
+        <span class="admin-sub">ID: {{ session.session_id }}</span>
+      {% endif %}
+    </div>
+
+    <form{{ attributes }}>
+      {{ form.form_build_id }}
+      {{ form.form_token }}
+      {{ form.form_id }}
+
+      <div class="form-grid">
+
+        <div class="field">
+          {{ form.title }}
+        </div>
+
+        <div class="admin-form-row-2">
+          <div class="field">{{ form.session_type }}</div>
+          <div class="field">{{ form.status }}</div>
+        </div>
+
+        <div class="admin-form-row-2">
+          <div class="field">{{ form.start_datetime }}</div>
+          <div class="field">{{ form.end_datetime }}</div>
+        </div>
+
+        <div class="admin-form-row-2">
+          <div class="field">{{ form.location }}</div>
+          <div class="field">{{ form.max_attendees }}</div>
+        </div>
+
+        <div class="field">{{ form.price }}</div>
+
+        <div class="admin-form-actions">
+          {{ form.actions }}
+        </div>
+
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,47 @@
+{#
+  form--session-management-session-delete-form.html.twig
+  Styled delete-confirmation form for removing a Planning session.
+#}
+
+<div class="admin-sessions">
+  <div class="admin-head">
+    <div>
+      <span class="eyebrow">{{ 'Planning service'|t }}</span>
+      <h1>{{ 'Delete session'|t }}</h1>
+    </div>
+    <a href="/session/admin" class="btn btn-ghost btn-sm">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+      {{ 'Back to sessions'|t }}
+    </a>
+  </div>
+
+  <div class="card card-pad-lg admin-form-card admin-delete-card">
+    <form{{ attributes }}>
+      {{ form.form_build_id }}
+      {{ form.form_token }}
+      {{ form.form_id }}
+
+      {% if form.session_info %}
+        {{ form.session_info }}
+      {% endif %}
+
+      <div class="admin-delete-warning">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <p>{{ 'This will send a delete request to the Planning service. The action cannot be undone.'|t }}</p>
+      </div>
+
+      <div class="field">
+        {{ form.reason }}
+      </div>
+
+      <div class="admin-form-actions">
+        {{ form.actions }}
+      </div>
+    </form>
+  </div>
+</div>

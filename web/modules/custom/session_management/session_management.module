@@ -6,3 +6,18 @@ declare(strict_types=1);
  * @file
  * Integration hooks for the session_management module.
  */
+
+/**
+ * Implements hook_theme().
+ */
+function session_management_theme(): array
+{
+    return [
+        'admin_sessions' => [
+            'variables' => [
+                'sessions'   => [],
+                'create_url' => '',
+            ],
+        ],
+    ];
+}
