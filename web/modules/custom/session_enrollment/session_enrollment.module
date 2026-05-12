@@ -89,3 +89,4 @@ function session_enrollment_cron(): void
         ]);
     }
 }
+ 
