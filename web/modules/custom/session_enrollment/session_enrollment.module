@@ -32,48 +32,24 @@ function session_enrollment_theme(): array
 /**
  * Implements hook_cron().
  *
- * Polls RabbitMQ queues each cron run to keep the Planning session state in sync
- * and to forward badge check-ins to CRM.
+ * Polls RabbitMQ queues each cron run.
+ *
+ * NOTE: session_view_request/response is handled on-demand in SessionEnrollForm,
+ * NOT via cron. Cron only handles push events and wallet updates.
  *
  * Strategy:
- *  1. Drain any pending session_view_response messages (from a previous request).
- *  2. Drain session_created and session_updated push events from Planning.
- *  3. Drain badge_scanned messages and forward as user_checkin to CRM.
- *  4. Send a fresh session_view_request so the response is ready for the next cron run.
+ *  1. Drain session_created push events from Planning.
+ *  2. Drain session_updated push events from Planning.
+ *  3. Drain wallet_balance_update messages from Kassa.
  */
 function session_enrollment_cron(): void
 {
     $logger = \Drupal::logger('session_enrollment');
 
     try {
-        $host = getenv('RABBITMQ_HOST') ?: 'rabbitmq_broker';
-        $port = (int) (getenv('RABBITMQ_PORT') ?: '5672');
+        $client = new \Drupal\rabbitmq_sender\RabbitMQClient();
 
-        $logger->info('Cron: connecting to RabbitMQ at @host:@port.', [
-            '@host' => $host,
-            '@port' => $port,
-        ]);
-
-        $client = new \Drupal\rabbitmq_sender\RabbitMQClient(
-            $host,
-            $port,
-            getenv('RABBITMQ_USER') ?: 'guest',
-            getenv('RABBITMQ_PASS') ?: 'guest',
-            getenv('RABBITMQ_VHOST') ?: '/'
-        );
-
-        // 1. Process any pending session_view_response messages (up to 5 per cron run).
-        $viewReceiver = new \Drupal\rabbitmq_receiver\SessionViewResponseReceiver($client);
-        $count = 0;
-        for ($i = 0; $i < 5; $i++) {
-            if (!$viewReceiver->pollOnce()) {
-                break;
-            }
-            $count++;
-        }
-        $logger->info('Cron: processed @n session_view_response message(s).', ['@n' => $count]);
-
-        // 2. Process session_created push events from Planning (up to 20 per cron run).
+        // 1. Process session_created push events from Planning (up to 20 per cron run).
         $createdReceiver = new \Drupal\rabbitmq_receiver\SessionCreatedReceiver($client);
         $count = 0;
         for ($i = 0; $i < 20; $i++) {
@@ -84,7 +60,7 @@ function session_enrollment_cron(): void
         }
         $logger->info('Cron: processed @n session_created message(s).', ['@n' => $count]);
 
-        // 3. Process session_updated push events from Planning (up to 20 per cron run).
+        // 2. Process session_updated push events from Planning (up to 20 per cron run).
         $updateReceiver = new \Drupal\rabbitmq_receiver\SessionUpdateReceiver($client);
         $count = 0;
         for ($i = 0; $i < 20; $i++) {
@@ -95,8 +71,7 @@ function session_enrollment_cron(): void
         }
         $logger->info('Cron: processed @n session_updated message(s).', ['@n' => $count]);
 
-        // 4. Process wallet_balance_update messages from Kassa and store balance per user (up to 20 per cron run).
-        // NOTE: badge_scanned is consumed by Kassa (kassa.incoming), NOT by Frontend — see contract §6.3.
+        // 3. Process wallet_balance_update messages from Kassa (up to 20 per cron run).
         $walletReceiver = new \Drupal\rabbitmq_receiver\WalletBalanceReceiver($client);
         $count = 0;
         for ($i = 0; $i < 20; $i++) {
@@ -106,34 +81,6 @@ function session_enrollment_cron(): void
             $count++;
         }
         $logger->info('Cron: processed @n wallet_balance_update message(s).', ['@n' => $count]);
-
-        // 6. Request a fresh session list from Planning — the response will be processed next cron run.
-        $viewSender = new \Drupal\rabbitmq_sender\SessionViewRequestSender($client);
-        $viewSender->send();
-        $logger->info('Cron: session_view_request sent to Planning.');
-
-        // 7. Process any pending user_sessions_response messages (up to 20 per cron run).
-        //    Responses are stored in Drupal state keyed by identity_uuid for use by MySessionsController.
-        $userSessionsReceiver = new \Drupal\rabbitmq_receiver\UserSessionsResponseReceiver($client);
-        $count = 0;
-        for ($i = 0; $i < 20; $i++) {
-            $result = $userSessionsReceiver->pollOnce();
-            if ($result === null) {
-                break;
-            }
-            // Store the result in Drupal state keyed by identity_uuid.
-            $identityUuid = $result['identity_uuid'] ?? '';
-            if ($identityUuid !== '') {
-                \Drupal::state()->set('user_sessions.' . $identityUuid, [
-                    'sessions'       => $result['sessions'],
-                    'status'         => $result['status'],
-                    'correlation_id' => $result['correlation_id'],
-                    'fetched_at'     => time(),
-                ]);
-            }
-            $count++;
-        }
-        $logger->info('Cron: processed @n user_sessions_response message(s).', ['@n' => $count]);
 
         $logger->info('Cron: RabbitMQ queue polling completed successfully.');
     } catch (\Throwable $e) {

@@ -36,6 +36,10 @@ class SessionEnrollForm extends FormBase
 
     public function buildForm(array $form, FormStateInterface $form_state): array
     {
+        // Fetch sessions on-demand: send request to Planning and poll for response.
+        // This avoids dependency on cron for showing available sessions.
+        $this->fetchSessionsFromPlanning();
+
         $options = $this->getSessionOptions();
 
         if (empty($options)) {
@@ -110,6 +114,33 @@ class SessionEnrollForm extends FormBase
         } catch (\Throwable $e) {
             $this->messenger()->addError($this->t('Enrollment failed: @error', ['@error' => $e->getMessage()]));
         }
+    }
+
+    /**
+     * Sends a session_view_request_all to Planning and polls for the response.
+     * Stores the result in Drupal state under 'planning.sessions'.
+     * Falls back to cached state if Planning does not respond in time.
+     */
+    private function fetchSessionsFromPlanning(): void
+    {
+        try {
+            $client = new \Drupal\rabbitmq_sender\RabbitMQClient();
+            $sender = new \Drupal\rabbitmq_sender\SessionViewRequestSender($client);
+            $sender->send(); // no session_id = session_view_request_all
+
+            $receiver = new \Drupal\rabbitmq_receiver\SessionViewResponseReceiver($client);
+            for ($i = 0; $i < 5; $i++) {
+                if ($receiver->pollOnce()) {
+                    return; // response received and stored in state
+                }
+            }
+        } catch (\Throwable $e) {
+            \Drupal::logger('session_enrollment')->warning(
+                'Could not fetch sessions from Planning: @error',
+                ['@error' => $e->getMessage()]
+            );
+        }
+        // Falls back to whatever is in state from a previous successful fetch.
     }
 
     /**
