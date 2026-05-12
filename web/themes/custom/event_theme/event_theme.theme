@@ -144,10 +144,15 @@ function event_theme_preprocess_page(array &$variables): void {
   // First name from profile field; fall back to display name.
   $fullUser = $account->isAuthenticated() ? \Drupal\user\Entity\User::load($account->id()) : null;
   $firstName = '';
+  $lastName = '';
   if ($fullUser && $fullUser->hasField('field_first_name')) {
     $firstName = (string) $fullUser->get('field_first_name')->value;
   }
+  if ($fullUser && $fullUser->hasField('field_last_name')) {
+    $lastName = (string) $fullUser->get('field_last_name')->value;
+  }
   $variables['current_first_name'] = $firstName ?: $account->getDisplayName();
+  $variables['current_full_name']  = trim("$firstName $lastName") ?: $account->getDisplayName();
 
   $isCompanyUser = false;
   if ($account->isAuthenticated()) {
