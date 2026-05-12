@@ -65,7 +65,7 @@
           {% if session.speaker %}
             <div class="session-speaker">
               <h3>{{ 'Speaker'|t }}</h3>
-              <p class="speaker-name">{{ session.speaker.first_name }} {{ session.speaker.last_name }}</p>
+              <p class="speaker-name">{{ [session.speaker.first_name, session.speaker.last_name]|join(' ')|trim }}</p>
               {% if session.speaker.organisation %}
                 <p class="speaker-organisation">{{ session.speaker.organisation }}</p>
               {% endif %}

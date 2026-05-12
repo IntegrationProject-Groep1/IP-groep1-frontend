@@ -99,7 +99,7 @@ class SessionUpdateRequestSender
             $body->appendChild($dom->createElement('current_attendees', (string) (int) $data['current_attendees']));
         }
         if (isset($data['price'])) {
-            $priceEl = $dom->createElement('price', number_format((float) $data['price'], 2, '.', ''));
+            $priceEl = $dom->createElement('price', number_format(is_numeric($data['price']) ? (float) $data['price'] : 0.0, 2, '.', ''));
             $priceEl->setAttribute('currency', 'eur');
             $body->appendChild($priceEl);
         }
