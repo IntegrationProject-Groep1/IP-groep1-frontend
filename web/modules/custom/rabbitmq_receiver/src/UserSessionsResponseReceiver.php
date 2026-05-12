@@ -86,20 +86,22 @@ class UserSessionsResponseReceiver
                 }
 
                 $sessions[] = [
-                    'session_id'      => $sessionId,
-                    'title'           => trim((string) $session->title),
-                    'description'     => trim((string) ($session->description ?? '')),
-                    'date'            => trim((string) $session->date),
-                    'end_date'        => trim((string) ($session->end_date ?? '')),
-                    'location'        => trim((string) ($session->location ?? '')),
-                    'session_type'    => trim((string) ($session->session_type ?? '')),
-                    'capacity'        => isset($session->capacity) ? (int) (string) $session->capacity : null,
-                    'enrolled_count'  => isset($session->enrolled_count) ? (int) (string) $session->enrolled_count : null,
-                    'status'          => trim((string) ($session->status ?? '')),
-                    'speaker'         => isset($session->speaker) ? [
-                        'name'         => trim((string) ($session->speaker->name ?? '')),
-                        'bio'          => trim((string) ($session->speaker->bio ?? '')),
-                        'organisation' => trim((string) ($session->speaker->organisation ?? '')),
+                    'session_id'        => $sessionId,
+                    'title'             => trim((string) $session->title),
+                    'start_datetime'    => trim((string) $session->start_datetime),
+                    'end_datetime'      => trim((string) $session->end_datetime),
+                    'location'          => trim((string) $session->location),
+                    'session_type'      => trim((string) $session->session_type),
+                    'status'            => trim((string) $session->status),
+                    'max_attendees'     => (int) (string) $session->max_attendees,
+                    'current_attendees' => (int) (string) $session->current_attendees,
+                    'price'             => isset($session->price) ? (float) (string) $session->price : null,
+                    'speaker'           => isset($session->speaker) ? [
+                        'identity_uuid' => trim((string) ($session->speaker->identity_uuid ?? '')),
+                        'first_name'    => trim((string) ($session->speaker->contact->first_name ?? '')),
+                        'last_name'     => trim((string) ($session->speaker->contact->last_name ?? '')),
+                        'organisation'  => trim((string) ($session->speaker->organisation ?? '')),
+                        'email'         => trim((string) ($session->speaker->email ?? '')),
                     ] : null,
                 ];
             }

@@ -11,7 +11,7 @@ namespace Drupal\rabbitmq_sender;
  *   Routing key: planning.session.update.request
  *
  * Required body fields: session_id, title, start_datetime, end_datetime
- * Optional body fields: location, session_type, status, max_attendees
+ * Optional body fields: location, session_type, status, max_attendees, current_attendees, price
  */
 class SessionUpdateRequestSender
 {
@@ -94,6 +94,14 @@ class SessionUpdateRequestSender
         }
         if (isset($data['max_attendees'])) {
             $body->appendChild($dom->createElement('max_attendees', (string) (int) $data['max_attendees']));
+        }
+        if (isset($data['current_attendees'])) {
+            $body->appendChild($dom->createElement('current_attendees', (string) (int) $data['current_attendees']));
+        }
+        if (isset($data['price'])) {
+            $priceEl = $dom->createElement('price', number_format((float) $data['price'], 2, '.', ''));
+            $priceEl->setAttribute('currency', 'eur');
+            $body->appendChild($priceEl);
         }
 
         $message->appendChild($body);
