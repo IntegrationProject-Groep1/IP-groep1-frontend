@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\session_management\Form;
 
-use Drupal\Core\Form\ConfirmFormBase;
+use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\rabbitmq_sender\SessionDeleteRequestSender;
@@ -15,11 +15,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * Sends a session_delete_request XML message via RabbitMQ.
  */
-class SessionDeleteForm extends ConfirmFormBase
+class SessionDeleteForm extends FormBase
 {
-    private ?array $session = null;
-    private string $sessionId = '';
-
     public function __construct(
         private readonly SessionDeleteRequestSender $deleteSender,
     ) {}
@@ -36,41 +33,23 @@ class SessionDeleteForm extends ConfirmFormBase
         return 'session_management_session_delete_form';
     }
 
-    public function getQuestion(): \Drupal\Core\StringTranslation\TranslatableMarkup
-    {
-        $title = $this->session['title'] ?? $this->sessionId;
-        return $this->t('Delete session "@title"?', ['@title' => $title]);
-    }
-
-    public function getDescription(): \Drupal\Core\StringTranslation\TranslatableMarkup
-    {
-        return $this->t('This will send a delete request to the Planning service. The action cannot be undone.');
-    }
-
-    public function getCancelUrl(): Url
-    {
-        return Url::fromRoute('session_management.admin');
-    }
-
-    public function getConfirmText(): \Drupal\Core\StringTranslation\TranslatableMarkup
-    {
-        return $this->t('Delete session');
-    }
-
     public function buildForm(array $form, FormStateInterface $form_state, string $session_id = ''): array
     {
-        $this->sessionId = $session_id;
-        $this->session   = $this->loadSession($session_id);
+        $form_state->set('session_id', $session_id);
+        $session = $this->loadSession($session_id);
+        $form_state->set('session', $session);
 
-        $form = parent::buildForm($form, $form_state);
-
-        if ($this->session !== null) {
+        if ($session !== null) {
             $form['session_info'] = [
-                '#type'   => 'markup',
-                '#markup' => $this->buildSessionSummaryHtml($this->session),
+                '#markup' => $this->buildSessionSummaryHtml($session),
                 '#weight' => -10,
             ];
         }
+
+        $form['warning'] = [
+            '#markup' => '<div class="admin-delete-warning"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg><p>' . $this->t('This will send a delete request to the Planning service. The action cannot be undone.') . '</p></div>',
+            '#weight' => -5,
+        ];
 
         $form['reason'] = [
             '#type'        => 'textfield',
@@ -80,14 +59,30 @@ class SessionDeleteForm extends ConfirmFormBase
             '#description' => $this->t('Optional. Will be included in the delete request to Planning.'),
         ];
 
-        $form['actions']['submit']['#attributes']['class'][] = 'button--danger';
+        $form['actions'] = ['#type' => 'actions'];
+
+        $form['actions']['submit'] = [
+            '#type'       => 'submit',
+            '#value'      => $this->t('Delete session'),
+            '#attributes' => ['class' => ['button', 'button--danger']],
+        ];
+
+        $form['actions']['cancel'] = [
+            '#type'       => 'link',
+            '#title'      => $this->t('Cancel'),
+            '#url'        => Url::fromRoute('session_management.admin'),
+            '#attributes' => ['class' => ['button', 'button--ghost']],
+        ];
 
         return $form;
     }
 
     public function submitForm(array &$form, FormStateInterface $form_state): void
     {
-        $data = ['session_id' => $this->sessionId];
+        $sessionId = (string) $form_state->get('session_id');
+        $session   = $form_state->get('session');
+
+        $data = ['session_id' => $sessionId];
 
         $reason = trim((string) $form_state->getValue('reason'));
         if ($reason !== '') {
@@ -96,14 +91,14 @@ class SessionDeleteForm extends ConfirmFormBase
 
         try {
             $this->deleteSender->send($data);
-            $title = $this->session['title'] ?? $this->sessionId;
+            $title = $session['title'] ?? $sessionId;
             $this->messenger()->addStatus($this->t('Session "@title" has been deleted and Planning has been notified.', [
                 '@title' => $title,
             ]));
 
-            // Remove from local state immediately so the table reflects the change.
+            // Remove from local state immediately for instant feedback.
             $sessions = \Drupal::state()->get('planning.sessions', []);
-            $sessions = array_values(array_filter($sessions, fn($s) => ($s['session_id'] ?? '') !== $this->sessionId));
+            $sessions = array_values(array_filter($sessions, fn($s) => ($s['session_id'] ?? '') !== $sessionId));
             \Drupal::state()->set('planning.sessions', $sessions);
         } catch (\InvalidArgumentException $e) {
             $this->messenger()->addError($e->getMessage());
