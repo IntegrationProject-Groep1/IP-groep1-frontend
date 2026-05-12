@@ -117,21 +117,39 @@ class SessionEnrollForm extends FormBase
     }
 
     /**
-     * Sends a session_view_request_all to Planning and polls for the response.
-     * Stores the result in Drupal state under 'planning.sessions'.
-     * Falls back to cached state if Planning does not respond in time.
+     * Fetches sessions from Planning on-demand.
+     *
+     * Strategy:
+     *  1. First drain any pending response already in the queue (from a previous page load).
+     *     Planning can take ~60 s to respond, so the response of the previous request is
+     *     likely waiting by the time the user refreshes.
+     *  2. Send a fresh request so the next page load also has up-to-date data.
+     *  3. Poll briefly in case Planning happens to respond quickly this time.
+     *
+     * Falls back to whatever is cached in Drupal state when no response arrives in time.
      */
     private function fetchSessionsFromPlanning(): void
     {
         try {
-            $client = new \Drupal\rabbitmq_sender\RabbitMQClient();
-            $sender = new \Drupal\rabbitmq_sender\SessionViewRequestSender($client);
-            $sender->send(); // no session_id = session_view_request_all
-
+            $client   = new \Drupal\rabbitmq_sender\RabbitMQClient();
             $receiver = new \Drupal\rabbitmq_receiver\SessionViewResponseReceiver($client);
+
+            // Step 1: pick up any response that is already waiting in the queue.
+            for ($i = 0; $i < 3; $i++) {
+                if ($receiver->pollOnce()) {
+                    // Got fresh data; send a new request for the next page load and return.
+                    (new \Drupal\rabbitmq_sender\SessionViewRequestSender($client))->send();
+                    return;
+                }
+            }
+
+            // Step 2: nothing pending – send a fresh request.
+            (new \Drupal\rabbitmq_sender\SessionViewRequestSender($client))->send();
+
+            // Step 3: poll a few more times in case Planning responds quickly.
             for ($i = 0; $i < 5; $i++) {
                 if ($receiver->pollOnce()) {
-                    return; // response received and stored in state
+                    return;
                 }
             }
         } catch (\Throwable $e) {
