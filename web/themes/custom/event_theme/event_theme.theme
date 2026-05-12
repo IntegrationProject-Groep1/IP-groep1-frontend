@@ -141,7 +141,7 @@ function event_theme_preprocess_page(array &$variables): void {
   $variables['is_admin']             = $account->hasPermission('administer site configuration');
   $variables['current_uid']          = $account->id();
   $variables['current_display_name'] = $account->getDisplayName();
-  // First name from profile field; fall back to display name.
+  // First/last name from profile fields; fall back to email-username (part before @).
   $fullUser = $account->isAuthenticated() ? \Drupal\user\Entity\User::load($account->id()) : null;
   $firstName = '';
   $lastName = '';
@@ -151,8 +151,9 @@ function event_theme_preprocess_page(array &$variables): void {
   if ($fullUser && $fullUser->hasField('field_last_name')) {
     $lastName = (string) $fullUser->get('field_last_name')->value;
   }
-  $variables['current_first_name'] = $firstName ?: $account->getDisplayName();
-  $variables['current_full_name']  = trim("$firstName $lastName") ?: $account->getDisplayName();
+  $emailFallback = ucwords(str_replace(['.', '_', '-'], ' ', strtok($account->getEmail() ?: $account->getDisplayName(), '@')));
+  $variables['current_first_name'] = $firstName ?: $emailFallback;
+  $variables['current_full_name']  = trim("$firstName $lastName") ?: $emailFallback;
 
   $isCompanyUser = false;
   if ($account->isAuthenticated()) {
