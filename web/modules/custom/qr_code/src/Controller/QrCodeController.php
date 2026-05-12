@@ -27,7 +27,7 @@ class QrCodeController extends ControllerBase
             ? (string) $fullUser->get('field_last_name')->value : '';
         $company   = $fullUser && $fullUser->hasField('field_company')
             ? (string) $fullUser->get('field_company')->value : '';
-        $displayName = trim("$firstName $lastName") ?: $this->currentUser()->getDisplayName();
+        $displayName = trim("$firstName $lastName") ?: '—';
         $roleLabel   = $company ?: (string) $this->t('Deelnemer');
 
         $e = fn(string $v): string => htmlspecialchars($v, ENT_HTML5, 'UTF-8');
