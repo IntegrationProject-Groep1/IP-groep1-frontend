@@ -109,7 +109,8 @@ class SessionCreatedReceiver
             false,
             function (AMQPMessage $msg): void {
                 try {
-                    $this->processMessageFromXml($msg->body);
+                    $session = $this->processMessageFromXml($msg->body);
+                    $this->upsertSessionInState($session);
                     $msg->ack();
                 } catch (\Throwable $e) {
                     $this->logReceiverError($e, self::QUEUE, $msg->body);
@@ -145,6 +146,8 @@ class SessionCreatedReceiver
     /**
      * Poll the session_created queue once (non-blocking) and process any waiting message.
      *
+     * Upserts the session into planning.sessions state so the enrollment form
+     * has a populated session cache after cron runs.
      * Returns true when a message was processed, false when the queue was empty.
      */
     public function pollOnce(): bool
@@ -167,7 +170,8 @@ class SessionCreatedReceiver
         }
 
         try {
-            $this->processMessageFromXml($msg->body);
+            $session = $this->processMessageFromXml($msg->body);
+            $this->upsertSessionInState($session);
             $msg->ack();
         } catch (\Throwable $e) {
             $this->logReceiverError($e, self::QUEUE, $msg->body);
@@ -175,5 +179,27 @@ class SessionCreatedReceiver
         }
 
         return true;
+    }
+
+    /**
+     * Upserts a session into the planning.sessions Drupal state array.
+     * Replaces an existing entry with the same session_id, or appends a new one.
+     */
+    private function upsertSessionInState(array $session): void
+    {
+        $sessions = \Drupal::state()->get('planning.sessions', []);
+        $found = false;
+        foreach ($sessions as &$existing) {
+            if ($existing['session_id'] === $session['session_id']) {
+                $existing = $session;
+                $found = true;
+                break;
+            }
+        }
+        unset($existing);
+        if (!$found) {
+            $sessions[] = $session;
+        }
+        \Drupal::state()->set('planning.sessions', $sessions);
     }
 }
