@@ -27,9 +27,16 @@ class SessionViewRequestSenderTest extends TestCase
         $this->assertStringNotContainsString('xmlns=', $xml);
     }
 
-    public function test_buildXml_contains_correct_type(): void
+    public function test_buildXml_contains_correct_type_for_all_sessions(): void
     {
         $xml = $this->sender->buildXml();
+
+        $this->assertStringContainsString('<type>session_view_request_all</type>', $xml);
+    }
+
+    public function test_buildXml_contains_correct_type_for_single_session(): void
+    {
+        $xml = $this->sender->buildXml(['session_id' => 'sess-uuid-001']);
 
         $this->assertStringContainsString('<type>session_view_request</type>', $xml);
     }

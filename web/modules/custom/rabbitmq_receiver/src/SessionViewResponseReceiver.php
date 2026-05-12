@@ -76,6 +76,7 @@ class SessionViewResponseReceiver
                     'status'            => trim((string) $session->status),
                     'max_attendees'     => (int) (string) $session->max_attendees,
                     'current_attendees' => (int) (string) $session->current_attendees,
+                    'price'             => isset($session->price) ? (float) (string) $session->price : null,
                     'speaker'           => isset($session->speaker) ? [
                         'identity_uuid' => trim((string) ($session->speaker->identity_uuid ?? '')),
                         'first_name'    => trim((string) ($session->speaker->contact->first_name ?? '')),
