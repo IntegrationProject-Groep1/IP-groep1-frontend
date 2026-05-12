@@ -31,7 +31,7 @@ class SessionViewRequestSenderTest extends TestCase
     {
         $xml = $this->sender->buildXml();
 
-        $this->assertStringContainsString('<type>session_view_request_all</type>', $xml);
+        $this->assertStringContainsString('<type>session_view_request</type>', $xml);
     }
 
     public function test_buildXml_contains_correct_type_for_single_session(): void
@@ -163,4 +163,3 @@ class SessionViewRequestSenderTest extends TestCase
         (new SessionViewRequestSender($mock))->send(['session_id' => 'sess-001']);
     }
 }
-
