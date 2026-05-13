@@ -18,10 +18,26 @@
     <div>
       <h1>{{ 'The programme'|t }}</h1>
       {% if sessions_full %}
-        <p>{{ '@count sessions available. Select the ones you want to attend and click Enroll.'|t({'@count': sessions_full|length}) }}</p>
+        <p>{{ '@count sessions across three days. Filter, search, and enrol — drop sessions any time before the festival starts.'|t({'@count': sessions_full|length}) }}</p>
       {% else %}
         <p>{{ 'Select one or more sessions you want to attend.'|t }}</p>
       {% endif %}
+    </div>
+    <div class="sessions-tools">
+      <div class="search">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input type="text" id="session-search" placeholder="{{ 'Search talks, speakers, or rooms...'|t }}" autocomplete="off">
+      </div>
+      <div class="chip-row" id="chip-row">
+        <button type="button" class="chip is-on" data-filter="all">{{ 'All'|t }}</button>
+        <button type="button" class="chip" data-filter="keynote">{{ 'Keynote'|t }}</button>
+        <button type="button" class="chip" data-filter="workshop">{{ 'Workshop'|t }}</button>
+        <button type="button" class="chip" data-filter="talk">{{ 'Talk'|t }}</button>
+        <button type="button" class="chip" data-filter="panel">{{ 'Panel'|t }}</button>
+        <button type="button" class="chip" data-filter="reception">{{ 'Reception'|t }}</button>
+      </div>
     </div>
   </div>
 
@@ -72,19 +88,27 @@
 
           {% set is_full = session.max_attendees > 0 and session.current_attendees >= session.max_attendees %}
 
-          <article class="session-card{% if is_full %} session-card-full{% endif %}">
+          {% set is_enrolled = session.status == 'enrolled' or session.status == 'confirmed' %}
+
+          <article class="session-card{% if is_full %} session-card-full{% endif %}"
+                   data-type="{{ session.session_type|lower }}"
+                   data-title="{{ session.title|lower }}"
+                   data-speaker="{% if session.speaker %}{{ [session.speaker.first_name, session.speaker.last_name]|join(' ')|lower }}{% endif %}"
+                   data-location="{{ session.location|lower }}">
 
             {# Time column #}
             <div class="session-time-col">
               {% if session.start_datetime %}
                 {% set start_parts = session.start_datetime|split('T') %}
-                {% set date_part = start_parts[0] ?? session.start_datetime %}
-                {% set time_part = (start_parts[1] ?? '')|split(':')|slice(0,2)|join(':') %}
-                <span class="session-day">{{ date_part }}</span>
-                <span class="session-hour">{{ time_part }}</span>
+                {% set date_str = start_parts[0] ?? '' %}
+                {% set time_str = (start_parts[1] ?? '')|split(':')|slice(0,2)|join(':') %}
+                {# Format date as "TUE 12 MAY" #}
+                <span class="session-day">{{ date_str }}</span>
+                <span class="session-hour">{{ time_str }}</span>
               {% endif %}
-              {% if session.session_type %}
-                <span class="session-dur">{{ session.session_type }}</span>
+              {% if session.duration_minutes is defined and session.duration_minutes %}
+                {% set dur = session.duration_minutes %}
+                <span class="session-dur">{{ dur >= 60 ? (dur // 60) ~ ' hr' : dur ~ ' min' }}</span>
               {% endif %}
             </div>
 
@@ -94,12 +118,17 @@
                 {% if session.session_type %}
                   <span class="tag tag-{{ type_tone }}">{{ session.session_type }}</span>
                 {% endif %}
-                {% if session.status and session.status != 'open' %}
-                  <span class="tag">{{ session.status }}</span>
+                {% if is_enrolled %}
+                  <span class="tag tag-ok">{{ 'enrolled'|t }}</span>
                 {% endif %}
               </div>
 
-              <h3>{{ session.title }}</h3>
+              {% if session.description %}
+                <h3 title="{{ session.description }}">{{ session.title }}</h3>
+                <p class="session-desc">{{ session.description|slice(0, 120) }}{% if session.description|length > 120 %}…{% endif %}</p>
+              {% else %}
+                <h3>{{ session.title }}</h3>
+              {% endif %}
 
               <div class="session-foot">
                 {% if session.speaker %}
@@ -120,9 +149,6 @@
                     {{ session.location }}
                   </span>
                 {% endif %}
-                {% if session.price is not null %}
-                  <span>€{{ session.price|number_format(2) }}</span>
-                {% endif %}
               </div>
             </div>
 
@@ -135,7 +161,7 @@
                   </div>
                   <div class="capacity-meta">
                     <span>{{ session.current_attendees }}&thinsp;/&thinsp;{{ session.max_attendees }}</span>
-                    <span class="capacity-pct">{{ pct }}%</span>
+                    <span class="capacity-pct">{{ pct }}%{{ pct >= 95 ? ' full' : '' }}</span>
                   </div>
                 </div>
               {% endif %}
@@ -144,8 +170,11 @@
                 <span class="btn btn-ghost btn-sm btn-full" style="text-align:center;cursor:not-allowed;opacity:.55;">
                   {{ 'Full'|t }}
                 </span>
+              {% elseif is_enrolled %}
+                <div class="session-checkbox-wrap">
+                  {{ form.session_ids[sid] }}
+                </div>
               {% else %}
-                {# Render individual checkbox for this session #}
                 <div class="session-checkbox-wrap">
                   {{ form.session_ids[sid] }}
                 </div>
@@ -165,3 +194,41 @@
 
   </form>
 </div>
+
+<script>
+(function() {
+  var search  = document.getElementById('session-search');
+  var chipRow = document.getElementById('chip-row');
+  var cards   = document.querySelectorAll('.session-card');
+  var activeFilter = 'all';
+
+  function filterCards() {
+    var q = search ? search.value.toLowerCase() : '';
+    cards.forEach(function(card) {
+      var type    = (card.dataset.type    || '').toLowerCase();
+      var title   = (card.dataset.title   || '').toLowerCase();
+      var speaker = (card.dataset.speaker || '').toLowerCase();
+      var loc     = (card.dataset.location|| '').toLowerCase();
+      var matchFilter = activeFilter === 'all' || type === activeFilter;
+      var matchSearch = !q || title.indexOf(q) > -1 || speaker.indexOf(q) > -1 || loc.indexOf(q) > -1;
+      card.style.display = (matchFilter && matchSearch) ? '' : 'none';
+    });
+  }
+
+  if (search) {
+    search.addEventListener('input', filterCards);
+  }
+
+  if (chipRow) {
+    chipRow.addEventListener('click', function(e) {
+      var btn = e.target.closest('.chip');
+      if (!btn) return;
+      chipRow.querySelectorAll('.chip').forEach(function(c) { c.classList.remove('is-on'); });
+      btn.classList.add('is-on');
+      activeFilter = btn.dataset.filter;
+      filterCards();
+    });
+  }
+})();
+</script>
+

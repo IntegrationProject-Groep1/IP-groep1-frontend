@@ -90,17 +90,12 @@
                         {% if s.speaker.organisation %}· {{ s.speaker.organisation }}{% endif %}
                       </span>
                     {% endif %}
-                    {% if s.price is not null %}
-                      <span>€{{ s.price|number_format(2) }}</span>
-                    {% endif %}
                   </div>
                 </div>
 
-                {% if s.status %}
-                  <span class="tag tag-{{ s.status == 'confirmed' ? 'ok' : (s.status == 'cancelled' ? 'hot' : 'neutral') }}">
-                    {{ s.status }}
-                  </span>
-                {% endif %}
+                <a href="/sessions/enroll" class="btn btn-ghost btn-sm schedule-drop-btn">
+                  {{ 'Drop'|t }}
+                </a>
               </div>
             {% endfor %}
           </div>

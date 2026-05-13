@@ -37,38 +37,45 @@
         {% if qr_url %}
           <a href="{{ qr_url }}" class="shell-nav-item">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v3M14 19v2M17 21h4M19 17v0"/></svg>
-            <span>{{ 'Mijn Badge'|t }}</span>
+            <span>{{ 'My Badge'|t }}</span>
           </a>
         {% endif %}
 
         {% if nav_show_enroll and enroll_url %}
           <a href="{{ enroll_url }}" class="shell-nav-item">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-            <span>{{ 'Sessies'|t }}</span>
+            <span>{{ 'Browse Sessions'|t }}</span>
           </a>
         {% endif %}
 
         {% if my_sessions_url %}
           <a href="{{ my_sessions_url }}" class="shell-nav-item">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 12l2 2 4-4"/></svg>
-            <span>{{ 'Mijn sessies'|t }}</span>
+            <span>{{ 'My Sessions'|t }}</span>
+          </a>
+        {% endif %}
+
+        {% if wallet_url %}
+          <a href="{{ wallet_url }}" class="shell-nav-item">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M16 14h.01"/></svg>
+            <span>{{ 'Wallet'|t }}</span>
           </a>
         {% endif %}
       </div>
 
       {% if is_company_user or is_admin %}
         <div class="shell-nav-group">
-          <div class="shell-nav-label">{{ 'Beheer'|t }}</div>
-          {% if is_company_user and invite_url %}
-            <a href="{{ invite_url }}" class="shell-nav-item">
-              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              <span>{{ 'Team & Uitnodigingen'|t }}</span>
-            </a>
-          {% endif %}
+          <div class="shell-nav-label">{{ 'Company Admin'|t }}</div>
           {% if is_admin and session_admin_url %}
             <a href="{{ session_admin_url }}" class="shell-nav-item">
               <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09c0 .68.41 1.29 1.03 1.56a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.27.62.88 1.03 1.56 1.03H21a2 2 0 1 1 0 4h-.09c-.68 0-1.29.41-1.51 1z"/></svg>
-              <span>{{ 'Sessies beheren'|t }}</span>
+              <span>{{ 'Manage Sessions'|t }}</span>
+            </a>
+          {% endif %}
+          {% if is_company_user and invite_url %}
+            <a href="{{ invite_url }}" class="shell-nav-item">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <span>{{ 'Team &amp; Invites'|t }}</span>
             </a>
           {% endif %}
         </div>

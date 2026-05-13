@@ -195,6 +195,7 @@ function event_theme_preprocess_page(array &$variables): void {
     'session_create_url' => 'session_management.create',
     'session_end_url'    => 'session_management.end',
     'register_url'       => 'registration_form.register',
+    'wallet_url'         => 'wallet.page',
   ];
   foreach ($safeRoutes as $varName => $routeName) {
     try {
