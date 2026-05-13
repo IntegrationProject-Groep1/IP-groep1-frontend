@@ -35,8 +35,8 @@
         {{ 'Team'|t }}
       </a>
     {% endif %}
-    {% if is_admin and session_create_url %}
-      <a href="{{ session_create_url }}" class="sf-nav-link">{{ 'Sessie aanmaken'|t }}</a>
+    {% if is_admin and session_admin_url %}
+      <a href="{{ session_admin_url }}" class="sf-nav-link {{ current_route starts with 'session_management' ? 'is-active' : '' }}">{{ 'Sessies beheren'|t }}</a>
     {% endif %}
     {% if is_admin and session_end_url %}
       <a href="{{ session_end_url }}" class="sf-nav-link">{{ 'Sessie beëindigen'|t }}</a>
@@ -131,8 +131,8 @@
   {% if logged_in and is_company_user and invite_url %}
     <a href="{{ invite_url }}" class="sf-nav-link">{{ 'Team'|t }}</a>
   {% endif %}
-  {% if is_admin and session_create_url %}
-    <a href="{{ session_create_url }}" class="sf-nav-link">{{ 'Sessie aanmaken'|t }}</a>
+  {% if is_admin and session_admin_url %}
+    <a href="{{ session_admin_url }}" class="sf-nav-link">{{ 'Sessies beheren'|t }}</a>
   {% endif %}
   {% if is_admin and session_end_url %}
     <a href="{{ session_end_url }}" class="sf-nav-link">{{ 'Sessie beëindigen'|t }}</a>
