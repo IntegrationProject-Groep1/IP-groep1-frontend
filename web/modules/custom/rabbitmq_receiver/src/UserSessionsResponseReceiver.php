@@ -145,6 +145,7 @@ class UserSessionsResponseReceiver
 
         try {
             $result = $this->processMessageFromXml($msg->body);
+            $this->storeResult($result);
             $msg->ack();
             return $result;
         } catch (\Throwable $e) {
