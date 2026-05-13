@@ -9,7 +9,8 @@
     - form.submit            : submit button
 #}
 
-{% set sessions_full = form['#sessions_full'] ?? [] %}
+{# sessions_full is injected by event_theme_preprocess_form(); fall back to the form element property #}
+{% set sessions_full = sessions_full is defined ? sessions_full : (form['#sessions_full'] ?? []) %}
 
 <div class="sessions-page">
 
