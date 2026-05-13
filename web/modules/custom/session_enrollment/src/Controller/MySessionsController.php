@@ -61,11 +61,10 @@ class MySessionsController extends ControllerBase
             ];
         }
 
-        // Send a fresh user_sessions_request.
-        $correlationId = $this->sendRequest($identityUuid);
-
-        // Poll for the response.
-        $sessions = $this->pollForResponse($identityUuid, $correlationId);
+        // Pre-drain strategy (same pattern as SessionEnrollForm):
+        // Planning takes ~60s to respond, so the response from the previous page load
+        // is likely already waiting in the queue by the time the user refreshes.
+        $sessions = $this->fetchSessions($identityUuid);
 
         return [
             '#theme'             => 'my_sessions',
@@ -111,46 +110,25 @@ class MySessionsController extends ControllerBase
     }
 
     /**
-     * Send a user_sessions_request and return the correlation_id.
-     */
-    private function sendRequest(string $identityUuid): string
-    {
-        try {
-            $client = new RabbitMQClient(
-                (string) (getenv('RABBITMQ_HOST') ?: 'rabbitmq_broker'),
-                (int)    (getenv('RABBITMQ_PORT') ?: 5672),
-                (string) (getenv('RABBITMQ_USER') ?: 'guest'),
-                (string) (getenv('RABBITMQ_PASS') ?: 'guest'),
-                (string) (getenv('RABBITMQ_VHOST') ?: '/')
-            );
-            $sender = new UserSessionsRequestSender($client);
-            return $sender->send($identityUuid);
-        } catch (\Throwable $e) {
-            \Drupal::logger('session_enrollment')->error(
-                'Failed to send user_sessions_request: @error',
-                ['@error' => $e->getMessage()]
-            );
-            return '';
-        }
-    }
-
-    /**
-     * Poll the user_sessions_response queue and return the session list.
+     * Pre-drain strategy for fetching user sessions from Planning.
      *
-     * Tries up to MAX_POLL_ATTEMPTS times (non-blocking basic_get).
-     * Accepts the first response that arrives, regardless of correlation_id,
-     * because the dedicated queue is per-frontend and responses arrive in order.
+     * Planning takes ~60s to respond. By the time the user revisits the page,
+     * the response from the previous request is likely already waiting in the queue.
      *
-     * Falls back to the last cached result in Drupal state if no live response comes.
+     * Strategy:
+     *  1. Drain ALL pending responses from the queue (each stored under its own identity_uuid).
+     *  2. If a response for THIS user arrived → send a fresh request for next load, return cached data.
+     *  3. If nothing for this user → send a fresh request, poll a few more times.
+     *  4. Always fall back to whatever is in Drupal state from a previous successful fetch.
      *
      * @return list<array<string,mixed>>
      */
-    private function pollForResponse(string $identityUuid, string $correlationId): array
+    private function fetchSessions(string $identityUuid): array
     {
         $stateKey = 'user_sessions.' . $identityUuid;
 
         try {
-            $client = new RabbitMQClient(
+            $client   = new RabbitMQClient(
                 (string) (getenv('RABBITMQ_HOST') ?: 'rabbitmq_broker'),
                 (int)    (getenv('RABBITMQ_PORT') ?: 5672),
                 (string) (getenv('RABBITMQ_USER') ?: 'guest'),
@@ -158,28 +136,46 @@ class MySessionsController extends ControllerBase
                 (string) (getenv('RABBITMQ_VHOST') ?: '/')
             );
             $receiver = new UserSessionsResponseReceiver($client);
+            $sender   = new UserSessionsRequestSender($client);
 
+            // Step 1: drain all pending responses (stores each under its own identity_uuid key).
+            $gotOwnResponse = false;
+            for ($i = 0; $i < 10; $i++) {
+                $result = $receiver->pollOnce();
+                if ($result === null) {
+                    break;
+                }
+                // storeResult is called inside pollOnce already; check if it's ours.
+                if (($result['identity_uuid'] ?? '') === $identityUuid) {
+                    $gotOwnResponse = true;
+                }
+            }
+
+            if ($gotOwnResponse) {
+                // Got fresh data — send a new request for the next page load.
+                $sender->send($identityUuid);
+                $cached = \Drupal::state()->get($stateKey, []);
+                return (array) ($cached['sessions'] ?? []);
+            }
+
+            // Step 2: nothing for this user yet — send a fresh request.
+            $sender->send($identityUuid);
+
+            // Step 3: poll briefly in case Planning responds quickly.
             for ($i = 0; $i < self::MAX_POLL_ATTEMPTS; $i++) {
                 $result = $receiver->pollOnce();
-                if ($result !== null) {
-                    // Store for later (cron + cache fallback).
-                    \Drupal::state()->set($stateKey, [
-                        'sessions'       => $result['sessions'],
-                        'status'         => $result['status'],
-                        'correlation_id' => $result['correlation_id'],
-                        'fetched_at'     => time(),
-                    ]);
+                if ($result !== null && ($result['identity_uuid'] ?? '') === $identityUuid) {
                     return $result['sessions'];
                 }
             }
         } catch (\Throwable $e) {
-            \Drupal::logger('session_enrollment')->error(
-                'Failed to poll user_sessions_response: @error',
+            \Drupal::logger('session_enrollment')->warning(
+                'Could not fetch user sessions from Planning: @error',
                 ['@error' => $e->getMessage()]
             );
         }
 
-        // Fall back to cached sessions from the last successful fetch.
+        // Fall back to whatever is in state from a previous successful fetch.
         $cached = \Drupal::state()->get($stateKey, []);
         return (array) ($cached['sessions'] ?? []);
     }
