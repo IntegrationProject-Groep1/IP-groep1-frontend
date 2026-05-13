@@ -2,16 +2,16 @@ company_invite.invite_form:
   path: '/company/invite'
   defaults:
     _controller: '\Drupal\company_invite\Controller\InviteDashboardController::page'
-    _title: 'Team members'
+    _title: 'Team & Invites'
   requirements:
-    _role: 'company_admin'
+    _role: 'authenticated'
 
 company_invite.delete_invite:
   path: '/company/invite/{token}/delete'
   defaults:
     _controller: '\Drupal\company_invite\Controller\InviteDeleteController::delete'
   requirements:
-    _role: 'company_admin'
+    _role: 'authenticated'
     token: '[a-f0-9]{64}'
 
 company_invite.register_invited:
