@@ -165,7 +165,6 @@ class RegistrationService
             ]);
         }
     }
-}
 
     private function validateRegistrationInput(array $data): void
     {
