@@ -4,7 +4,16 @@
   Uitgelogd → alleen {{ page.content }} (login/register hebben eigen auth-wrap)
 #}
 
-{% if logged_in %}
+{# Auth-pagina's (login/register) tonen altijd hun eigen auth-wrap, nooit de shell #}
+{% set is_auth_page = current_route in [
+  'registration_form.register',
+  'user.login',
+  'user.register',
+  'user.pass',
+  'user.reset',
+] %}
+
+{% if logged_in and not is_auth_page %}
 
   {# ════════════════════════════════════ AUTHENTICATED SHELL ════ #}
   <div class="shell">
@@ -49,9 +58,17 @@
 
           {% if nav_show_enroll and enroll_url %}
             <a href="{{ enroll_url }}"
-               class="shell-nav-item {{ current_route starts with 'session_enrollment' ? 'is-active' : '' }}">
+               class="shell-nav-item {{ current_route == 'session_enrollment.enroll' ? 'is-active' : '' }}">
               <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
               <span>{{ 'Sessies'|t }}</span>
+            </a>
+          {% endif %}
+
+          {% if my_sessions_url %}
+            <a href="{{ my_sessions_url }}"
+               class="shell-nav-item {{ current_route == 'session_enrollment.my_sessions' ? 'is-active' : '' }}">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 12l2 2 4-4"/></svg>
+              <span>{{ 'Mijn sessies'|t }}</span>
             </a>
           {% endif %}
         </div>
@@ -102,12 +119,13 @@
       <div class="shell-topbar">
         <div class="shell-crumbs">
           {% set route_labels = {
-            'qr_code.page':             'Mijn Badge',
-            'session_enrollment.enroll':'Sessies',
-            'company_invite.invite_form':'Team & Uitnodigingen',
-            'session_management.admin': 'Sessies beheren',
-            'session_management.end':   'Sessie beëindigen',
-            'entity.user.edit_form':    'Mijn gegevens',
+            'qr_code.page':                  'Mijn Badge',
+            'session_enrollment.enroll':     'Sessies',
+            'session_enrollment.my_sessions':'Mijn sessies',
+            'company_invite.invite_form':    'Team & Uitnodigingen',
+            'session_management.admin':      'Sessies beheren',
+            'session_management.end':        'Sessie beëindigen',
+            'entity.user.edit_form':         'Mijn gegevens',
           } %}
           {{ route_labels[current_route] ?? 'Dashboard' }}
         </div>

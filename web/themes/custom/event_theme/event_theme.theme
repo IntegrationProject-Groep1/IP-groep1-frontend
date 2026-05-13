@@ -174,13 +174,14 @@ function event_theme_preprocess_page(array &$variables): void {
   // Generate URLs safely — routes may not exist if a module is not installed.
   $urlGenerator = \Drupal::urlGenerator();
   $safeRoutes = [
-    'qr_url'          => 'qr_code.page',
-    'enroll_url'      => 'session_enrollment.enroll',
-    'invite_url'      => 'company_invite.invite_form',
+    'qr_url'             => 'qr_code.page',
+    'enroll_url'         => 'session_enrollment.enroll',
+    'my_sessions_url'    => 'session_enrollment.my_sessions',
+    'invite_url'         => 'company_invite.invite_form',
     'session_admin_url'  => 'session_management.admin',
     'session_create_url' => 'session_management.create',
     'session_end_url'    => 'session_management.end',
-    'register_url'    => 'registration_form.register',
+    'register_url'       => 'registration_form.register',
   ];
   foreach ($safeRoutes as $varName => $routeName) {
     try {

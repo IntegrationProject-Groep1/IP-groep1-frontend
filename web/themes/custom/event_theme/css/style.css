@@ -1458,6 +1458,9 @@ h1.page-title, .page-title {
 }
 .icon-btn:hover { background: var(--surface); border-color: var(--ink); }
 
+/* Auth form grid (gebruikt in login & registratie form) */
+.auth-form-grid { display: flex; flex-direction: column; gap: 18px; }
+
 /* Auth back link */
 .auth-back {
   display: inline-flex; align-items: center; gap: 6px;
