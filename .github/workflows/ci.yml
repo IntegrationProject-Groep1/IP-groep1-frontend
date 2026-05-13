@@ -31,6 +31,7 @@ jobs:
       DRUPAL_DB_ROOT_PASS: root_pass
       DRUPAL_DB_HOST: frontend_db
       FRONTEND_HTTP_PORT: 8080
+      COMPOSER_AUTH: '{}'
 
     steps:
       - name: Checkout repository
