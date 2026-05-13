@@ -110,6 +110,19 @@ function event_theme_preprocess_html(array &$variables): void {
     ['#type' => 'html_tag', '#tag' => 'link', '#attributes' => ['rel' => 'stylesheet', 'href' => 'https://fonts.googleapis.com/css2?family=' . $fontQuery . '&display=swap']],
     'gf_stylesheet',
   ];
+
+  // Add body class for auth routes so CSS can suppress Drupal page-title blocks.
+  $authRoutes = [
+    'user.login',
+    'user.register',
+    'user.pass',
+    'user.reset',
+    'registration_form.register',
+  ];
+  $currentRoute = \Drupal::routeMatch()->getRouteName() ?? '';
+  if (in_array($currentRoute, $authRoutes, true)) {
+    $variables['attributes']['class'][] = 'is-auth-page';
+  }
 }
 
 /**

@@ -1609,3 +1609,65 @@ h1.page-title, .page-title {
   .wallet-grid { grid-template-columns: 1fr; }
   .wallet-quick { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ─ Auth pages: suppress Drupal chrome, let auth-wrap own the full viewport ─ */
+
+/* body gets .is-auth-page from event_theme_preprocess_html() */
+body.is-auth-page {
+  display: block; /* override Tailwind's flex-column on body */
+}
+
+/* Hide Drupal's page title block and breadcrumb on auth pages */
+body.is-auth-page .block-page-title-block,
+body.is-auth-page .block-system-breadcrumb-block,
+body.is-auth-page .block-breadcrumb {
+  display: none !important;
+}
+
+/* Make the main content block transparent so auth-wrap fills the viewport */
+body.is-auth-page .block-system-main-block {
+  display: contents;
+}
+
+/* Make sure auth-wrap fills the full screen height */
+body.is-auth-page .auth-wrap {
+  min-height: 100vh;
+}
+
+/* Drupal submit buttons in auth forms: full-width, large, dark */
+body.is-auth-page input[type="submit"],
+body.is-auth-page .button,
+body.is-auth-page .button--primary {
+  width: 100%;
+  padding: 13px 22px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font);
+  background: var(--ink);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background .15s;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+body.is-auth-page input[type="submit"]:hover,
+body.is-auth-page .button:hover,
+body.is-auth-page .button--primary:hover {
+  background: var(--ink-2);
+}
+
+/* Auth sidebar bullet list: add check icon via ::before */
+.auth-side-body li::before {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%230e7c66' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: contain;
+}
