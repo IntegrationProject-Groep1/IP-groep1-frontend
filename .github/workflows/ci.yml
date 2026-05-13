@@ -44,6 +44,9 @@ jobs:
           extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, simplexml
           coverage: none
 
+      - name: Remove Composer GitHub auth
+        run: composer config --global --unset github-oauth.github.com || true
+
       - name: Validate composer.json
         run: composer validate --no-check-publish
 
