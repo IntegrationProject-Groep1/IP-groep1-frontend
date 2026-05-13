@@ -1610,6 +1610,12 @@ h1.page-title, .page-title {
   .wallet-quick { grid-template-columns: repeat(3, 1fr); }
 }
 
+/* ─ Auth pages: layout lives in page.html.twig, suppress Drupal chrome ─ */
+
+/* Forms inside auth-form-inner get the form-grid treatment even when form template isn't used */
+.auth-form-inner > .block-system-main-block { display: contents; }
+.auth-form-inner form { display: flex; flex-direction: column; gap: 18px; }
+
 /* ─ Auth pages: suppress Drupal chrome, let auth-wrap own the full viewport ─ */
 
 /* body gets .is-auth-page from event_theme_preprocess_html() */

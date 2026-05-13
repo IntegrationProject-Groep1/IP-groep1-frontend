@@ -1,155 +1,65 @@
 {#
   form--registration-form.html.twig
-  Shift Festival 2026 registratiepagina met auth-wrap layout (sidebar + formulier).
+  Rendert alleen het formulier; de auth-wrap layout staat in page.html.twig.
 #}
 
-<div class="auth-wrap">
+{% if message %}
+  <div style="margin-bottom:16px;">{{ message }}</div>
+{% endif %}
 
-  {# ── Dark sidebar ── #}
-  <aside class="auth-side">
-    <div class="auth-side-top">
-      <a href="{{ path('<front>') }}" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;">
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-          <rect x="2" y="2" width="24" height="24" rx="7" fill="white"/>
-          <path d="M9 18.5L14 9.5L19 18.5" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="14" cy="14" r="1.6" fill="var(--accent)"/>
-        </svg>
-        <span style="font-weight:700;font-size:16px;color:white;">Shift Festival</span>
-      </a>
-    </div>
+<form{{ attributes }} class="form-grid">
+  {{ form.form_build_id }}
+  {{ form.form_token }}
+  {{ form.form_id }}
 
-    <div class="auth-side-body">
-      <h2>{{ 'Haal je festivalbadge op.'|t }}</h2>
-      <p>{{ 'Twee minuten. Na registratie ontvang je een digitale badge met een QR-code — zo check je in aan de deur, aan de bar en bij elke sessie.'|t }}</p>
-      <ul>
-        <li>{{ 'Reserveer je plek in 84 sessies'|t }}</li>
-        <li>{{ 'Laad een digitale wallet op voor eten, drinken en merch'|t }}</li>
-        <li>{{ 'Nodig tot 20 collega\'s uit als bedrijfsdeelnemer'|t }}</li>
-      </ul>
-    </div>
+  <div class="row-2">
+    <div>{{ form.first_name }}</div>
+    <div>{{ form.last_name }}</div>
+  </div>
 
-    <div class="auth-side-foot">
-      <div class="badge-mini">
-        <div class="badge-mini-top">
-          <span>SHIFT · 2026</span>
-          <span>12 – 14 MEI</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:12px;">
-          <svg width="56" height="56" viewBox="0 0 56 56" fill="none" style="background:white;padding:4px;border-radius:6px;" aria-hidden="true">
-            <rect width="56" height="56" fill="white"/>
-            <rect x="4" y="4" width="14" height="14" rx="2" fill="var(--ink)"/>
-            <rect x="6" y="6" width="10" height="10" rx="1" fill="white"/>
-            <rect x="8" y="8" width="6" height="6" fill="var(--ink)"/>
-            <rect x="38" y="4" width="14" height="14" rx="2" fill="var(--ink)"/>
-            <rect x="40" y="6" width="10" height="10" rx="1" fill="white"/>
-            <rect x="42" y="8" width="6" height="6" fill="var(--ink)"/>
-            <rect x="4" y="38" width="14" height="14" rx="2" fill="var(--ink)"/>
-            <rect x="6" y="40" width="10" height="10" rx="1" fill="white"/>
-            <rect x="8" y="42" width="6" height="6" fill="var(--ink)"/>
-            <rect x="22" y="22" width="4" height="4" fill="var(--accent)"/>
-            <rect x="28" y="22" width="4" height="4" fill="var(--ink)"/>
-            <rect x="34" y="22" width="4" height="4" fill="var(--ink)"/>
-            <rect x="22" y="28" width="4" height="4" fill="var(--ink)"/>
-            <rect x="34" y="28" width="4" height="4" fill="var(--ink)"/>
-          </svg>
-          <div>
-            <div class="badge-mini-name">Shift Festival</div>
-            <div class="badge-mini-role">Deelnemer 2026</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </aside>
+  <div>{{ form.email }}</div>
 
-  {# ── Form pane ── #}
-  <main class="auth-form-pane">
-    <div class="auth-form-inner">
-      <a href="{{ path('<front>') }}" class="auth-back">
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-        </svg>
-        {{ 'Terug'|t }}
-      </a>
+  {% if form.pass is defined %}
+    <div>{{ form.pass }}</div>
+  {% endif %}
 
-      <h1>{{ 'Maak je account aan'|t }}</h1>
-      <p class="auth-form-sub">
-        {{ 'Al geregistreerd?'|t }}
-        <a href="{{ path('user.login') }}">{{ 'Log hier in'|t }}</a>.
-      </p>
+  {% if form.date_of_birth is defined %}
+    <div>{{ form.date_of_birth }}</div>
+  {% endif %}
 
-      {% if message %}
-        <div style="margin-bottom:20px;">{{ message }}</div>
-      {% endif %}
+  {% if form.session_id is defined %}
+    <div>{{ form.session_id }}</div>
+  {% endif %}
 
-      <form{{ attributes }} class="form-grid">
-        {{ form.form_build_id }}
-        {{ form.form_token }}
-        {{ form.form_id }}
+  {% if form.is_company is defined %}
+    <label class="check-row" style="cursor:pointer;">
+      {{ form.is_company }}
+      <span>
+        <strong>{{ 'Ik registreer als bedrijf'|t }}</strong>
+        <em>{{ 'Ontgrendelt het teamuitnodigingen-dashboard en groepsfacturatie.'|t }}</em>
+      </span>
+    </label>
+  {% endif %}
 
-        {# Naam #}
-        <div class="row-2">
-          <div>{{ form.first_name }}</div>
-          <div>{{ form.last_name }}</div>
-        </div>
+  {% if form.company_fields is defined %}
+    <fieldset class="reveal">
+      <legend>{{ 'Bedrijfsgegevens'|t }}</legend>
+      {{ form.company_fields }}
+    </fieldset>
+  {% endif %}
 
-        {# E-mail #}
-        <div>{{ form.email }}</div>
+  {% if form.terms_accepted is defined %}
+    <label class="check-row check-row-inline" style="padding:0;border:none;">
+      {{ form.terms_accepted }}
+    </label>
+  {% endif %}
 
-        {# Wachtwoord #}
-        {% if form.pass is defined %}
-          <div>{{ form.pass }}</div>
-        {% endif %}
+  {{ form|without('first_name','last_name','email','pass','date_of_birth','session_id','is_company','company_fields','terms_accepted','actions','form_build_id','form_token','form_id') }}
 
-        {# Geboortedatum #}
-        {% if form.date_of_birth is defined %}
-          <div>{{ form.date_of_birth }}</div>
-        {% endif %}
-
-        {# Sessie (optioneel) #}
-        {% if form.session_id is defined %}
-          <div>{{ form.session_id }}</div>
-        {% endif %}
-
-        {# Bedrijfsregistratie #}
-        {% if form.is_company is defined %}
-          <label class="check-row" style="cursor:pointer;">
-            {{ form.is_company }}
-            <span>
-              <strong>{{ 'Ik registreer als bedrijf'|t }}</strong>
-              <em>{{ 'Ontgrendelt het teamuitnodigingen-dashboard en groepsfacturatie.'|t }}</em>
-            </span>
-          </label>
-        {% endif %}
-
-        {% if form.company_fields is defined %}
-          <fieldset class="reveal" style="border:1px solid var(--line-2);border-radius:12px;padding:18px 18px 6px;margin:0;background:var(--surface-2);">
-            <legend style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600;padding:0 6px;">
-              {{ 'Bedrijfsgegevens'|t }}
-            </legend>
-            {{ form.company_fields }}
-          </fieldset>
-        {% endif %}
-
-        {# Algemene voorwaarden #}
-        {% if form.terms_accepted is defined %}
-          <label class="check-row check-row-inline" style="padding:0;border:none;">
-            {{ form.terms_accepted }}
-          </label>
-        {% endif %}
-
-        {# Overige velden #}
-        {{ form|without('first_name','last_name','email','pass','date_of_birth','session_id','is_company','company_fields','terms_accepted','actions','form_build_id','form_token','form_id') }}
-
-        {# Submit #}
-        <div class="form-actions-row">
-          {{ form.actions }}
-          <span style="font-size:12px;color:var(--muted);max-width:280px;line-height:1.45;">
-            {{ 'Door te registreren ga je akkoord met de festivalcode en ons gegevensbeleid.'|t }}
-          </span>
-        </div>
-
-      </form>
-    </div>
-  </main>
-
-</div>
+  <div class="form-actions-row">
+    {{ form.actions }}
+    <span class="form-fine">
+      {{ 'Door te registreren ga je akkoord met de festivalcode en ons gegevensbeleid.'|t }}
+    </span>
+  </div>
+</form>

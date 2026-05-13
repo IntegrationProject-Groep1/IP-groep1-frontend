@@ -1,10 +1,11 @@
 {#
   page.html.twig — Shift Festival 2026
-  Ingelogd  → sidebar shell (.shell layout)
-  Uitgelogd → alleen {{ page.content }} (login/register hebben eigen auth-wrap)
+  Drie branches:
+    1. Ingelogd (niet auth-pagina) → sidebar shell (.shell)
+    2. Auth-pagina (login/register/reset) → .auth-wrap split layout
+    3. Overige niet-ingelogd → alleen {{ page.content }}
 #}
 
-{# Auth-pagina's (login/register) tonen altijd hun eigen auth-wrap, nooit de shell #}
 {% set is_auth_page = current_route in [
   'registration_form.register',
   'user.login',
@@ -152,10 +153,118 @@
     </main>
   </div>
 
+{% elseif is_auth_page %}
+
+  {# ════════════════════════════════════ AUTH SPLIT LAYOUT ════ #}
+  <div class="auth-wrap">
+
+    {# ── Dark sidebar ── #}
+    <aside class="auth-side">
+      <div class="auth-side-top">
+        <a href="{{ path('<front>') }}" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+            <rect x="2" y="2" width="24" height="24" rx="7" fill="white"/>
+            <path d="M9 18.5L14 9.5L19 18.5" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="14" cy="14" r="1.6" fill="var(--accent)"/>
+          </svg>
+          <span style="font-weight:700;font-size:16px;color:white;">Shift Festival</span>
+        </a>
+      </div>
+
+      <div class="auth-side-body">
+        {% if current_route in ['registration_form.register', 'user.register'] %}
+          <h2>{{ 'Haal je festivalbadge op.'|t }}</h2>
+          <p>{{ 'Twee minuten. Na registratie ontvang je een digitale badge met een QR-code — zo check je in aan de deur, aan de bar en bij elke sessie.'|t }}</p>
+          <ul>
+            <li>{{ 'Reserveer je plek in 84 sessies'|t }}</li>
+            <li>{{ 'Laad een digitale wallet op voor eten, drinken en merch'|t }}</li>
+            <li>{{ "Nodig tot 20 collega's uit als bedrijfsdeelnemer"|t }}</li>
+          </ul>
+        {% else %}
+          <h2>{{ 'Welkom terug.'|t }}</h2>
+          <p>{{ 'Log in om je badge te bekijken, het programma te verkennen en je sessies te beheren.'|t }}</p>
+          <ul>
+            <li>{{ 'Je QR-badge is altijd een tik verwijderd'|t }}</li>
+            <li>{{ 'Schrijf je in of meld je af voor sessies in real time'|t }}</li>
+            <li>{{ 'Wallet-saldo gesynchroniseerd met de kassa'|t }}</li>
+          </ul>
+        {% endif %}
+      </div>
+
+      <div class="auth-side-foot">
+        <div class="badge-mini">
+          <div class="badge-mini-top">
+            <span>SHIFT · 2026</span>
+            <span>12 – 14 MEI</span>
+          </div>
+          <div class="badge-mini-body">
+            <svg width="56" height="56" viewBox="0 0 56 56" fill="none" aria-label="{{ 'Badge QR-code'|t }}">
+              <rect width="56" height="56" fill="white"/>
+              <rect x="4" y="4" width="14" height="14" rx="2" fill="var(--ink)"/>
+              <rect x="6" y="6" width="10" height="10" rx="1" fill="white"/>
+              <rect x="8" y="8" width="6" height="6" fill="var(--ink)"/>
+              <rect x="38" y="4" width="14" height="14" rx="2" fill="var(--ink)"/>
+              <rect x="40" y="6" width="10" height="10" rx="1" fill="white"/>
+              <rect x="42" y="8" width="6" height="6" fill="var(--ink)"/>
+              <rect x="4" y="38" width="14" height="14" rx="2" fill="var(--ink)"/>
+              <rect x="6" y="40" width="10" height="10" rx="1" fill="white"/>
+              <rect x="8" y="42" width="6" height="6" fill="var(--ink)"/>
+              <rect x="22" y="22" width="4" height="4" fill="var(--accent)"/>
+              <rect x="28" y="22" width="4" height="4" fill="var(--ink)"/>
+              <rect x="34" y="22" width="4" height="4" fill="var(--ink)"/>
+              <rect x="22" y="28" width="4" height="4" fill="var(--ink)"/>
+              <rect x="34" y="28" width="4" height="4" fill="var(--ink)"/>
+            </svg>
+            <div>
+              <div class="badge-mini-name">Shift Festival</div>
+              <div class="badge-mini-role">{{ 'Deelnemer 2026'|t }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    {# ── Form pane ── #}
+    <main class="auth-form-pane">
+      <div class="auth-form-inner">
+
+        <a href="{{ path('<front>') }}" class="auth-back">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          {{ 'Terug'|t }}
+        </a>
+
+        {% if current_route in ['registration_form.register', 'user.register'] %}
+          <h1>{{ 'Maak je account aan'|t }}</h1>
+          <p class="auth-form-sub">
+            {{ 'Al geregistreerd?'|t }}
+            <a href="{{ path('user.login') }}">{{ 'Log hier in'|t }}</a>.
+          </p>
+        {% elseif current_route == 'user.login' %}
+          <h1>{{ 'Inloggen'|t }}</h1>
+          <p class="auth-form-sub">
+            {{ 'Nog geen account?'|t }}
+            <a href="{{ path('registration_form.register') }}">{{ 'Maak er hier een aan'|t }}</a>.
+          </p>
+        {% elseif current_route == 'user.pass' %}
+          <h1>{{ 'Wachtwoord vergeten'|t }}</h1>
+          <p class="auth-form-sub">{{ 'Vul je gebruikersnaam of e-mailadres in om een reset-link te ontvangen.'|t }}</p>
+        {% else %}
+          <h1>{{ 'Account'|t }}</h1>
+        {% endif %}
+
+        {# Drupal renders page title block (hidden by CSS) + main content block with the form #}
+        {{ page.content }}
+
+      </div>
+    </main>
+
+  </div>
+
 {% else %}
 
-  {# ════════════════════════════ NIET INGELOGD ════ #}
-  {# Login en registratie hebben hun eigen auth-wrap layout #}
+  {# ════════════════════════════════════ NIET INGELOGD (publiek) ════ #}
   {{ page.content }}
 
 {% endif %}
