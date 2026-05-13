@@ -43,3 +43,6 @@ services:
 
   rabbitmq_sender.user_sessions_request_sender:
     class: Drupal\rabbitmq_sender\UserSessionsRequestSender
+
+  rabbitmq_sender.send_mailing_sender:
+    class: Drupal\rabbitmq_sender\SendMailingSender

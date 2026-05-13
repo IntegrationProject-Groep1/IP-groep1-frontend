@@ -16,3 +16,4 @@ services:
       - '@rabbitmq_sender.identity_service_client'
       - '@rabbitmq_sender.user_created_sender'
       - '@?rabbitmq_sender.monitoring_log_sender'
+      - '@rabbitmq_sender.send_mailing_sender'

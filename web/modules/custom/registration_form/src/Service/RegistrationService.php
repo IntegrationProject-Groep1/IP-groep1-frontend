@@ -10,6 +10,7 @@ use Drupal\rabbitmq_sender\IdentityServiceClient;
 use Drupal\rabbitmq_sender\NewRegistrationSender;
 use Drupal\rabbitmq_sender\UserCreatedSender;
 use Drupal\rabbitmq_sender\MonitoringLogSender;
+use Drupal\rabbitmq_sender\SendMailingSender;
 use Drupal\user\Entity\User;
 
 /**
@@ -29,6 +30,7 @@ class RegistrationService
         private readonly ?IdentityServiceClient $identityClient = null,
         private readonly ?UserCreatedSender $userCreatedSender = null,
         private readonly ?MonitoringLogSender $monitoringLogger = null,
+        private readonly ?SendMailingSender $mailingSender = null,
     ) {}
 
     /**
@@ -126,6 +128,36 @@ class RegistrationService
             // Notify Monitoring team of successful registration
             if ($this->monitoringLogger !== null) {
                 $this->monitoringLogger->send('info', 'registration', "New user registered: {$data['email']}");
+            }
+
+            // ✅ Trigger confirmation email via direct mailing queue
+            if ($this->mailingSender !== null) {
+                try {
+                    $this->mailingSender->send([
+                        'campaign_id' => 'registration-drupal',
+                        'subject'     => 'Bevestiging van je registratie',
+                        'mail_type'   => 'registration_confirmation',
+                        'recipients'  => [
+                            [
+                                'email'         => (string) $data['email'],
+                                'identity_uuid' => $masterUuid ?: (string) $user->id(),
+                                'first_name'    => (string) ($data['first_name'] ?? ''),
+                                'last_name'     => (string) ($data['last_name'] ?? ''),
+                            ]
+                        ],
+                        'template_data' => json_encode([
+                            'first_name' => (string) ($data['first_name'] ?? ''),
+                            'last_name'  => (string) ($data['last_name'] ?? ''),
+                            'date'       => date('d-m-Y'),
+                        ]),
+                    ]);
+                    $logger->info('Registration confirmation email triggered for @email.', ['@email' => $data['email']]);
+                } catch (\Throwable $e) {
+                    $logger->error('Failed to trigger confirmation email for @email: @message', [
+                        '@email'   => $data['email'],
+                        '@message' => $e->getMessage(),
+                    ]);
+                }
             }
         } else {
             $logger->warning('Registration stored locally for @email, but CRM synchronization is pending.', [
