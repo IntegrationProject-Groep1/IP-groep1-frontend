@@ -43,9 +43,13 @@ jobs:
           php-version: '8.4'
           extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, simplexml
           coverage: none
+        env:
+          COMPOSER_TOKEN: ''
 
       - name: Remove Composer GitHub auth
-        run: composer config --global --unset github-oauth.github.com || true
+        run: |
+          composer config --global --unset github-oauth.github.com || true
+          composer config --global --unset github-oauth || true
 
       - name: Validate composer.json
         run: composer validate --no-check-publish
