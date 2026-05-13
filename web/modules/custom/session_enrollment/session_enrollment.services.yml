@@ -6,4 +6,3 @@ services:
       - '@rabbitmq_sender.new_registration_sender'
       - '@rabbitmq_sender.calendar_invite_sender'
       - '@rabbitmq_sender.user_registered_sender'
-      - '@?rabbitmq_sender.monitoring_log_sender'

@@ -296,8 +296,43 @@
 
 {# ════════════════════════════════════════════════════════════ PROGRAM #}
 <section class="program" id="program">
-  {% if page.content %}
-    {{ page.content }}
+  {% if front_sessions is not empty %}
+    <div class="section-head">
+      <span class="section-eyebrow">{{ 'Programma'|t }}</span>
+      <h2>{{ 'Een festivalprogramma, geen conferentieagenda.'|t }}</h2>
+      <p>{{ 'Een voorproefje van wat er op het programma staat. Na registratie kun je je inschrijven voor sessies met nog beschikbare plaatsen.'|t }}</p>
+    </div>
+    <div class="program-grid">
+      {% for session in front_sessions %}
+        {% set type = session.session_type|default('other') %}
+        {% set tag_class = 'tag' %}
+        {% if type == 'keynote' %}{% set tag_class = 'tag tag-primary' %}
+        {% elseif type == 'workshop' %}{% set tag_class = 'tag tag-accent' %}
+        {% elseif type == 'panel' %}{% set tag_class = 'tag tag-ok' %}
+        {% elseif type == 'talk' %}{% set tag_class = 'tag' %}
+        {% endif %}
+        {% set time = '' %}
+        {% if session.start_datetime %}
+          {% set time = session.start_datetime|date('H:i') %}
+        {% endif %}
+        <article class="program-card">
+          <div class="program-card-top">
+            <span class="{{ tag_class }}">{{ type|t }}</span>
+            {% if time %}<span class="program-card-time">{{ time }}</span>{% endif %}
+          </div>
+          <h3>{{ session.title }}</h3>
+          {% if session.speaker.first_name is defined %}
+            <p style="font-size:13px;color:var(--muted);margin-bottom:8px;">{{ session.speaker.first_name }} {{ session.speaker.last_name }}{% if session.speaker.organisation %} · {{ session.speaker.organisation }}{% endif %}</p>
+          {% endif %}
+          <div class="program-card-foot">
+            <span>{{ session.location|default('')|t }}</span>
+            {% if session.current_attendees is defined and session.max_attendees is defined and session.max_attendees > 0 %}
+              <span style="color:var(--muted);font-size:12px;">{{ session.current_attendees }}/{{ session.max_attendees }}</span>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
   {% else %}
     <div class="section-head">
       <span class="section-eyebrow">{{ 'Dag één · Dinsdag'|t }}</span>

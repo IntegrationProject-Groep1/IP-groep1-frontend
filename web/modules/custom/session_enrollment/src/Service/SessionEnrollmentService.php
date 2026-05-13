@@ -8,7 +8,6 @@ use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\rabbitmq_sender\CalendarInviteSender;
 use Drupal\rabbitmq_sender\NewRegistrationSender;
 use Drupal\rabbitmq_sender\UserRegisteredSender;
-use Drupal\rabbitmq_sender\MonitoringLogSender;
 
 /**
  * Handles session enrollment: notifies CRM (new_registration) and Planning (calendar.invite).
@@ -20,7 +19,6 @@ class SessionEnrollmentService
         private readonly NewRegistrationSender $newRegistrationSender,
         private readonly CalendarInviteSender $calendarInviteSender,
         private readonly ?UserRegisteredSender $userRegisteredSender = null,
-        private readonly ?MonitoringLogSender $monitoringLogger = null,
     ) {}
 
     /**
@@ -146,11 +144,6 @@ class SessionEnrollmentService
                     '@email' => $userData['email'],
                     '@id'    => $sessionId,
                 ]);
-
-                // Notify Monitoring team of successful session enrollment
-                if ($this->monitoringLogger !== null) {
-                    $this->monitoringLogger->send('info', 'session', "User {$userData['email']} enrolled in session {$sessionId}");
-                }
             } catch (\Throwable $e) {
                 // Non-fatal: log and continue.
                 $logger->error('user_registered mislukt voor sessie @id: @message', [
