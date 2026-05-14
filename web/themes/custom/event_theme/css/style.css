@@ -712,8 +712,8 @@ html[data-sidebar="light"] .shell-user .icon-btn { border-color: var(--line-2); 
 .invite-avatar-muted { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
 .invite-name em { color: var(--muted); font-style: italic; font-size: 12px; }
 .invite-name .muted { color: var(--muted-2); }
-.invites-actions { text-align: right; white-space: nowrap; }
-.row-act { background: transparent; border: 1px solid var(--line-2); border-radius: 7px; padding: 5px 10px; font: inherit; font-size: 12px; cursor: pointer; color: var(--ink); margin-left: 4px; transition: all .12s; }
+.invites-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; white-space: nowrap; }
+.row-act { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; background: transparent; border: 1px solid var(--line-2); border-radius: 7px; cursor: pointer; color: var(--ink); transition: all .12s; text-decoration: none; flex-shrink: 0; }
 .row-act:hover { background: var(--surface-2); border-color: var(--ink); }
 .row-act-danger { color: var(--hot); border-color: color-mix(in srgb, var(--hot) 30%, white); }
 .row-act-danger:hover { background: color-mix(in srgb, var(--hot) 8%, white); border-color: var(--hot); }
@@ -1320,7 +1320,7 @@ h1.page-title, .page-title {
 .admin-sub { font-size: 11px; color: var(--muted); font-family: var(--font-mono); letter-spacing: .03em; }
 .cap-cell { min-width: 140px; }
 .nowrap { white-space: nowrap; }
-.row-act { background: transparent; border: 1px solid var(--line-2); border-radius: 7px; padding: 5px 10px; font: inherit; font-size: 12px; cursor: pointer; color: var(--ink); margin-left: 4px; transition: all .12s; }
+.row-act { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; background: transparent; border: 1px solid var(--line-2); border-radius: 7px; cursor: pointer; color: var(--ink); transition: all .12s; text-decoration: none; flex-shrink: 0; }
 .row-act:hover { background: var(--surface-2); border-color: var(--ink); }
 .row-act-danger { color: var(--hot); border-color: color-mix(in srgb, var(--hot) 30%, white); }
 .row-act-danger:hover { background: color-mix(in srgb, var(--hot) 8%, white); border-color: var(--hot); }
@@ -1341,7 +1341,7 @@ h1.page-title, .page-title {
 .invite-form { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; }
 .invites-head { padding: 22px 24px 14px; }
 .invite-name { display: flex; align-items: center; gap: 10px; }
-.invites-actions { text-align: right; white-space: nowrap; }
+.invites-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; white-space: nowrap; }
 .invites-self { background: color-mix(in srgb, var(--primary) 4%, white); }
 .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
 .stat-value { font-family: var(--font-display); font-size: 28px; line-height: 1; letter-spacing: -.02em; }
