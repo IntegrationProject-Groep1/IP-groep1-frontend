@@ -398,7 +398,7 @@ fieldset.reveal legend { font-size: 11px; text-transform: uppercase; letter-spac
   color: rgba(255,255,255,0.85);
   display: flex; flex-direction: column;
   padding: 22px 16px 18px;
-  position: sticky; top: 0; height: 100vh;
+  position: sticky; top: 0; height: 100vh; overflow: hidden;
 }
 html[data-sidebar="light"] .shell-side {
   background: white;
@@ -1392,7 +1392,7 @@ h1.page-title, .page-title {
   color: rgba(255,255,255,.85);
   display: flex; flex-direction: column;
   padding: 22px 16px 18px;
-  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  position: sticky; top: 0; height: 100vh; overflow: hidden;
 }
 .shell-brand { display: flex; align-items: center; gap: 12px; padding: 0 10px 24px; }
 .shell-brand .brand-name-stack { color: white; font-size: 14px; font-weight: 700; letter-spacing: -.01em; }
