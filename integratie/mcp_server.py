@@ -131,7 +131,11 @@ async def list_sessions(
     status: str | None = None,
     limit: int = 100,
 ) -> dict[str, Any]:
-    """List all event sessions. Optionally filter by status (e.g. 'active', 'cancelled', 'published')."""
+    """
+    List all event sessions. Optionally filter by status (e.g. 'active', 'cancelled', 'published').
+
+    Authoritative for session definitions, schedule, capacity, and enrollment.
+    """
     params: dict[str, Any] = {"page[limit]": min(limit, 200)}
     if status:
         params["filter[field_status]"] = status
@@ -145,7 +149,11 @@ async def list_sessions(
 
 @mcp.tool()
 async def get_session(session_id: str) -> dict[str, Any]:
-    """Get full detail for a single session by its UUID."""
+    """
+    Get full detail for a single session by its UUID.
+
+    Authoritative for session definitions, schedule, capacity, enrollment.
+    """
     try:
         body = await _jsonapi_get(f"node/session/{session_id}")
         return _session_from_node(body.get("data", {}))
@@ -284,7 +292,12 @@ async def get_sessions_today() -> dict[str, Any]:
 
 @mcp.tool()
 async def get_session_attendees(session_id: str) -> dict[str, Any]:
-    """Get the list of registered attendees for a specific session."""
+    """
+    Get the list of registered attendees for a specific session.
+
+    Returns Drupal user records (website accounts). For full member profile
+    with wallet/badge/address use `crm__get_member_by_email` per attendee.
+    """
     try:
         body = await _jsonapi_get(
             f"node/session/{session_id}",
@@ -466,6 +479,11 @@ async def list_users(
     """
     List all registered platform users.
     Set include_blocked=True to also return deactivated accounts.
+
+    Drupal website login accounts ONLY. NOT full member profiles
+    (use `crm__list_members`) and NOT billing clients (use
+    `facturatie__list_clients`). The same email may exist with different IDs
+    in each system.
     """
     params: dict[str, Any] = {
         "page[limit]": min(limit, 200),
@@ -483,7 +501,12 @@ async def list_users(
 
 @mcp.tool()
 async def get_user_by_email(email: str) -> dict[str, Any]:
-    """Look up a user account by their email address."""
+    """
+    Look up a Drupal website user account by their email address.
+
+    NOT a full member profile (use `crm__get_member_by_email`) and NOT a billing
+    client (use `facturatie__get_client_by_email`). Returns Drupal login data only.
+    """
     params = {
         "filter[mail]": email,
         "include": "roles",
@@ -501,7 +524,11 @@ async def get_user_by_email(email: str) -> dict[str, Any]:
 
 @mcp.tool()
 async def get_user_by_drupal_id(drupal_uid: int) -> dict[str, Any]:
-    """Look up a user by their Drupal internal user ID (UID)."""
+    """
+    Look up a Drupal user by their Drupal internal user ID (UID).
+
+    Drupal website account only. NOT a CRM member or FossBilling client.
+    """
     params = {
         "filter[drupal_internal__uid]": str(drupal_uid),
         "include": "roles",
@@ -519,7 +546,13 @@ async def get_user_by_drupal_id(drupal_uid: int) -> dict[str, Any]:
 
 @mcp.tool()
 async def get_user_by_uuid(user_uuid: str) -> dict[str, Any]:
-    """Look up a user by their Drupal UUID (not the identity master_uuid)."""
+    """
+    Look up a user by their Drupal UUID (NOT the identity master_uuid).
+
+    Drupal website account only — the Drupal UUID is distinct from the
+    cross-system identity Master_UUID. For CRM lookup by Master_UUID use
+    `crm__get_member`.
+    """
     try:
         body = await _jsonapi_get(f"user/user/{user_uuid}", {"include": "roles"})
         return _user_from_node(body.get("data", {}))
@@ -530,8 +563,11 @@ async def get_user_by_uuid(user_uuid: str) -> dict[str, Any]:
 @mcp.tool()
 async def search_users(query: str) -> dict[str, Any]:
     """
-    Search users by name or email containing the query string.
+    Search Drupal website users by name or email containing the query string.
     Returns matches from both username and email fields.
+
+    Drupal accounts only. For member-profile search use `crm__search_members`;
+    for billing-client search use `facturatie__search_clients`.
     """
     results: list[dict] = []
     seen: set[str] = set()
@@ -559,8 +595,11 @@ async def search_users(query: str) -> dict[str, Any]:
 @mcp.tool()
 async def get_users_by_role(role: str) -> dict[str, Any]:
     """
-    Get all users that have a specific Drupal role.
+    Get all Drupal users that have a specific Drupal role.
     Common roles: 'company_admin', 'authenticated', 'administrator'.
+
+    Drupal website roles (people). NOT company billing entities — for those
+    use `facturatie__get_company_billing_accounts`.
     """
     params = {
         "filter[roles.meta.drupal_internal__target_id]": role,
@@ -577,7 +616,14 @@ async def get_users_by_role(role: str) -> dict[str, Any]:
 
 @mcp.tool()
 async def get_company_accounts() -> dict[str, Any]:
-    """Get all users registered as company accounts (role: company_admin)."""
+    """
+    Get all Drupal users registered as company accounts (role: company_admin).
+
+    These are PEOPLE with company-admin privileges on the website. NOT company
+    billing entities — for those use `facturatie__get_company_billing_accounts`.
+    A company may have multiple company_admin users; one user may admin
+    multiple companies.
+    """
     return await get_users_by_role("company_admin")
 
 
