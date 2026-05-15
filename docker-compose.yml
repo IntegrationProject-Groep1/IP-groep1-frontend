@@ -64,6 +64,24 @@ services:
     networks:
       - shift_net
 
+  frontend_mcp:
+    build:
+      context: ./integratie
+    image: frontend-mcp:local
+    container_name: frontend_mcp
+    restart: unless-stopped
+    ports:
+      - "${MCP_FRONTEND_PORT:-8006}:8006"
+    environment:
+      FRONTEND_BASE_URL: http://frontend_drupal:80
+      DRUPAL_ADMIN_USER: ${DRUPAL_ADMIN_USER:-}
+      DRUPAL_ADMIN_PASS: ${DRUPAL_ADMIN_PASS:-}
+      PORT: "8006"
+    depends_on:
+      - frontend_drupal
+    networks:
+      - shift_net
+
 volumes:
   frontend_db_data:
 
