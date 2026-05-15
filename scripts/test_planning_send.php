@@ -46,7 +46,7 @@ try {
     $client = new RabbitMQClient($host, $port, $user, $pass, $vhost);
     $sender = new CalendarInviteSender($client);
 
-    echo "Sending calendar.invite → calendar.exchange (routing: calendar.invite)\n";
+    echo "Sending calendar_invite → calendar.exchange (routing: frontend.to.planning.calendar.invite)\n";
     echo "  session_id    : {$data['session_id']}\n";
     echo "  title         : {$data['title']}\n";
     echo "  start         : {$data['start_datetime']}\n";
