@@ -23,6 +23,8 @@ from fastmcp import FastMCP
 mcp = FastMCP("frontend")
 
 _BASE_URL    = os.getenv("FRONTEND_BASE_URL", "http://localhost:30020")
+
+_DATE_FIELDS = ("field_start_datetime", "field_date", "field_session_date")
 _JSONAPI     = f"{_BASE_URL}/jsonapi"
 _ADMIN_USER  = os.getenv("DRUPAL_ADMIN_USER", "")
 _ADMIN_PASS  = os.getenv("DRUPAL_ADMIN_PASS", "")
@@ -400,12 +402,9 @@ async def get_sessions_with_available_spots(min_spots: int = 1) -> dict[str, Any
 async def get_all_session_types() -> dict[str, Any]:
     """Get a list of all distinct session types used across all sessions."""
     try:
-        nodes = await _fetch_all_pages("node/session", {"page[limit]": "200"})
-        types = sorted({
-            _session_from_node(n).get("session_type")
-            for n in nodes
-            if _session_from_node(n).get("session_type")
-        })
+        nodes    = await _fetch_all_pages("node/session", {"page[limit]": "200"})
+        sessions = [_session_from_node(n) for n in nodes]
+        types    = sorted({s.get("session_type") for s in sessions if s.get("session_type")})
         return {"session_types": types, "count": len(types)}
     except Exception as exc:
         return _err(str(exc), session_types=[])
@@ -415,12 +414,9 @@ async def get_all_session_types() -> dict[str, Any]:
 async def get_all_session_locations() -> dict[str, Any]:
     """Get a list of all distinct locations used across all sessions."""
     try:
-        nodes = await _fetch_all_pages("node/session", {"page[limit]": "200"})
-        locations = sorted({
-            _session_from_node(n).get("location")
-            for n in nodes
-            if _session_from_node(n).get("location")
-        })
+        nodes     = await _fetch_all_pages("node/session", {"page[limit]": "200"})
+        sessions  = [_session_from_node(n) for n in nodes]
+        locations = sorted({s.get("location") for s in sessions if s.get("location")})
         return {"locations": locations, "count": len(locations)}
     except Exception as exc:
         return _err(str(exc), locations=[])
