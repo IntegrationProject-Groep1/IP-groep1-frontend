@@ -1,65 +1,15 @@
 {#
   form--registration-form.html.twig
-  Rendert alleen het formulier; de auth-wrap layout staat in page.html.twig.
+  Rendert het registratieformulier; de auth-wrap layout staat in page.html.twig.
 #}
 
 {% if message %}
   <div style="margin-bottom:16px;">{{ message }}</div>
 {% endif %}
 
-<form{{ attributes }} class="form-grid">
-  {{ form.form_build_id }}
-  {{ form.form_token }}
-  {{ form.form_id }}
-
-  <div class="row-2">
-    <div>{{ form.first_name }}</div>
-    <div>{{ form.last_name }}</div>
-  </div>
-
-  <div>{{ form.email }}</div>
-
-  {% if form.pass is defined %}
-    <div>{{ form.pass }}</div>
-  {% endif %}
-
-  {% if form.date_of_birth is defined %}
-    <div>{{ form.date_of_birth }}</div>
-  {% endif %}
-
-  {% if form.session_id is defined %}
-    <div>{{ form.session_id }}</div>
-  {% endif %}
-
-  {% if form.is_company is defined %}
-    <label class="check-row" style="cursor:pointer;">
-      {{ form.is_company }}
-      <span>
-        <strong>{{ 'Ik registreer als bedrijf'|t }}</strong>
-        <em>{{ 'Ontgrendelt het teamuitnodigingen-dashboard en groepsfacturatie.'|t }}</em>
-      </span>
-    </label>
-  {% endif %}
-
-  {% if form.company_fields is defined %}
-    <fieldset class="reveal">
-      <legend>{{ 'Bedrijfsgegevens'|t }}</legend>
-      {{ form.company_fields }}
-    </fieldset>
-  {% endif %}
-
-  {% if form.terms_accepted is defined %}
-    <label class="check-row check-row-inline" style="padding:0;border:none;">
-      {{ form.terms_accepted }}
-    </label>
-  {% endif %}
-
-  {{ form|without('first_name','last_name','email','pass','date_of_birth','session_id','is_company','company_fields','terms_accepted','actions','form_build_id','form_token','form_id') }}
-
-  <div class="form-actions-row">
-    {{ form.actions }}
-    <span class="form-fine">
-      {{ 'Door te registreren ga je akkoord met de festivalcode en ons gegevensbeleid.'|t }}
-    </span>
-  </div>
+<form{{ attributes.addClass('form-grid') }}>
+  {{ children }}
+  <p class="form-fine">
+    {{ 'Door te registreren ga je akkoord met de festivalcode en ons gegevensbeleid.'|t }}
+  </p>
 </form>

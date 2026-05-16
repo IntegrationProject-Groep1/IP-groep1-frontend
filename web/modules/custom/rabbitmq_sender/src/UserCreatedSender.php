@@ -35,6 +35,9 @@ class UserCreatedSender
         if (empty($data['email'])) {
             throw new \InvalidArgumentException('email is required');
         }
+        if (empty($data['date_of_birth'])) {
+            throw new \InvalidArgumentException('date_of_birth is required');
+        }
 
         $xml = $this->buildXml($data);
 

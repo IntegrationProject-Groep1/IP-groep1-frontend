@@ -7,20 +7,6 @@
   <div style="margin-bottom:16px;">{{ message }}</div>
 {% endif %}
 
-<form{{ attributes }} class="form-grid">
-  {{ form.form_build_id }}
-  {{ form.form_token }}
-  {{ form.form_id }}
-
-  <div>{{ form.name }}</div>
-  <div>{{ form.pass }}</div>
-
-  <div class="login-extras">
-    {{ form.remember_me is defined ? form.remember_me : '' }}
-    <a href="{{ path('user.pass') }}" class="muted-link">{{ 'Wachtwoord vergeten?'|t }}</a>
-  </div>
-
-  <div>{{ form.actions }}</div>
-
-  {{ form|without('name','pass','actions','remember_me','form_build_id','form_token','form_id') }}
+<form{{ attributes.addClass('form-grid') }}>
+  {{ children }}
 </form>

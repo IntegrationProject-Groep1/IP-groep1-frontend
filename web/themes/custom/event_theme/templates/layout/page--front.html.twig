@@ -72,7 +72,7 @@
               <span>{{ 'Manage Sessions'|t }}</span>
             </a>
           {% endif %}
-          {% if (is_company_user or is_admin) and invite_url %}
+          {% if is_company_user and invite_url %}
             <a href="{{ invite_url }}" class="shell-nav-item">
               <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               <span>{{ 'Team &amp; Invites'|t }}</span>
@@ -179,7 +179,7 @@
           {# Schedule #}
           <div class="card card-pad-lg">
             <div class="section-label-row">
-              <span class="section-label">{{ 'Komend op je schema'|t }}</span>
+              <span class="section-label">{{ 'Jouw sessies'|t }}</span>
               {% if my_sessions_url %}
                 <a href="{{ my_sessions_url }}" class="muted-link" style="font-size:13px;">{{ 'Alles zien'|t }} →</a>
               {% endif %}

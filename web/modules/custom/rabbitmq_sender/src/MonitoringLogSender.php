@@ -13,11 +13,13 @@ class MonitoringLogSender
 
     private ?RabbitMQClient $client;
 
-    private const QUEUE_NAME = 'logs';
-    private const SOURCE     = 'frontend';
-    private const TYPE       = 'log';
-    private const VERSION    = '2.0';
-    private const XSD_PATH   = __DIR__ . '/../../../../../xsd/schema_log.xsd';
+    private const QUEUE_NAME    = 'logs';
+    private const SOURCE        = 'frontend';
+    private const TYPE          = 'log';
+    private const VERSION       = '2.0';
+    private const XSD_PATH      = __DIR__ . '/../../../../../xsd/schema_log.xsd';
+    private const VALID_LEVELS  = ['info', 'warning', 'error'];
+    private const VALID_ACTIONS = ['registration', 'user', 'payment', 'invoice', 'session', 'calendar', 'email', 'wallet', 'refund', 'identity', 'xml_validation', 'system_error', 'badge'];
 
     public function __construct(?RabbitMQClient $client = null)
     {
@@ -33,6 +35,13 @@ class MonitoringLogSender
      */
     public function send(string $level, string $action, string $messageText): void
     {
+        if (!in_array($level, self::VALID_LEVELS, true)) {
+            throw new \InvalidArgumentException("Invalid log level '{$level}'. Allowed: " . implode(', ', self::VALID_LEVELS));
+        }
+        if (!in_array($action, self::VALID_ACTIONS, true)) {
+            throw new \InvalidArgumentException("Invalid log action '{$action}'. Allowed: " . implode(', ', self::VALID_ACTIONS));
+        }
+
         $xml = $this->buildXml($level, $action, $messageText);
         
         try {

@@ -208,6 +208,20 @@ function event_theme_preprocess_page(array &$variables): void {
 }
 
 /**
+ * Implements hook_form_user_login_form_alter().
+ *
+ * Inserts the "Forgot password" link between the password field and the submit
+ * button so it renders in the correct position within {{ children }}.
+ */
+function event_theme_form_user_login_form_alter(array &$form, \Drupal\Core\Form\FormStateInterface $form_state, string $form_id): void {
+    $form['forgot_password_link'] = [
+        '#type'   => 'markup',
+        '#markup' => '<div class="login-extras"><a href="' . \Drupal\Core\Url::fromRoute('user.pass')->toString() . '" class="muted-link">' . t('Wachtwoord vergeten?') . '</a></div>',
+        '#weight' => 2,
+    ];
+}
+
+/**
  * Implements hook_theme_suggestions_form_alter().
  *
  * Ensures form--session-enrollment-form.html.twig is always suggested,
@@ -253,8 +267,18 @@ function event_theme_preprocess_page__front(array &$variables): void {
   $variables['hero_cta_label'] = theme_get_setting('event_theme_hero_cta_label') ?: 'Register now';
   $variables['hero_cta_url']   = theme_get_setting('event_theme_hero_cta_url')   ?: '/register';
 
-  // Pass live sessions from Planning state to the front page template.
-  $variables['front_sessions'] = \Drupal::state()->get('planning.sessions', []);
+  // Pass the current user's enrolled sessions (cached from last user_sessions_response).
+  $account = \Drupal::currentUser();
+  $frontSessions = [];
+  if ($account->isAuthenticated()) {
+    $uid         = (int) $account->id();
+    $masterUuid  = (string) (\Drupal::service('user.data')->get('registration_form', $uid, 'master_uuid') ?? '');
+    if ($masterUuid !== '') {
+      $cached = \Drupal::state()->get('user_sessions.' . $masterUuid, []);
+      $frontSessions = (array) ($cached['sessions'] ?? []);
+    }
+  }
+  $variables['front_sessions'] = $frontSessions;
 }
 
 /* ── Private helpers ─────────────────────────────────────── */
