@@ -762,6 +762,58 @@ async def check_drupal_status() -> dict[str, Any]:
         }
 
 
+@mcp.tool()
+async def discover_drupal_schema() -> dict[str, Any]:
+    """
+    Discover what content types and user fields actually exist in this Drupal installation.
+    Use this to debug why session or user queries return no results — it reveals the actual
+    resource type names and available attributes so field names can be confirmed.
+    """
+    try:
+        # GET /jsonapi returns all available resource types
+        resp = await _http.get(f"{_BASE_URL}/jsonapi", timeout=10.0)
+        resp.raise_for_status()
+        api_root = resp.json()
+        resource_types = list((api_root.get("links") or {}).keys())
+
+        # Fetch one session to see its actual fields
+        session_fields: list[str] = []
+        session_sample: dict = {}
+        for rt in resource_types:
+            if "session" in rt.lower() or "event" in rt.lower() or "training" in rt.lower():
+                try:
+                    body = await _jsonapi_get(rt.replace("--", "/"), {"page[limit]": "1"})
+                    nodes = body.get("data", [])
+                    if nodes:
+                        session_fields = list(nodes[0].get("attributes", {}).keys())
+                        session_sample = {"type": rt, "id": nodes[0].get("id"), "sample_attributes": session_fields}
+                except Exception:
+                    pass
+
+        # Fetch one user to see its actual fields
+        user_fields: list[str] = []
+        try:
+            body = await _jsonapi_get("user/user", {"page[limit]": "1"})
+            nodes = body.get("data", [])
+            if nodes:
+                user_fields = list(nodes[0].get("attributes", {}).keys())
+        except Exception:
+            pass
+
+        node_types = [rt for rt in resource_types if rt.startswith("node--")]
+
+        return {
+            "base_url": _BASE_URL,
+            "node_content_types": node_types,
+            "all_resource_types_count": len(resource_types),
+            "session_like_types": [rt for rt in resource_types if any(k in rt.lower() for k in ("session", "event", "training", "activity"))],
+            "session_sample": session_sample,
+            "user_fields": user_fields,
+        }
+    except Exception as exc:
+        return {"error": str(exc), "base_url": _BASE_URL}
+
+
 if __name__ == "__main__":
     mcp.run(
         transport="streamable-http",
