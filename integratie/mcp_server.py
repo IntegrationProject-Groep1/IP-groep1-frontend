@@ -15,10 +15,11 @@ Environment variables:
 """
 import os
 from datetime import datetime, timezone
-from typing import Any
+from typing import Annotated, Any
 
 import httpx
 from fastmcp import FastMCP
+from pydantic import Field
 
 mcp = FastMCP("frontend")
 
@@ -130,13 +131,13 @@ async def _fetch_all_pages(path: str, params: dict, max_pages: int = 10) -> list
 
 @mcp.tool()
 async def list_sessions(
-    status: str | None = None,
-    limit: int = 100,
+    status: Annotated[str | None, Field(description="Filter by session status: 'active', 'published', 'cancelled', 'draft', 'full'. Omit for all sessions.")] = None,
+    limit: Annotated[int, Field(description="Max sessions to return (default 100, max 200).")] = 100,
 ) -> dict[str, Any]:
     """
-    List all event sessions. Optionally filter by status (e.g. 'active', 'cancelled', 'published').
-
+    List all event sessions. Optionally filter by status.
     Authoritative for session definitions, schedule, capacity, and enrollment.
+    Returns: session_id (UUID for other tools), title, start_datetime, location, status, capacity.
     """
     params: dict[str, Any] = {"page[limit]": min(limit, 200)}
     if status:
@@ -150,7 +151,9 @@ async def list_sessions(
 
 
 @mcp.tool()
-async def get_session(session_id: str) -> dict[str, Any]:
+async def get_session(
+    session_id: Annotated[str, Field(description="The Drupal session UUID (from list_sessions or search_sessions_by_title). Format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx. Never guess this value.")],
+) -> dict[str, Any]:
     """
     Get full detail for a single session by its UUID.
 
@@ -164,7 +167,9 @@ async def get_session(session_id: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-async def search_sessions_by_title(title: str) -> dict[str, Any]:
+async def search_sessions_by_title(
+    title: Annotated[str, Field(description="Title text to search for (partial, case-insensitive). Example: 'workshop' or 'keynote'.")],
+) -> dict[str, Any]:
     """Search sessions whose title contains the given text (case-insensitive)."""
     params = {
         "filter[title][value]": title,
@@ -180,8 +185,10 @@ async def search_sessions_by_title(title: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-async def get_sessions_by_status(status: str) -> dict[str, Any]:
-    """Get all sessions with a specific status (e.g. 'active', 'cancelled', 'full', 'draft')."""
+async def get_sessions_by_status(
+    status: Annotated[str, Field(description="Session status to filter by: 'active', 'published', 'cancelled', 'draft', 'full'.")],
+) -> dict[str, Any]:
+    """Get all sessions with a specific status."""
     params = {
         "filter[field_status]": status,
         "page[limit]": "200",
@@ -195,8 +202,10 @@ async def get_sessions_by_status(status: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-async def get_sessions_by_type(session_type: str) -> dict[str, Any]:
-    """Get all sessions of a specific type (e.g. 'workshop', 'keynote', 'networking')."""
+async def get_sessions_by_type(
+    session_type: Annotated[str, Field(description="Session type to filter by. Get valid values from get_all_session_types() first. Examples: 'workshop', 'keynote', 'networking'.")],
+) -> dict[str, Any]:
+    """Get all sessions of a specific type. Use get_all_session_types() to discover valid type values."""
     params = {
         "filter[field_session_type]": session_type,
         "page[limit]": "200",
@@ -210,8 +219,10 @@ async def get_sessions_by_type(session_type: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-async def get_sessions_by_location(location: str) -> dict[str, Any]:
-    """Get all sessions at a specific location. Uses partial/contains match."""
+async def get_sessions_by_location(
+    location: Annotated[str, Field(description="Location text to search for (partial match). Get valid values from get_all_session_locations() first.")],
+) -> dict[str, Any]:
+    """Get all sessions at a specific location. Uses partial/contains match. Use get_all_session_locations() to discover valid values."""
     params = {
         "filter[field_location][value]": location,
         "filter[field_location][operator]": "CONTAINS",
@@ -227,12 +238,12 @@ async def get_sessions_by_location(location: str) -> dict[str, Any]:
 
 @mcp.tool()
 async def get_sessions_by_date_range(
-    start_date: str,
-    end_date: str,
+    start_date: Annotated[str, Field(description="Range start in ISO 8601 format: '2026-05-01T00:00:00' or '2026-05-01'.")],
+    end_date: Annotated[str, Field(description="Range end in ISO 8601 format: '2026-05-31T23:59:59' or '2026-05-31'.")],
 ) -> dict[str, Any]:
     """
     Get sessions that start within a date range.
-    Dates must be ISO 8601 format, e.g. '2026-05-01T00:00:00' or '2026-05-01'.
+    Use this for 'sessions this week', 'sessions in May', etc.
     """
     for field in ("field_start_datetime", "field_date", "field_session_date"):
         params = {
@@ -261,7 +272,9 @@ async def get_sessions_by_date_range(
 
 
 @mcp.tool()
-async def get_upcoming_sessions(limit: int = 50) -> dict[str, Any]:
+async def get_upcoming_sessions(
+    limit: Annotated[int, Field(description="Max upcoming sessions to return (default 50, max 200).")] = 50,
+) -> dict[str, Any]:
     """Get sessions that start in the future, ordered by start date ascending."""
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
     for field in ("field_start_datetime", "field_date", "field_session_date"):
@@ -293,12 +306,15 @@ async def get_sessions_today() -> dict[str, Any]:
 
 
 @mcp.tool()
-async def get_session_attendees(session_id: str) -> dict[str, Any]:
+async def get_session_attendees(
+    session_id: Annotated[str, Field(description="Drupal session UUID. Get it via list_sessions or search_sessions_by_title first — never guess.")],
+) -> dict[str, Any]:
     """
     Get the list of registered attendees for a specific session.
 
-    Returns Drupal user records (website accounts). For full member profile
-    with wallet/badge/address use `crm__get_member_by_email` per attendee.
+    Returns Drupal website accounts (email, name, drupal_uid).
+    IMPORTANT: user_id here is a Drupal UUID — NOT the same as CRM master_uuid.
+    For full member profile use crm__get_member_by_email per attendee.
     """
     try:
         body = await _jsonapi_get(
@@ -386,7 +402,9 @@ async def get_full_sessions() -> dict[str, Any]:
 
 
 @mcp.tool()
-async def get_sessions_with_available_spots(min_spots: int = 1) -> dict[str, Any]:
+async def get_sessions_with_available_spots(
+    min_spots: Annotated[int, Field(description="Minimum available spots required (default 1).")] = 1,
+) -> dict[str, Any]:
     """Get sessions that still have at least min_spots available."""
     overview = await get_session_capacity_overview()
     if "error" in overview:
@@ -488,13 +506,15 @@ async def get_user_by_email(email: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-async def get_users_by_role(role: str) -> dict[str, Any]:
+async def get_users_by_role(
+    role: Annotated[str, Field(description="Drupal role name. Common values: 'company_admin', 'authenticated', 'administrator'.")],
+) -> dict[str, Any]:
     """
     Get all Drupal users that have a specific Drupal role.
-    Common roles: 'company_admin', 'authenticated', 'administrator'.
 
     Drupal website roles (people). NOT company billing entities — for those
     use `facturatie__get_company_billing_accounts`.
+    NOTE: Returns Drupal user_id (UUID), NOT CRM master_uuid — these are different systems.
     """
     params = {
         "filter[roles.meta.drupal_internal__target_id]": role,
@@ -523,8 +543,10 @@ async def get_company_accounts() -> dict[str, Any]:
 
 
 @mcp.tool()
-async def get_recent_registrations(limit: int = 20) -> dict[str, Any]:
-    """Get the most recently registered users, newest first."""
+async def get_recent_registrations(
+    limit: Annotated[int, Field(description="Max users to return (default 20, max 100).")] = 20,
+) -> dict[str, Any]:
+    """Get the most recently registered Drupal website users, newest first."""
     params = {
         "sort": "-created",
         "filter[status]": "1",
@@ -556,10 +578,12 @@ async def get_blocked_users() -> dict[str, Any]:
 
 
 @mcp.tool()
-async def get_users_registered_after(date: str) -> dict[str, Any]:
+async def get_users_registered_after(
+    date: Annotated[str, Field(description="ISO 8601 datetime string: '2026-01-01T00:00:00' or '2026-01-01'.")],
+) -> dict[str, Any]:
     """
     Get users who registered after a given date.
-    Date format: ISO 8601, e.g. '2026-01-01T00:00:00'.
+    Returns Drupal website accounts (NOT CRM members — different systems).
     """
     params = {
         "filter[created][condition][path]": "created",
@@ -584,10 +608,12 @@ async def get_users_registered_after(date: str) -> dict[str, Any]:
 # ─────────────────────────────────────────────
 
 @mcp.tool()
-async def get_user_enrolled_sessions(user_uuid: str) -> dict[str, Any]:
+async def get_user_enrolled_sessions(
+    user_uuid: Annotated[str, Field(description="The Drupal user UUID (user_id from get_recent_registrations or get_user_by_email). NOT the CRM master_uuid — these are different systems.")],
+) -> dict[str, Any]:
     """
-    Get all sessions that a specific user (by Drupal UUID) is enrolled in.
-    Queries sessions where field_registered_users includes this user.
+    Get all sessions a specific Drupal user is enrolled in.
+    Prefer get_user_enrolled_sessions_by_email if you only have an email address.
     """
     params = {
         "filter[field_registered_users.id]": user_uuid,
@@ -602,7 +628,9 @@ async def get_user_enrolled_sessions(user_uuid: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-async def get_user_enrolled_sessions_by_email(email: str) -> dict[str, Any]:
+async def get_user_enrolled_sessions_by_email(
+    email: Annotated[str, Field(description="The user's email address (must include @). Looks up the Drupal account internally.")],
+) -> dict[str, Any]:
     """
     Get all sessions a user is enrolled in, looked up by email.
     Primary tool for 'what sessions is X enrolled in?' — resolves the Drupal user internally.
@@ -648,7 +676,9 @@ async def get_enrollment_overview() -> dict[str, Any]:
 
 
 @mcp.tool()
-async def get_most_popular_sessions(limit: int = 10) -> dict[str, Any]:
+async def get_most_popular_sessions(
+    limit: Annotated[int, Field(description="Number of top sessions to return (default 10).")] = 10,
+) -> dict[str, Any]:
     """Get the sessions with the most enrollments, sorted by popularity."""
     overview = await get_enrollment_overview()
     if "error" in overview:
