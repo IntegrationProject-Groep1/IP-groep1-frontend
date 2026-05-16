@@ -170,7 +170,7 @@ async def get_session(
 async def search_sessions_by_title(
     title: Annotated[str, Field(description="Title text to search for (partial, case-insensitive). Example: 'workshop' or 'keynote'.")],
 ) -> dict[str, Any]:
-    """Search sessions whose title contains the given text (case-insensitive)."""
+    """Search sessions whose title contains the given text (case-insensitive partial match). Returns matching sessions with capacity, enrollment count, date, and location. Use when an admin asks for a session by name or keyword."""
     params = {
         "filter[title][value]": title,
         "filter[title][operator]": "CONTAINS",
@@ -188,7 +188,7 @@ async def search_sessions_by_title(
 async def get_sessions_by_status(
     status: Annotated[str, Field(description="Session status to filter by: 'active', 'published', 'cancelled', 'draft', 'full'.")],
 ) -> dict[str, Any]:
-    """Get all sessions with a specific status."""
+    """Get all sessions with a specific publication/lifecycle status. Valid statuses: 'active', 'published', 'cancelled', 'draft', 'full'. Use to audit which sessions are still open for enrollment or which have been cancelled."""
     params = {
         "filter[field_status]": status,
         "page[limit]": "200",
@@ -205,7 +205,7 @@ async def get_sessions_by_status(
 async def get_sessions_by_type(
     session_type: Annotated[str, Field(description="Session type to filter by. Get valid values from get_all_session_types() first. Examples: 'workshop', 'keynote', 'networking'.")],
 ) -> dict[str, Any]:
-    """Get all sessions of a specific type. Use get_all_session_types() to discover valid type values."""
+    """Get all sessions of a specific type (e.g. 'workshop', 'keynote', 'networking'). Call get_all_session_types() first to discover valid values for this event. Includes capacity, enrollment count, and schedule."""
     params = {
         "filter[field_session_type]": session_type,
         "page[limit]": "200",
@@ -222,7 +222,7 @@ async def get_sessions_by_type(
 async def get_sessions_by_location(
     location: Annotated[str, Field(description="Location text to search for (partial match). Get valid values from get_all_session_locations() first.")],
 ) -> dict[str, Any]:
-    """Get all sessions at a specific location. Uses partial/contains match. Use get_all_session_locations() to discover valid values."""
+    """Get all sessions at a specific venue or room (partial match). Call get_all_session_locations() first to discover valid location strings. Useful when an admin asks 'what sessions are in room A?' or 'what's happening at the main stage?'."""
     params = {
         "filter[field_location][value]": location,
         "filter[field_location][operator]": "CONTAINS",
@@ -530,9 +530,9 @@ async def get_users_by_role(
 
 
 @mcp.tool()
-async def get_company_accounts() -> dict[str, Any]:
+async def get_company_admin_users() -> dict[str, Any]:
     """
-    Get all Drupal users registered as company accounts (role: company_admin).
+    Get all Drupal users with the company_admin role (website admins for companies).
 
     These are PEOPLE with company-admin privileges on the website. NOT company
     billing entities — for those use `facturatie__get_company_billing_accounts`.
@@ -546,7 +546,7 @@ async def get_company_accounts() -> dict[str, Any]:
 async def get_recent_registrations(
     limit: Annotated[int, Field(description="Max users to return (default 20, max 100).")] = 20,
 ) -> dict[str, Any]:
-    """Get the most recently registered Drupal website users, newest first."""
+    """Get the most recently registered Drupal website accounts, newest first. Useful for onboarding checks — shows who signed up recently and whether their accounts are active. Returns name, email, registration date, and status."""
     params = {
         "sort": "-created",
         "filter[status]": "1",
@@ -563,7 +563,7 @@ async def get_recent_registrations(
 
 @mcp.tool()
 async def get_blocked_users() -> dict[str, Any]:
-    """Get all user accounts that have been blocked/deactivated."""
+    """Get all Drupal user accounts that have been blocked (status = 0 / deactivated). Returns name, email, and block date. Use when an admin asks who is blocked or to audit access restrictions. To re-activate, use set_user_blocked(email, blocked=False)."""
     params = {
         "filter[status]": "0",
         "include": "roles",
@@ -644,8 +644,9 @@ async def get_user_enrolled_sessions_by_email(
 @mcp.tool()
 async def get_enrollment_overview() -> dict[str, Any]:
     """
-    Overview of enrollment numbers across all sessions:
-    total enrollments, sessions sorted by popularity.
+    Overview of enrollment numbers across all sessions: total enrollments platform-wide,
+    and all sessions ranked by number of enrolled attendees. Use for at-a-glance popularity stats
+    or to find which sessions are close to capacity.
     """
     try:
         nodes    = await _fetch_all_pages(
@@ -756,7 +757,7 @@ async def get_registration_stats() -> dict[str, Any]:
 
 @mcp.tool()
 async def get_users_count_by_role() -> dict[str, Any]:
-    """Get the total number of users grouped by their Drupal role."""
+    """Get the total number of active Drupal users grouped by their assigned role. Useful for a quick access-control overview — how many admins, editors, regular attendees, etc. are registered on the platform."""
     try:
         nodes  = await _fetch_all_pages("user/user", {"include": "roles", "page[limit]": "200"})
         users  = [_user_from_node(n) for n in nodes]
@@ -769,79 +770,134 @@ async def get_users_count_by_role() -> dict[str, Any]:
         return _err(str(exc))
 
 
-@mcp.tool()
-async def check_drupal_status() -> dict[str, Any]:
-    """
-    Check if the Drupal frontend is reachable and the JSON:API is responding.
-    Returns status and basic info.
-    """
-    try:
-        resp = await _http.get(f"{_BASE_URL}/jsonapi", timeout=5.0)
-        ok   = resp.status_code == 200
-        return {
-            "status":      "online" if ok else "error",
-            "http_status": resp.status_code,
-            "base_url":    _BASE_URL,
-            "jsonapi_url": f"{_BASE_URL}/jsonapi",
-        }
-    except Exception as exc:
-        return {
-            "status":   "offline",
-            "error":    str(exc),
-            "base_url": _BASE_URL,
-        }
+# ─────────────────────────────────────────────
+#  WRITE OPERATIONS
+# ─────────────────────────────────────────────
+
+_JSONAPI_CT = "application/vnd.api+json"
 
 
 @mcp.tool()
-async def discover_drupal_schema() -> dict[str, Any]:
+async def enroll_user_in_session(
+    session_id: Annotated[str, Field(description="Drupal session UUID. Get it via list_sessions — never guess.")],
+    email: Annotated[str, Field(description="Email address of the user to enroll.")],
+) -> dict[str, Any]:
     """
-    Discover what content types and user fields actually exist in this Drupal installation.
-    Use this to debug why session or user queries return no results — it reveals the actual
-    resource type names and available attributes so field names can be confirmed.
+    Enroll a user in a session by adding them to field_registered_users.
+    WRITE OPERATION — confirm with admin before calling.
+    """
+    user = await get_user_by_email(email)
+    if "error" in user:
+        return user
+    try:
+        resp = await _http.post(
+            f"{_JSONAPI}/node/session/{session_id}/relationships/field_registered_users",
+            json={"data": [{"type": "user--user", "id": user["user_id"]}]},
+            headers={"Content-Type": _JSONAPI_CT},
+        )
+        if resp.status_code in (200, 204):
+            return {"success": True, "session_id": session_id, "email": email, "message": f"{email} enrolled in session."}
+        return {"error": f"Drupal returned HTTP {resp.status_code}", "body": resp.text[:300]}
+    except Exception as exc:
+        return _err(str(exc))
+
+
+@mcp.tool()
+async def unenroll_user_from_session(
+    session_id: Annotated[str, Field(description="Drupal session UUID. Get it via list_sessions — never guess.")],
+    email: Annotated[str, Field(description="Email address of the user to unenroll.")],
+) -> dict[str, Any]:
+    """
+    Remove a user from a session. WRITE OPERATION — confirm with admin before calling.
+    """
+    user = await get_user_by_email(email)
+    if "error" in user:
+        return user
+    try:
+        resp = await _http.request(
+            "DELETE",
+            f"{_JSONAPI}/node/session/{session_id}/relationships/field_registered_users",
+            json={"data": [{"type": "user--user", "id": user["user_id"]}]},
+            headers={"Content-Type": _JSONAPI_CT},
+        )
+        if resp.status_code in (200, 204):
+            return {"success": True, "session_id": session_id, "email": email, "message": f"{email} removed from session."}
+        return {"error": f"Drupal returned HTTP {resp.status_code}", "body": resp.text[:300]}
+    except Exception as exc:
+        return _err(str(exc))
+
+
+@mcp.tool()
+async def update_session_status(
+    session_id: Annotated[str, Field(description="Drupal session UUID. Get it via list_sessions — never guess.")],
+    status: Annotated[str, Field(description="New session status. Common values: 'active', 'cancelled', 'full', 'draft'.")],
+) -> dict[str, Any]:
+    """
+    Update a session's status field. WRITE OPERATION — confirm with admin before calling.
+
+    Use list_sessions to confirm the session_id and current status first.
     """
     try:
-        # GET /jsonapi returns all available resource types
-        resp = await _http.get(f"{_BASE_URL}/jsonapi", timeout=10.0)
-        resp.raise_for_status()
-        api_root = resp.json()
-        resource_types = list((api_root.get("links") or {}).keys())
-
-        # Fetch one session to see its actual fields
-        session_fields: list[str] = []
-        session_sample: dict = {}
-        for rt in resource_types:
-            if "session" in rt.lower() or "event" in rt.lower() or "training" in rt.lower():
-                try:
-                    body = await _jsonapi_get(rt.replace("--", "/"), {"page[limit]": "1"})
-                    nodes = body.get("data", [])
-                    if nodes:
-                        session_fields = list(nodes[0].get("attributes", {}).keys())
-                        session_sample = {"type": rt, "id": nodes[0].get("id"), "sample_attributes": session_fields}
-                except Exception:
-                    pass
-
-        # Fetch one user to see its actual fields
-        user_fields: list[str] = []
-        try:
-            body = await _jsonapi_get("user/user", {"page[limit]": "1"})
-            nodes = body.get("data", [])
-            if nodes:
-                user_fields = list(nodes[0].get("attributes", {}).keys())
-        except Exception:
-            pass
-
-        node_types = [rt for rt in resource_types if rt.startswith("node--")]
-
-        return {
-            "base_url": _BASE_URL,
-            "node_content_types": node_types,
-            "all_resource_types_count": len(resource_types),
-            "session_like_types": [rt for rt in resource_types if any(k in rt.lower() for k in ("session", "event", "training", "activity"))],
-            "session_sample": session_sample,
-            "user_fields": user_fields,
-        }
+        resp = await _http.patch(
+            f"{_JSONAPI}/node/session/{session_id}",
+            json={"data": {"type": "node--session", "id": session_id, "attributes": {"field_status": status}}},
+            headers={"Content-Type": _JSONAPI_CT},
+        )
+        if resp.status_code in (200, 204):
+            return {"success": True, "session_id": session_id, "status": status, "message": f"Session status updated to '{status}'."}
+        return {"error": f"Drupal returned HTTP {resp.status_code}", "body": resp.text[:300]}
     except Exception as exc:
-        return {"error": str(exc), "base_url": _BASE_URL}
+        return _err(str(exc))
+
+
+@mcp.tool()
+async def update_session_capacity(
+    session_id: Annotated[str, Field(description="Drupal session UUID. Get it via list_sessions — never guess.")],
+    max_attendees: Annotated[int, Field(description="New maximum attendee count. Must be ≥ current enrollment.", ge=1)],
+) -> dict[str, Any]:
+    """
+    Update a session's maximum capacity. WRITE OPERATION — confirm with admin before calling.
+
+    Check current enrollment via get_session_attendees before reducing capacity.
+    """
+    try:
+        resp = await _http.patch(
+            f"{_JSONAPI}/node/session/{session_id}",
+            json={"data": {"type": "node--session", "id": session_id, "attributes": {"field_max_attendees": max_attendees}}},
+            headers={"Content-Type": _JSONAPI_CT},
+        )
+        if resp.status_code in (200, 204):
+            return {"success": True, "session_id": session_id, "max_attendees": max_attendees, "message": f"Session capacity updated to {max_attendees}."}
+        return {"error": f"Drupal returned HTTP {resp.status_code}", "body": resp.text[:300]}
+    except Exception as exc:
+        return _err(str(exc))
+
+
+@mcp.tool()
+async def set_user_blocked(
+    email: Annotated[str, Field(description="Email address of the Drupal user to block or unblock.")],
+    blocked: Annotated[bool, Field(description="True to block the account, False to unblock/reactivate it.")],
+) -> dict[str, Any]:
+    """
+    Block or unblock a Drupal website account. WRITE OPERATION — confirm with admin before calling.
+
+    Use get_blocked_users to see currently blocked accounts.
+    """
+    user = await get_user_by_email(email)
+    if "error" in user:
+        return user
+    try:
+        resp = await _http.patch(
+            f"{_JSONAPI}/user/user/{user['user_id']}",
+            json={"data": {"type": "user--user", "id": user["user_id"], "attributes": {"status": not blocked}}},
+            headers={"Content-Type": _JSONAPI_CT},
+        )
+        action = "blocked" if blocked else "unblocked"
+        if resp.status_code in (200, 204):
+            return {"success": True, "email": email, "blocked": blocked, "message": f"User {email} has been {action}."}
+        return {"error": f"Drupal returned HTTP {resp.status_code}", "body": resp.text[:300]}
+    except Exception as exc:
+        return _err(str(exc))
 
 
 if __name__ == "__main__":
