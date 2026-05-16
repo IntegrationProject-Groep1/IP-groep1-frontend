@@ -468,45 +468,12 @@ async def get_sessions_summary() -> dict[str, Any]:
 
 
 # ─────────────────────────────────────────────
-#  USER / REGISTRATION TOOLS
+#  DRUPAL ACCOUNT MANAGEMENT TOOLS
+#  For person identity queries use CRM (crm__get_member_by_email etc.)
 # ─────────────────────────────────────────────
 
-@mcp.tool()
-async def list_users(
-    limit: int = 100,
-    include_blocked: bool = False,
-) -> dict[str, Any]:
-    """
-    List all registered platform users.
-    Set include_blocked=True to also return deactivated accounts.
-
-    Drupal website login accounts ONLY. NOT full member profiles
-    (use `crm__list_members`) and NOT billing clients (use
-    `facturatie__list_clients`). The same email may exist with different IDs
-    in each system.
-    """
-    params: dict[str, Any] = {
-        "page[limit]": min(limit, 200),
-        "include": "roles",
-    }
-    if not include_blocked:
-        params["filter[status]"] = "1"
-    try:
-        nodes    = await _fetch_all_pages("user/user", params)
-        users    = [_user_from_node(n) for n in nodes]
-        return {"users": users, "count": len(users)}
-    except Exception as exc:
-        return _err(str(exc), users=[], count=0)
-
-
-@mcp.tool()
 async def get_user_by_email(email: str) -> dict[str, Any]:
-    """
-    Look up a Drupal website user account by their email address.
-
-    NOT a full member profile (use `crm__get_member_by_email`) and NOT a billing
-    client (use `facturatie__get_client_by_email`). Returns Drupal login data only.
-    """
+    """Internal helper — resolves a Drupal user UUID from email for enrollment lookups."""
     params = {
         "filter[mail]": email,
         "include": "roles",
@@ -522,74 +489,6 @@ async def get_user_by_email(email: str) -> dict[str, Any]:
         return _err(str(exc), email=email)
 
 
-@mcp.tool()
-async def get_user_by_drupal_id(drupal_uid: int) -> dict[str, Any]:
-    """
-    Look up a Drupal user by their Drupal internal user ID (UID).
-
-    Drupal website account only. NOT a CRM member or FossBilling client.
-    """
-    params = {
-        "filter[drupal_internal__uid]": str(drupal_uid),
-        "include": "roles",
-        "page[limit]": "1",
-    }
-    try:
-        body = await _jsonapi_get("user/user", params)
-        data = body.get("data", [])
-        if not data:
-            return {"error": f"No user found with Drupal UID {drupal_uid}"}
-        return _user_from_node(data[0])
-    except Exception as exc:
-        return _err(str(exc), drupal_uid=drupal_uid)
-
-
-@mcp.tool()
-async def get_user_by_uuid(user_uuid: str) -> dict[str, Any]:
-    """
-    Look up a user by their Drupal UUID (NOT the identity master_uuid).
-
-    Drupal website account only — the Drupal UUID is distinct from the
-    cross-system identity Master_UUID. For CRM lookup by Master_UUID use
-    `crm__get_member`.
-    """
-    try:
-        body = await _jsonapi_get(f"user/user/{user_uuid}", {"include": "roles"})
-        return _user_from_node(body.get("data", {}))
-    except Exception as exc:
-        return _err(str(exc), user_uuid=user_uuid)
-
-
-@mcp.tool()
-async def search_users(query: str) -> dict[str, Any]:
-    """
-    Search Drupal website users by name or email containing the query string.
-    Returns matches from both username and email fields.
-
-    Drupal accounts only. For member-profile search use `crm__search_members`;
-    for billing-client search use `facturatie__search_clients`.
-    """
-    results: list[dict] = []
-    seen: set[str] = set()
-
-    for field in ("name", "mail"):
-        params = {
-            f"filter[{field}][value]": query,
-            f"filter[{field}][operator]": "CONTAINS",
-            "include": "roles",
-            "page[limit]": "50",
-        }
-        try:
-            body = await _jsonapi_get("user/user", params)
-            for node in body.get("data", []):
-                uid = node.get("id")
-                if uid not in seen:
-                    seen.add(uid)
-                    results.append(_user_from_node(node))
-        except Exception:
-            continue
-
-    return {"users": results, "count": len(results)}
 
 
 @mcp.tool()
@@ -682,36 +581,6 @@ async def get_users_registered_after(date: str) -> dict[str, Any]:
         return _err(str(exc), users=[], count=0)
 
 
-@mcp.tool()
-async def get_user_profile(email: str) -> dict[str, Any]:
-    """
-    Get full profile for a user including their roles and all stored fields.
-    Looks up by email address.
-    """
-    user = await get_user_by_email(email)
-    if "error" in user:
-        return user
-
-    uuid = user.get("user_id")
-    if not uuid:
-        return user
-
-    # Try to fetch with all available includes
-    try:
-        body = await _jsonapi_get(
-            f"user/user/{uuid}",
-            {"include": "roles,user_picture"},
-        )
-        full = _user_from_node(body.get("data", {}))
-        # Merge all raw attributes for completeness
-        raw_attr = body.get("data", {}).get("attributes", {})
-        full["_raw_attributes"] = {
-            k: v for k, v in raw_attr.items()
-            if k not in ("pass",)  # never expose password hash
-        }
-        return full
-    except Exception as exc:
-        return user  # return basic profile on include failure
 
 
 # ─────────────────────────────────────────────
@@ -738,7 +607,10 @@ async def get_user_enrolled_sessions(user_uuid: str) -> dict[str, Any]:
 
 @mcp.tool()
 async def get_user_enrolled_sessions_by_email(email: str) -> dict[str, Any]:
-    """Get all sessions a user (identified by email) is enrolled in."""
+    """
+    Get all sessions a user is enrolled in, looked up by email.
+    Primary tool for 'what sessions is X enrolled in?' — resolves the Drupal user internally.
+    """
     user = await get_user_by_email(email)
     if "error" in user:
         return user
