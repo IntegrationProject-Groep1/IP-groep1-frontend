@@ -1,395 +1,513 @@
 {#
-  page--front.html.twig — Shift Festival 2026 landing page.
-  Uses the same sf-header as page.html.twig so navigation is consistent.
+  page--front.html.twig — Shift Festival 2026
+  Ingelogd  → shell + dashboard (Image #3)
+  Uitgelogd → landing page (Image #4)
 #}
 
-{# ════════════════════════════════════════════════════════════ HEADER #}
-<header class="sf-header">
+{% if logged_in %}
 
-  <a href="{{ path('<front>') }}" class="sf-header-brand">
-    <svg width="26" height="26" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-      <rect x="2" y="2" width="24" height="24" rx="7" fill="white"/>
-      <path d="M9 18.5L14 9.5L19 18.5" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="14" cy="14" r="1.6" fill="var(--accent)"/>
-    </svg>
-    <span>{{ site_name }}</span>
-  </a>
+{# ══════════════════════════════════════════════ DASHBOARD (ingelogd) ══ #}
+<div class="shell">
 
-  <nav class="sf-header-nav" aria-label="{{ 'Hoofdnavigatie'|t }}">
-    <a href="{{ path('<front>') }}" class="sf-nav-link is-active">
-      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-      {{ 'Home'|t }}
-    </a>
-    {% if not logged_in and nav_show_register and register_url %}
-      <a href="{{ register_url }}" class="sf-nav-link">{{ 'Registreren'|t }}</a>
-    {% endif %}
-    {% if logged_in and nav_show_enroll and enroll_url %}
-      <a href="{{ enroll_url }}" class="sf-nav-link">
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-        {{ 'Sessies'|t }}
+  {# ── Sidebar ── #}
+  <aside class="shell-side">
+    <div class="shell-brand">
+      <a href="{{ path('<front>') }}" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+          <rect x="2" y="2" width="24" height="24" rx="7" fill="white"/>
+          <path d="M9 18.5L14 9.5L19 18.5" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="14" cy="14" r="1.6" fill="var(--accent)"/>
+        </svg>
+        <div>
+          <div class="brand-name brand-name-stack">{{ site_name }}</div>
+          <div class="brand-tag">2026 · Deelnemer</div>
+        </div>
       </a>
-    {% endif %}
-    {% if logged_in and is_company_user and invite_url %}
-      <a href="{{ invite_url }}" class="sf-nav-link">
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        {{ 'Team'|t }}
-      </a>
-    {% endif %}
-    {% if is_admin and session_admin_url %}
-      <a href="{{ session_admin_url }}" class="sf-nav-link {{ current_route starts with 'session_management' ? 'is-active' : '' }}">{{ 'Sessies beheren'|t }}</a>
-    {% endif %}
-    {% if is_admin and session_end_url %}
-      <a href="{{ session_end_url }}" class="sf-nav-link">{{ 'Sessie beëindigen'|t }}</a>
-    {% endif %}
-  </nav>
+    </div>
 
-  <div class="sf-header-actions">
-    {% if logged_in %}
-      {% if wallet_balance and qr_url %}
-        <a href="{{ qr_url }}"
-           style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid rgba(255,255,255,.15);border-radius:100px;font-size:12px;color:rgba(255,255,255,.8);text-decoration:none;">
-          <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-          €{{ wallet_balance }}
+    <nav class="shell-nav" aria-label="{{ 'Hoofdnavigatie'|t }}">
+      <div class="shell-nav-group">
+        <div class="shell-nav-label">{{ 'Festival'|t }}</div>
+
+        <a href="{{ path('<front>') }}" class="shell-nav-item is-active">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>
+          <span>{{ 'Dashboard'|t }}</span>
         </a>
-      {% endif %}
-      {% if qr_url %}
-        <a href="{{ qr_url }}"
-           style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid rgba(255,255,255,.2);border-radius:8px;color:rgba(255,255,255,.7);text-decoration:none;"
-           title="{{ 'Mijn QR Badge'|t }}">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4H4v8h8V4zM4 4v8M12 4v8M4 12h8M20 4h-8v8h8V4zM12 4v8M20 4v8M12 12h8M4 20h8v-8H4v8zM4 12v8M12 12v8M4 20h8"/>
-          </svg>
-        </a>
-      {% endif %}
-      <div style="position:relative;" id="sf-account-wrapper">
-        <button id="sf-account-toggle" class="sf-account-btn"
-                aria-haspopup="true" aria-expanded="false" aria-controls="sf-account-dropdown">
-          <span class="sf-account-avatar">{{ current_first_name|slice(0,1)|upper }}</span>
-          <span>{{ current_first_name }}</span>
-          <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="sf-account-chevron">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-          </svg>
-        </button>
-        <div id="sf-account-dropdown" class="sf-dropdown" style="display:none;" role="menu">
-          <a href="{{ path('entity.user.edit_form', {'user': current_uid}) }}" class="sf-dropdown-item" role="menuitem">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z"/></svg>
-            {{ 'Mijn gegevens'|t }}
+
+        {% if qr_url %}
+          <a href="{{ qr_url }}" class="shell-nav-item">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v3M14 19v2M17 21h4M19 17v0"/></svg>
+            <span>{{ 'My Badge'|t }}</span>
           </a>
-          {% if qr_url %}
-            <a href="{{ qr_url }}" class="sf-dropdown-item" role="menuitem">
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4H4v8h8V4zM4 4v8M12 4v8M4 12h8M20 4h-8v8h8V4z"/></svg>
-              {{ 'Mijn QR Code'|t }}
-              {% if wallet_balance %}<span style="margin-left:auto;font-size:11px;color:var(--muted);">€{{ wallet_balance }}</span>{% endif %}
+        {% endif %}
+
+        {% if nav_show_enroll and enroll_url %}
+          <a href="{{ enroll_url }}" class="shell-nav-item">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+            <span>{{ 'Browse Sessions'|t }}</span>
+          </a>
+        {% endif %}
+
+        {% if my_sessions_url %}
+          <a href="{{ my_sessions_url }}" class="shell-nav-item">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 12l2 2 4-4"/></svg>
+            <span>{{ 'My Sessions'|t }}</span>
+          </a>
+        {% endif %}
+
+        {% if wallet_url %}
+          <a href="{{ wallet_url }}" class="shell-nav-item">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M16 14h.01"/></svg>
+            <span>{{ 'Wallet'|t }}</span>
+          </a>
+        {% endif %}
+      </div>
+
+      {% if is_company_user or is_admin %}
+        <div class="shell-nav-group">
+          <div class="shell-nav-label">{{ 'Company Admin'|t }}</div>
+          {% if is_admin and session_admin_url %}
+            <a href="{{ session_admin_url }}" class="shell-nav-item">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09c0 .68.41 1.29 1.03 1.56a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.27.62.88 1.03 1.56 1.03H21a2 2 0 1 1 0 4h-.09c-.68 0-1.29.41-1.51 1z"/></svg>
+              <span>{{ 'Manage Sessions'|t }}</span>
             </a>
           {% endif %}
-          <hr class="sf-dropdown-divider">
-          <a href="{{ path('entity.user.cancel_form', {'user': current_uid}) }}" class="sf-dropdown-item danger" role="menuitem">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-            {{ 'Account verwijderen'|t }}
-          </a>
-          <hr class="sf-dropdown-divider">
-          <a href="{{ path('user.logout') }}" class="sf-dropdown-item" role="menuitem" style="color:var(--muted);">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-            {{ 'Afmelden'|t }}
-          </a>
+          {% if is_company_user and invite_url %}
+            <a href="{{ invite_url }}" class="shell-nav-item">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <span>{{ 'Team &amp; Invites'|t }}</span>
+            </a>
+          {% endif %}
         </div>
+      {% endif %}
+    </nav>
+
+    <div class="shell-user">
+      <div class="shell-user-avatar">{{ current_first_name|slice(0,1)|upper }}</div>
+      <div class="shell-user-meta">
+        <div class="shell-user-name">{{ current_full_name }}</div>
+        <div class="shell-user-sub">{{ current_display_name }}</div>
       </div>
-    {% else %}
-      <a href="{{ path('user.login') }}" class="sf-login-btn">{{ 'Inloggen'|t }}</a>
-      {% if nav_show_register and register_url %}
-        <a href="{{ register_url }}"
-           style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--accent);color:white;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
-          {{ 'Registreren'|t }}
+      <a href="{{ path('user.logout') }}" class="shell-logout-btn" title="{{ 'Afmelden'|t }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+        </svg>
+      </a>
+    </div>
+  </aside>
+
+  {# ── Main ── #}
+  <main class="shell-main" role="main">
+    <div class="shell-topbar">
+      <div class="shell-crumbs">{{ 'Dashboard'|t }}</div>
+      <div class="shell-topbar-actions">
+        <div class="event-pill">
+          <span class="event-pill-dot"></span>
+          <span>{{ 'Live · 12–14 MEI'|t }}</span>
+        </div>
+        {% if qr_url %}
+          <a href="{{ qr_url }}" class="icon-btn" title="{{ 'Mijn Badge'|t }}">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v3M14 19v2M17 21h4M19 17v0"/></svg>
+          </a>
+        {% endif %}
+        {% if wallet_balance %}
+          <span style="font-size:12px;color:var(--muted);font-weight:500;">€{{ wallet_balance }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="shell-content">
+      <div class="dash">
+
+        {# ── Hero ── #}
+        <header class="dash-hero">
+          <div class="dash-hero-lhs">
+            <span class="eyebrow">{{ 'Welkom terug'|t }}</span>
+            <h1>{{ 'Hi'|t }} {{ current_first_name }} — {{ 'je festival start over'|t }} <strong>{{ 'dagen'|t }}</strong>.</h1>
+            <p>{% if front_sessions is not empty %}{{ 'Er staan'|t }} <strong>{{ front_sessions|length }}</strong> {{ 'sessies op het programma. Je digitale badge is klaar voor gebruik.'|t }}{% else %}{{ 'Je digitale badge is klaar voor gebruik aan de deur.'|t }}{% endif %}</p>
+            <div class="dash-hero-ctas">
+              {% if qr_url %}
+                <a href="{{ qr_url }}" class="btn btn-primary">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v3M14 19v2M17 21h4M19 17v0"/></svg>
+                  {{ 'Open mijn badge'|t }}
+                </a>
+              {% endif %}
+              {% if enroll_url %}
+                <a href="{{ enroll_url }}" class="btn btn-ghost">
+                  {{ 'Bekijk het programma'|t }}
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                </a>
+              {% endif %}
+            </div>
+          </div>
+          <div class="dash-hero-rhs">
+            <div class="mini-badge">
+              <div class="mini-badge-strap"></div>
+              <div class="mini-badge-card">
+                <div class="mini-badge-top">
+                  <span>SHIFT · 2026</span>
+                  <span>DAY 01</span>
+                </div>
+                <div class="mini-badge-name">{{ current_full_name }}</div>
+                <div class="mini-badge-role">{{ 'Deelnemer'|t }}</div>
+                <svg width="96" height="96" viewBox="0 0 56 56" fill="none" style="margin:12px auto;display:block;" aria-label="{{ 'Badge QR-code'|t }}">
+                  <rect width="56" height="56" fill="white"/>
+                  <rect x="4" y="4" width="14" height="14" rx="2" fill="var(--ink)"/>
+                  <rect x="6" y="6" width="10" height="10" rx="1" fill="white"/>
+                  <rect x="8" y="8" width="6" height="6" fill="var(--ink)"/>
+                  <rect x="38" y="4" width="14" height="14" rx="2" fill="var(--ink)"/>
+                  <rect x="40" y="6" width="10" height="10" rx="1" fill="white"/>
+                  <rect x="42" y="8" width="6" height="6" fill="var(--ink)"/>
+                  <rect x="4" y="38" width="14" height="14" rx="2" fill="var(--ink)"/>
+                  <rect x="6" y="40" width="10" height="10" rx="1" fill="white"/>
+                  <rect x="8" y="42" width="6" height="6" fill="var(--ink)"/>
+                  <rect x="22" y="22" width="4" height="4" fill="var(--accent)"/>
+                  <rect x="28" y="22" width="4" height="4" fill="var(--ink)"/>
+                  <rect x="34" y="22" width="4" height="4" fill="var(--ink)"/>
+                  <rect x="22" y="28" width="4" height="4" fill="var(--ink)"/>
+                  <rect x="34" y="28" width="4" height="4" fill="var(--ink)"/>
+                </svg>
+                <div class="mini-badge-id">BDG-{{ current_uid }}-2026</div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {# ── Grid: schedule + wallet ── #}
+        <div class="dash-grid">
+
+          {# Schedule #}
+          <div class="card card-pad-lg">
+            <div class="section-label-row">
+              <span class="section-label">{{ 'Jouw sessies'|t }}</span>
+              {% if my_sessions_url %}
+                <a href="{{ my_sessions_url }}" class="muted-link" style="font-size:13px;">{{ 'Alles zien'|t }} →</a>
+              {% endif %}
+            </div>
+            {% if front_sessions is not empty %}
+              <ul class="schedule-list">
+                {% for session in front_sessions|slice(0, 3) %}
+                  <li>
+                    <div class="schedule-time">
+                      {% if session.start_datetime %}
+                        <strong>{{ session.start_datetime|date('H:i') }}</strong>
+                        <span>{{ session.start_datetime|date('D d M')|upper }}</span>
+                      {% else %}
+                        <strong>—</strong>
+                      {% endif %}
+                    </div>
+                    <div class="schedule-meta">
+                      <div class="schedule-title">{{ session.title }}</div>
+                      <div class="schedule-sub">
+                        {% if session.location is defined and session.location %}
+                          <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                          {{ session.location }}
+                        {% endif %}
+                        {% if session.speaker is defined and session.speaker.first_name is defined %}
+                          <span class="dot-sep">·</span>{{ session.speaker.first_name }} {{ session.speaker.last_name }}
+                        {% endif %}
+                      </div>
+                    </div>
+                    {% set stype = session.session_type|default('') %}
+                    {% if stype == 'keynote' %}<span class="tag tag-primary">{{ stype }}</span>
+                    {% elseif stype == 'workshop' %}<span class="tag tag-accent">{{ stype }}</span>
+                    {% elseif stype == 'reception' %}<span class="tag tag-warm">{{ stype }}</span>
+                    {% elseif stype %}<span class="tag">{{ stype }}</span>
+                    {% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <div style="padding:20px 0;text-align:center;color:var(--muted);">
+                <p style="margin:0 0 12px;font-size:14px;">{{ 'Je hebt je nog niet ingeschreven voor sessies.'|t }}</p>
+                {% if enroll_url %}
+                  <a href="{{ enroll_url }}" class="btn btn-sm btn-primary">{{ 'Bekijk sessies'|t }}</a>
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
+
+          {# Wallet #}
+          <div class="card card-pad-lg">
+            <div class="section-label-row" style="margin-bottom:8px;">
+              <span class="section-label">{{ 'Wallet'|t }}</span>
+            </div>
+            <div class="wallet-mini">
+              <div class="wallet-mini-balance">
+                <span class="wallet-mini-currency">€</span>
+                <span class="wallet-mini-amount">{{ wallet_balance is not null ? wallet_balance|number_format(2, '.', '') : '0.00' }}</span>
+              </div>
+              <p>{{ 'Betaal voor eten, drinken en merch door je badge te scannen bij een kiosk.'|t }}</p>
+              <a href="{{ path('<front>') }}" class="btn btn-sm btn-ghost btn-full" style="justify-content:space-between;">
+                {{ 'Opwaarderen of geschiedenis bekijken'|t }}
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+              </a>
+            </div>
+          </div>
+
+          {# Stats #}
+          <div class="card dash-stat-row">
+            <div class="stat">
+              <div class="stat-label">{{ 'Sessies'|t }}</div>
+              <div class="stat-value">{{ front_sessions|length }}</div>
+              <div class="stat-sub">{{ 'van 84 beschikbaar'|t }}</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">{{ 'Wallet'|t }}</div>
+              <div class="stat-value">€{{ wallet_balance is not null ? wallet_balance|round : '0' }}</div>
+              <div class="stat-sub">{{ 'saldo'|t }}</div>
+            </div>
+            {% if is_company_user %}
+              <div class="stat">
+                <div class="stat-label">{{ 'Team'|t }}</div>
+                <div class="stat-value">—</div>
+                <div class="stat-sub">{{ 'uitgenodigde collega\'s'|t }}</div>
+              </div>
+            {% endif %}
+            <div class="stat">
+              <div class="stat-label">{{ 'Aftellen'|t }}</div>
+              <div class="stat-value">4</div>
+              <div class="stat-sub">{{ 'dagen tot festival'|t }}</div>
+            </div>
+          </div>
+
+          {# Festival pulse #}
+          <div class="card card-pad-lg">
+            <div class="section-label-row">
+              <span class="section-label">{{ 'Festival pulse'|t }}</span>
+            </div>
+            <ul class="pulse-list">
+              <li>
+                <span class="pulse-dot pulse-ok"></span>
+                <span><strong>{{ 'Sessie-service'|t }}</strong> {{ 'werkt. 84 sessies gepubliceerd.'|t }}</span>
+                <span class="pulse-time">{{ '2 min geleden'|t }}</span>
+              </li>
+              <li>
+                <span class="pulse-dot pulse-warn"></span>
+                <span><strong>{{ 'Workshop: XSD-first contracts'|t }}</strong> {{ 'is 97% vol. Nog maar een paar plekken.'|t }}</span>
+                <span class="pulse-time">{{ '14 min geleden'|t }}</span>
+              </li>
+              <li>
+                <span class="pulse-dot pulse-ok"></span>
+                <span><strong>{{ 'Identity service'|t }}</strong> {{ 'heeft je master UUID aangemaakt.'|t }}</span>
+                <span class="pulse-time">{{ '2 dagen geleden'|t }}</span>
+              </li>
+              <li>
+                <span class="pulse-dot pulse-ok"></span>
+                <span><strong>{{ 'Welkomstcredit'|t }}</strong> {{ 'van €25 toegevoegd aan je wallet.'|t }}</span>
+                <span class="pulse-time">{{ '6 dagen geleden'|t }}</span>
+              </li>
+            </ul>
+          </div>
+
+        </div>{# /dash-grid #}
+      </div>{# /dash #}
+    </div>{# /shell-content #}
+  </main>
+</div>{# /shell #}
+
+{% else %}
+
+{# ══════════════════════════════════════════════ LANDING PAGE (niet ingelogd) ══ #}
+<div class="landing">
+
+  {# ── Nav ── #}
+  <header class="landing-nav">
+    <div style="display:inline-flex;align-items:center;gap:10px;">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+        <rect x="2" y="2" width="24" height="24" rx="7" fill="var(--ink)"/>
+        <path d="M9 18.5L14 9.5L19 18.5" stroke="var(--bg)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="14" cy="14" r="1.6" fill="var(--accent)"/>
+      </svg>
+      <span class="brand-name">{{ site_name }}</span>
+    </div>
+    <nav class="landing-nav-links" aria-label="{{ 'Hoofdnavigatie'|t }}">
+      <a href="#program">{{ 'Programma'|t }}</a>
+      <a href="#venue">{{ 'Locatie'|t }}</a>
+      <a href="#faq">{{ 'FAQ'|t }}</a>
+    </nav>
+    <div class="landing-nav-cta">
+      <a href="{{ path('user.login') }}" class="btn btn-ghost btn-sm">{{ 'Log in'|t }}</a>
+      {% if register_url %}
+        <a href="{{ register_url }}" class="btn btn-primary btn-sm">
+          {{ 'Badge ophalen'|t }}
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
         </a>
       {% endif %}
-    {% endif %}
+    </div>
+  </header>
 
-    {# Hamburger #}
-    <button id="sf-menu-toggle"
-            style="display:none;background:transparent;border:none;cursor:pointer;padding:6px;color:rgba(255,255,255,.7);"
-            aria-label="{{ 'Menu openen'|t }}" aria-expanded="false" aria-controls="sf-mobile-menu">
-      <svg id="sf-icon-open" width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-      </svg>
-      <svg id="sf-icon-close" width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:none;">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-      </svg>
-    </button>
-  </div>
-
-</header>
-
-{# Mobile menu #}
-<div id="sf-mobile-menu" class="sf-mobile-menu">
-  <a href="{{ path('<front>') }}" class="sf-nav-link">{{ 'Home'|t }}</a>
-  {% if not logged_in and nav_show_register and register_url %}
-    <a href="{{ register_url }}" class="sf-nav-link">{{ 'Registreren'|t }}</a>
-  {% endif %}
-  {% if logged_in and nav_show_enroll and enroll_url %}
-    <a href="{{ enroll_url }}" class="sf-nav-link">{{ 'Sessies'|t }}</a>
-  {% endif %}
-  {% if logged_in and is_company_user and invite_url %}
-    <a href="{{ invite_url }}" class="sf-nav-link">{{ 'Team'|t }}</a>
-  {% endif %}
-  {% if is_admin and session_admin_url %}
-    <a href="{{ session_admin_url }}" class="sf-nav-link">{{ 'Sessies beheren'|t }}</a>
-  {% endif %}
-  {% if is_admin and session_end_url %}
-    <a href="{{ session_end_url }}" class="sf-nav-link">{{ 'Sessie beëindigen'|t }}</a>
-  {% endif %}
-  {% if logged_in %}
-    <hr style="border:none;border-top:1px solid rgba(255,255,255,.08);margin:6px 0;">
-    {% if qr_url %}
-      <a href="{{ qr_url }}" class="sf-nav-link">{{ 'Mijn QR Badge'|t }}</a>
-    {% endif %}
-    <a href="{{ path('entity.user.edit_form', {'user': current_uid}) }}" class="sf-nav-link">{{ 'Mijn gegevens'|t }}</a>
-    <a href="{{ path('user.logout') }}" class="sf-nav-link" style="color:rgba(255,255,255,.5);">{{ 'Afmelden'|t }}</a>
-  {% else %}
-    <a href="{{ path('user.login') }}" class="sf-nav-link">{{ 'Inloggen'|t }}</a>
-  {% endif %}
-</div>
-
-{# ════════════════════════════════════════════════════════════ HERO #}
-{% if hero_enabled %}
-<section class="hero">
-  <div class="hero-grid">
-    <div class="hero-lhs">
-      <div class="hero-eyebrow">
-        <span class="hero-dot"></span>
-        {{ 'Registratie is open'|t }}
-      </div>
-      <h1 class="hero-title">
-        {% if hero_title %}
-          <span class="hero-line">{{ hero_title }}</span>
-        {% else %}
+  {# ── Hero ── #}
+  <section class="hero">
+    <div class="hero-grid">
+      <div class="hero-lhs">
+        <div class="hero-eyebrow">
+          <span class="hero-dot"></span>
+          {{ 'Registratie is open'|t }}
+        </div>
+        <h1 class="hero-title">
           <span class="hero-line">{{ 'Drie dagen.'|t }}</span>
           <span class="hero-line">{{ 'Twaalf podia.'|t }}</span>
           <span class="hero-line hero-line-accent">{{ 'Één geïntegreerde ervaring.'|t }}</span>
-        {% endif %}
-      </h1>
-      <p class="hero-sub">
-        {% if hero_subtitle %}{{ hero_subtitle }}{% else %}{{ 'Het festival waar technologie, creativiteit en samenwerking samenkomen. Schrijf je in voor sessies, scan je badge en ontdek het programma.'|t }}{% endif %}
-      </p>
-      <div class="hero-meta">
-        <div><span class="hero-meta-k">{{ 'Wanneer'|t }}</span><span class="hero-meta-v">{{ 'Mei 2026'|t }}</span></div>
-        <div><span class="hero-meta-k">{{ 'Locatie'|t }}</span><span class="hero-meta-v">{{ 'Desiderius Campus'|t }}</span></div>
-        <div><span class="hero-meta-k">{{ 'Sessies'|t }}</span><span class="hero-meta-v">{{ '12 podia · 84 sessies'|t }}</span></div>
-      </div>
-      <div class="hero-ctas">
-        {% if logged_in %}
-          {% if nav_show_enroll and enroll_url %}
-            <a href="{{ enroll_url }}"
-               style="display:inline-flex;align-items:center;gap:8px;padding:13px 22px;background:var(--ink);color:white;border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;">
-              {{ 'Sessies inschrijven'|t }}
-              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-            </a>
-          {% endif %}
-          {% if qr_url %}
-            <a href="{{ qr_url }}"
-               style="display:inline-flex;align-items:center;gap:8px;padding:13px 22px;background:transparent;color:var(--ink);border:1px solid var(--line-2);border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;">
-              {{ 'Mijn badge'|t }}
-            </a>
-          {% endif %}
-        {% else %}
-          {% if nav_show_register and register_url %}
-            <a href="{{ register_url }}"
-               style="display:inline-flex;align-items:center;gap:8px;padding:13px 22px;background:var(--ink);color:white;border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;">
+        </h1>
+        <p class="hero-sub">{{ 'Een jaarlijkse bijeenkomst voor engineers, designers en operators die integratiesystemen bouwen. Workshops, keynotes en late-night demo\'s op twaalf locaties op de Desiderius Campus.'|t }}</p>
+        <div class="hero-meta">
+          <div><span class="hero-meta-k">{{ 'Wanneer'|t }}</span><span class="hero-meta-v">{{ '12 – 14 mei 2026'|t }}</span></div>
+          <div><span class="hero-meta-k">{{ 'Locatie'|t }}</span><span class="hero-meta-v">{{ 'Desiderius Campus · Brussel'|t }}</span></div>
+          <div><span class="hero-meta-k">{{ 'Tracks'|t }}</span><span class="hero-meta-v">{{ '12 podia · 84 sessies'|t }}</span></div>
+        </div>
+        <div class="hero-ctas">
+          {% if register_url %}
+            <a href="{{ register_url }}" class="btn btn-primary btn-lg">
               {{ 'Registreer voor het festival'|t }}
-              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+              <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
             </a>
           {% endif %}
-          <a href="{{ path('user.login') }}"
-             style="display:inline-flex;align-items:center;gap:8px;padding:13px 22px;background:transparent;color:var(--ink);border:1px solid var(--line-2);border-radius:12px;font-size:15px;font-weight:600;text-decoration:none;">
-            {{ 'Ik heb al een badge'|t }}
-          </a>
-        {% endif %}
+          <a href="{{ path('user.login') }}" class="btn btn-ghost btn-lg">{{ 'Ik heb al een badge'|t }}</a>
+        </div>
       </div>
-    </div>
 
-    <div class="hero-rhs">
-      <div class="badge-mock">
-        <div class="badge-strap"></div>
-        <div class="badge-clip"></div>
-        <div class="badge-card">
-          <div class="badge-card-top">
-            <span class="badge-event">SHIFT · 2026</span>
-            <span class="badge-day">DAG 01</span>
-          </div>
-          <div class="badge-name">{{ logged_in ? current_full_name : site_name }}</div>
-          <div class="badge-role">{{ logged_in ? 'Deelnemer'|t : 'Festival Attendee'|t }}</div>
-          <div class="badge-qr">
-            <svg width="120" height="120" viewBox="0 0 120 120" fill="none" aria-label="{{ 'QR code voorbeeld'|t }}">
-              <rect width="120" height="120" fill="white"/>
-              <rect x="10" y="10" width="32" height="32" rx="3" fill="var(--ink)"/>
-              <rect x="15" y="15" width="22" height="22" rx="2" fill="white"/>
-              <rect x="19" y="19" width="14" height="14" fill="var(--ink)"/>
-              <rect x="78" y="10" width="32" height="32" rx="3" fill="var(--ink)"/>
-              <rect x="83" y="15" width="22" height="22" rx="2" fill="white"/>
-              <rect x="87" y="19" width="14" height="14" fill="var(--ink)"/>
-              <rect x="10" y="78" width="32" height="32" rx="3" fill="var(--ink)"/>
-              <rect x="15" y="83" width="22" height="22" rx="2" fill="white"/>
-              <rect x="19" y="87" width="14" height="14" fill="var(--ink)"/>
-              <rect x="48" y="10" width="6" height="6" fill="var(--ink)"/>
-              <rect x="56" y="10" width="6" height="6" fill="var(--ink)"/>
-              <rect x="64" y="10" width="6" height="6" fill="var(--ink)"/>
-              <rect x="48" y="18" width="6" height="6" fill="var(--ink)"/>
-              <rect x="64" y="18" width="6" height="6" fill="var(--ink)"/>
-              <rect x="48" y="26" width="6" height="6" fill="var(--ink)"/>
-              <rect x="56" y="26" width="6" height="6" fill="var(--ink)"/>
-              <rect x="64" y="26" width="6" height="6" fill="var(--ink)"/>
-              <rect x="10" y="48" width="6" height="6" fill="var(--ink)"/>
-              <rect x="18" y="48" width="6" height="6" fill="var(--ink)"/>
-              <rect x="10" y="56" width="6" height="6" fill="var(--ink)"/>
-              <rect x="10" y="64" width="6" height="6" fill="var(--ink)"/>
-              <rect x="18" y="64" width="6" height="6" fill="var(--ink)"/>
-              <rect x="48" y="48" width="6" height="6" fill="var(--accent)"/>
-              <rect x="56" y="48" width="6" height="6" fill="var(--ink)"/>
-              <rect x="64" y="48" width="6" height="6" fill="var(--ink)"/>
-              <rect x="72" y="48" width="6" height="6" fill="var(--ink)"/>
-              <rect x="48" y="56" width="6" height="6" fill="var(--ink)"/>
-              <rect x="64" y="56" width="6" height="6" fill="var(--ink)"/>
-              <rect x="72" y="56" width="6" height="6" fill="var(--ink)"/>
-              <rect x="48" y="64" width="6" height="6" fill="var(--ink)"/>
-              <rect x="56" y="64" width="6" height="6" fill="var(--ink)"/>
-              <rect x="72" y="64" width="6" height="6" fill="var(--ink)"/>
-              <rect x="78" y="48" width="6" height="6" fill="var(--ink)"/>
-              <rect x="86" y="48" width="6" height="6" fill="var(--ink)"/>
-              <rect x="104" y="48" width="6" height="6" fill="var(--ink)"/>
-              <rect x="78" y="56" width="6" height="6" fill="var(--ink)"/>
-              <rect x="94" y="56" width="6" height="6" fill="var(--ink)"/>
-              <rect x="104" y="56" width="6" height="6" fill="var(--ink)"/>
-              <rect x="86" y="64" width="6" height="6" fill="var(--ink)"/>
-              <rect x="94" y="64" width="6" height="6" fill="var(--ink)"/>
-              <rect x="48" y="78" width="6" height="6" fill="var(--ink)"/>
-              <rect x="64" y="78" width="6" height="6" fill="var(--ink)"/>
-              <rect x="72" y="78" width="6" height="6" fill="var(--ink)"/>
-              <rect x="56" y="86" width="6" height="6" fill="var(--ink)"/>
-              <rect x="72" y="86" width="6" height="6" fill="var(--ink)"/>
-              <rect x="48" y="94" width="6" height="6" fill="var(--ink)"/>
-              <rect x="56" y="94" width="6" height="6" fill="var(--ink)"/>
-              <rect x="64" y="94" width="6" height="6" fill="var(--ink)"/>
-              <rect x="78" y="78" width="6" height="6" fill="var(--ink)"/>
-              <rect x="94" y="78" width="6" height="6" fill="var(--ink)"/>
-              <rect x="86" y="86" width="6" height="6" fill="var(--ink)"/>
-              <rect x="94" y="94" width="6" height="6" fill="var(--ink)"/>
-              <rect x="104" y="86" width="6" height="6" fill="var(--ink)"/>
-            </svg>
-          </div>
-          <div class="badge-foot">
-            <span>BDG-2026</span>
-            <span>Desiderius Campus</span>
+      <div class="hero-rhs">
+        <div class="badge-mock">
+          <div class="badge-strap"></div>
+          <div class="badge-clip"></div>
+          <div class="badge-card">
+            <div class="badge-card-top">
+              <span class="badge-event">SHIFT · 2026</span>
+              <span class="badge-day">{{ 'DAG 01'|t }}</span>
+            </div>
+            <div class="badge-name">Shift Festival</div>
+            <div class="badge-role">{{ 'Deelnemer 2026'|t }}</div>
+            <div class="badge-qr">
+              <svg width="120" height="120" viewBox="0 0 56 56" fill="none" aria-label="{{ 'QR code voorbeeld'|t }}">
+                <rect width="56" height="56" fill="white"/>
+                <rect x="4" y="4" width="14" height="14" rx="2" fill="var(--ink)"/>
+                <rect x="6" y="6" width="10" height="10" rx="1" fill="white"/>
+                <rect x="8" y="8" width="6" height="6" fill="var(--ink)"/>
+                <rect x="38" y="4" width="14" height="14" rx="2" fill="var(--ink)"/>
+                <rect x="40" y="6" width="10" height="10" rx="1" fill="white"/>
+                <rect x="42" y="8" width="6" height="6" fill="var(--ink)"/>
+                <rect x="4" y="38" width="14" height="14" rx="2" fill="var(--ink)"/>
+                <rect x="6" y="40" width="10" height="10" rx="1" fill="white"/>
+                <rect x="8" y="42" width="6" height="6" fill="var(--ink)"/>
+                <rect x="22" y="22" width="4" height="4" fill="var(--accent)"/>
+                <rect x="28" y="22" width="4" height="4" fill="var(--ink)"/>
+                <rect x="34" y="22" width="4" height="4" fill="var(--ink)"/>
+                <rect x="22" y="28" width="4" height="4" fill="var(--ink)"/>
+                <rect x="34" y="28" width="4" height="4" fill="var(--ink)"/>
+                <rect x="18" y="10" width="4" height="4" fill="var(--ink)"/>
+                <rect x="24" y="10" width="4" height="4" fill="var(--ink)"/>
+                <rect x="18" y="16" width="4" height="4" fill="var(--ink)"/>
+                <rect x="10" y="22" width="4" height="4" fill="var(--ink)"/>
+                <rect x="10" y="28" width="4" height="4" fill="var(--ink)"/>
+                <rect x="10" y="34" width="4" height="4" fill="var(--ink)"/>
+                <rect x="44" y="24" width="4" height="4" fill="var(--ink)"/>
+                <rect x="50" y="24" width="4" height="4" fill="var(--ink)"/>
+                <rect x="44" y="30" width="4" height="4" fill="var(--ink)"/>
+                <rect x="50" y="36" width="4" height="4" fill="var(--ink)"/>
+                <rect x="22" y="44" width="4" height="4" fill="var(--ink)"/>
+                <rect x="28" y="44" width="4" height="4" fill="var(--ink)"/>
+                <rect x="34" y="44" width="4" height="4" fill="var(--ink)"/>
+                <rect x="44" y="44" width="4" height="4" fill="var(--ink)"/>
+                <rect x="50" y="44" width="4" height="4" fill="var(--ink)"/>
+                <rect x="44" y="50" width="4" height="4" fill="var(--ink)"/>
+              </svg>
+            </div>
+            <div class="badge-foot">
+              <span>BDG-08412</span>
+              <span>{{ '12 – 14 MEI · Desiderius Campus'|t }}</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
+  </section>
+
+  {# ── Stats strip ── #}
+  <div class="strip">
+    <div class="strip-item"><span class="strip-num">2.400+</span><span class="strip-lbl">{{ 'Verwachte deelnemers'|t }}</span></div>
+    <div class="strip-item"><span class="strip-num">84</span><span class="strip-lbl">{{ 'Sessies over drie dagen'|t }}</span></div>
+    <div class="strip-item"><span class="strip-num">12</span><span class="strip-lbl">{{ 'Podia en labs op campus'|t }}</span></div>
+    <div class="strip-item"><span class="strip-num">37</span><span class="strip-lbl">{{ 'Partnerorganisaties'|t }}</span></div>
   </div>
-</section>
-{% endif %}
 
-{# ════════════════════════════════════════════════════════════ STATS STRIP #}
-<div class="strip">
-  <div class="strip-item"><span class="strip-num">2.400+</span><span class="strip-lbl">{{ 'Verwachte deelnemers'|t }}</span></div>
-  <div class="strip-item"><span class="strip-num">84</span><span class="strip-lbl">{{ 'Sessies over drie dagen'|t }}</span></div>
-  <div class="strip-item"><span class="strip-num">12</span><span class="strip-lbl">{{ 'Podia en labs op campus'|t }}</span></div>
-  <div class="strip-item"><span class="strip-num">37</span><span class="strip-lbl">{{ 'Partnerorganisaties'|t }}</span></div>
-</div>
-
-{# ════════════════════════════════════════════════════════════ PROGRAM #}
-<section class="program" id="program">
-  {% if front_sessions is not empty %}
-    <div class="section-head">
-      <span class="section-eyebrow">{{ 'Programma'|t }}</span>
-      <h2>{{ 'Een festivalprogramma, geen conferentieagenda.'|t }}</h2>
-      <p>{{ 'Een voorproefje van wat er op het programma staat. Na registratie kun je je inschrijven voor sessies met nog beschikbare plaatsen.'|t }}</p>
-    </div>
-    <div class="program-grid">
-      {% for session in front_sessions %}
-        {% set type = session.session_type|default('other') %}
-        {% set tag_class = 'tag' %}
-        {% if type == 'keynote' %}{% set tag_class = 'tag tag-primary' %}
-        {% elseif type == 'workshop' %}{% set tag_class = 'tag tag-accent' %}
-        {% elseif type == 'panel' %}{% set tag_class = 'tag tag-ok' %}
-        {% elseif type == 'talk' %}{% set tag_class = 'tag' %}
-        {% endif %}
-        {% set time = '' %}
-        {% if session.start_datetime %}
-          {% set time = session.start_datetime|date('H:i') %}
-        {% endif %}
-        <article class="program-card">
-          <div class="program-card-top">
-            <span class="{{ tag_class }}">{{ type|t }}</span>
-            {% if time %}<span class="program-card-time">{{ time }}</span>{% endif %}
-          </div>
-          <h3>{{ session.title }}</h3>
-          {% if session.speaker.first_name is defined %}
-            <p style="font-size:13px;color:var(--muted);margin-bottom:8px;">{{ session.speaker.first_name }} {{ session.speaker.last_name }}{% if session.speaker.organisation %} · {{ session.speaker.organisation }}{% endif %}</p>
-          {% endif %}
-          <div class="program-card-foot">
-            <span>{{ session.location|default('')|t }}</span>
-            {% if session.current_attendees is defined and session.max_attendees is defined and session.max_attendees > 0 %}
-              <span style="color:var(--muted);font-size:12px;">{{ session.current_attendees }}/{{ session.max_attendees }}</span>
-            {% endif %}
-          </div>
-        </article>
-      {% endfor %}
-    </div>
-  {% else %}
+  {# ── Program ── #}
+  <section class="program" id="program">
     <div class="section-head">
       <span class="section-eyebrow">{{ 'Dag één · Dinsdag'|t }}</span>
       <h2>{{ 'Een festivalprogramma, geen conferentieagenda.'|t }}</h2>
       <p>{{ 'Een voorproefje van wat er op het programma staat. Na registratie kun je je inschrijven voor sessies met nog beschikbare plaatsen.'|t }}</p>
     </div>
     <div class="program-grid">
-      <article class="program-card">
-        <div class="program-card-top"><span class="tag tag-primary">{{ 'keynote'|t }}</span><span class="program-card-time">09:00</span></div>
-        <h3>{{ 'Integratie in de praktijk'|t }}</h3>
-        <p>{{ 'Hoe systemen met elkaar communiceren in een moderne digitale omgeving — van API-design tot event-driven architectuur.'|t }}</p>
-        <div class="program-card-foot"><span>Hoofdpodium</span></div>
-      </article>
-      <article class="program-card">
-        <div class="program-card-top"><span class="tag tag-accent">{{ 'workshop'|t }}</span><span class="program-card-time">10:30</span></div>
-        <h3>{{ 'Hands-on: message brokers'|t }}</h3>
-        <p>{{ 'Aan de slag met RabbitMQ en Kafka. Leer hoe je betrouwbaar berichten verstuurt en verwerkt in gedistribueerde systemen.'|t }}</p>
-        <div class="program-card-foot"><span>Lab A</span></div>
-      </article>
-      <article class="program-card">
-        <div class="program-card-top"><span class="tag">{{ 'talk'|t }}</span><span class="program-card-time">13:00</span></div>
-        <h3>{{ 'Digitale badges & identiteit'|t }}</h3>
-        <p>{{ 'QR-codes, wallets en check-in systemen: hoe het festival zijn eigen backend in productie heeft gebracht.'|t }}</p>
-        <div class="program-card-foot"><span>Studio B</span></div>
-      </article>
-      <article class="program-card">
-        <div class="program-card-top"><span class="tag tag-ok">{{ 'panel'|t }}</span><span class="program-card-time">15:00</span></div>
-        <h3>{{ 'Toekomst van samenwerking'|t }}</h3>
-        <p>{{ 'Vijf experts bespreken hoe teams de integratie van technologie en organisatie aanpakken in 2026 en daarna.'|t }}</p>
-        <div class="program-card-foot"><span>Auditorium</span></div>
-      </article>
+      {% if front_sessions is not empty %}
+        {% for session in front_sessions|slice(0, 4) %}
+          {% set stype = session.session_type|default('talk') %}
+          <article class="program-card">
+            <div class="program-card-top">
+              {% if stype == 'keynote' %}<span class="tag tag-primary">{{ stype }}</span>
+              {% elseif stype == 'workshop' %}<span class="tag tag-accent">{{ stype }}</span>
+              {% elseif stype == 'panel' %}<span class="tag tag-ok">{{ stype }}</span>
+              {% else %}<span class="tag">{{ stype }}</span>
+              {% endif %}
+              {% if session.start_datetime %}<span class="program-card-time">{{ session.start_datetime|date('H:i') }}</span>{% endif %}
+            </div>
+            <h3>{{ session.title }}</h3>
+            {% if session.speaker.first_name is defined %}
+              <p>{{ session.speaker.first_name }} {{ session.speaker.last_name }}{% if session.speaker.organisation %} · {{ session.speaker.organisation }}{% endif %}</p>
+            {% endif %}
+            <div class="program-card-foot">
+              <span>{{ session.location|default('') }}</span>
+            </div>
+          </article>
+        {% endfor %}
+      {% else %}
+        <article class="program-card">
+          <div class="program-card-top"><span class="tag tag-primary">keynote</span><span class="program-card-time">09:30</span></div>
+          <h3>{{ 'Opening Keynote — The Decade of Integration'|t }}</h3>
+          <p>{{ 'Hoe systemen met elkaar communiceren in een moderne digitale omgeving — van API-design tot event-driven architectuur.'|t }}</p>
+          <div class="program-card-foot"><span>{{ 'Auditorium A'|t }}</span><span class="dot-sep">·</span><span>Inez Vandenbroucke</span></div>
+        </article>
+        <article class="program-card">
+          <div class="program-card-top"><span class="tag tag-accent">workshop</span><span class="program-card-time">11:00</span></div>
+          <h3>{{ 'XSD-first contracts in practice'|t }}</h3>
+          <p>{{ 'Aan de slag met RabbitMQ en Kafka. Betrouwbaar berichten versturen in gedistribueerde systemen.'|t }}</p>
+          <div class="program-card-foot"><span>{{ 'Lab Room 4'|t }}</span><span class="dot-sep">·</span><span>Charles Wong</span></div>
+        </article>
+        <article class="program-card">
+          <div class="program-card-top"><span class="tag">talk</span><span class="program-card-time">14:00</span></div>
+          <h3>{{ 'Digitale badges & identiteit'|t }}</h3>
+          <p>{{ 'QR-codes, wallets en check-in systemen: hoe het festival zijn eigen backend in productie heeft gebracht.'|t }}</p>
+          <div class="program-card-foot"><span>{{ 'Studio B'|t }}</span></div>
+        </article>
+        <article class="program-card">
+          <div class="program-card-top"><span class="tag tag-warm">reception</span><span class="program-card-time">19:00</span></div>
+          <h3>{{ 'Welcome Reception'|t }}</h3>
+          <p>{{ 'Vijf experts bespreken hoe teams de integratie van technologie en organisatie aanpakken in 2026 en daarna.'|t }}</p>
+          <div class="program-card-foot"><span>{{ 'Atrium · Glass Pavilion'|t }}</span></div>
+        </article>
+      {% endif %}
     </div>
-  {% endif %}
-</section>
+  </section>
 
-{# ════════════════════════════════════════════════════════════ FOOTER #}
-<footer style="border-top:1px solid var(--line);background:var(--surface);padding:24px 40px;" id="venue">
-  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+  {# ── Footer ── #}
+  <footer class="landing-foot" id="venue">
     <div style="display:inline-flex;align-items:center;gap:8px;">
       <svg width="20" height="20" viewBox="0 0 28 28" fill="none" aria-hidden="true">
         <rect x="2" y="2" width="24" height="24" rx="7" fill="var(--ink)"/>
         <path d="M9 18.5L14 9.5L19 18.5" stroke="var(--bg)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
         <circle cx="14" cy="14" r="1.6" fill="var(--accent)"/>
       </svg>
-      <span style="font-weight:600;font-size:13px;color:var(--ink);">{{ site_name }} 2026</span>
+      <span class="brand-name">{{ site_name }} 2026</span>
     </div>
-    <p style="font-size:13px;color:var(--muted);margin:0;">
-      {% if footer_text %}{{ footer_text }}{% else %}© 2026 {{ site_name }}{% endif %}
-    </p>
-  </div>
-</footer>
+    <div class="landing-foot-meta">
+      <span>{{ 'Desiderius Campus · Brussel'|t }}</span>
+      <span class="dot-sep">·</span>
+      <span>{{ '12 – 14 mei 2026'|t }}</span>
+      <span class="dot-sep">·</span>
+      <span>{{ 'Een integratieproject van Desideriushogeschool'|t }}</span>
+    </div>
+  </footer>
 
-<style>
-@media (max-width: 900px) {
-  #sf-menu-toggle { display: flex !important; }
-  .sf-header-nav { display: none !important; }
-  #sf-account-wrapper { display: none !important; }
-  .sf-login-btn { display: none !important; }
-}
-</style>
+</div>{# /landing #}
+
+{% endif %}

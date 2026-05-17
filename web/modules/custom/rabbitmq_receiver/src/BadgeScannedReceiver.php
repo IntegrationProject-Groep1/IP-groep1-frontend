@@ -100,7 +100,7 @@ class BadgeScannedReceiver
 
                 $this->userCheckinSender->send([
                     'user_id'    => $identityUuid,
-                    'badge_id'   => $identityUuid,
+                    'badge_id'   => $badgeId ?: $identityUuid,
                     'checkin_at' => $scannedAt,
                 ]);
 

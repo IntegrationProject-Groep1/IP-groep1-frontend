@@ -14,14 +14,12 @@
       <h1>{{ 'Manage sessions'|t }}</h1>
       <p>{{ 'Create, edit, or delete sessions. Changes are sent to the Planning service via RabbitMQ.'|t }}</p>
     </div>
-    {% if create_url %}
-      <a href="{{ create_url }}" class="btn btn-primary">
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-        </svg>
-        {{ 'New session'|t }}
-      </a>
-    {% endif %}
+    <button type="button" class="btn btn-primary" data-session-modal-url="{{ create_url }}" data-session-modal-title="{{ 'New session'|t }}">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      {{ 'New session'|t }}
+    </button>
   </div>
 
   {# ── Session table ── #}
@@ -46,7 +44,7 @@
       <table class="admin-table">
         <thead>
           <tr>
-            <th>{{ 'Session'|t }}</th>
+            <th>{{ 'Titel'|t }}</th>
             <th>{{ 'When'|t }}</th>
             <th>{{ 'Location'|t }}</th>
             <th>{{ 'Capacity'|t }}</th>
@@ -141,16 +139,18 @@
                 {% endif %}
               </td>
 
-              <td class="invites-actions">
-                <a href="/session/{{ sid|url_encode }}/edit"
-                   class="row-act"
-                   title="{{ 'Edit'|t }}"
-                   aria-label="{{ 'Edit session'|t }}">
+              <td class="admin-row-actions">
+                <button type="button"
+                        class="row-act"
+                        title="{{ 'Edit'|t }}"
+                        aria-label="{{ 'Edit session'|t }}"
+                        data-session-modal-url="/session/{{ sid|url_encode }}/edit"
+                        data-session-modal-title="{{ 'Edit session'|t }}">
                   <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                   </svg>
-                </a>
+                </button>
                 <a href="/session/{{ sid|url_encode }}/delete"
                    class="row-act row-act-danger"
                    title="{{ 'Delete'|t }}"
@@ -169,3 +169,151 @@
   {% endif %}
 
 </div>
+
+{# ── Edit modal ── #}
+<div id="session-edit-modal" class="session-modal" hidden aria-modal="true" role="dialog" aria-labelledby="session-modal-title">
+  <div class="session-modal-backdrop"></div>
+  <div class="session-modal-box">
+    <div class="session-modal-header">
+      <h2 id="session-modal-title">{{ 'Edit session'|t }}</h2>
+      <button type="button" id="session-modal-close" class="session-modal-close" aria-label="{{ 'Close'|t }}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div id="session-modal-body" class="session-modal-body">
+      {# filled dynamically #}
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var modal      = document.getElementById('session-edit-modal');
+  var modalTitle = document.getElementById('session-modal-title');
+  var modalBody  = document.getElementById('session-modal-body');
+  var closeBtn   = document.getElementById('session-modal-close');
+  var backdrop   = modal.querySelector('.session-modal-backdrop');
+
+  function openModal(title) {
+    modalTitle.textContent = title || '';
+    modal.hidden = false;
+    document.body.classList.add('modal-open');
+  }
+
+  function closeModal() {
+    modal.hidden = true;
+    document.body.classList.remove('modal-open');
+    modalBody.innerHTML = '';
+  }
+
+  function showLoading() {
+    modalBody.innerHTML =
+      '<div class="session-modal-loading">' +
+        '<svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="animation:spin .8s linear infinite;flex-shrink:0">' +
+          '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>' +
+        '</svg>' +
+        'Even geduld…' +
+      '</div>';
+  }
+
+  function showError(msg) {
+    modalBody.innerHTML = '<div class="alert alert-error" style="margin:0;">' + msg + '</div>';
+  }
+
+  function loadForm(url) {
+    fetch(url)
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.text();
+      })
+      .then(function (html) {
+        var doc  = new DOMParser().parseFromString(html, 'text/html');
+
+        // Prefer a styled card; fall back to the raw form element.
+        var card = doc.querySelector('.admin-form-card') ||
+                   doc.querySelector('.layout-container form') ||
+                   doc.querySelector('main form');
+
+        if (!card) {
+          showError('Formulier kon niet worden geladen. Probeer opnieuw.');
+          return;
+        }
+
+        // Remove "Back" links that belong to the full-page version.
+        card.querySelectorAll('a[href*="/session/admin"], a[href*="/session/create"]').forEach(function (a) {
+          a.style.display = 'none';
+        });
+
+        modalBody.innerHTML = '';
+        modalBody.appendChild(document.importNode(card, true));
+
+        // Intercept form submit so we stay on the admin page after saving.
+        var form = modalBody.querySelector('form');
+        if (!form) return;
+
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var submitBtn = form.querySelector('[type="submit"]');
+          var origLabel = submitBtn ? submitBtn.value || submitBtn.textContent : '';
+          if (submitBtn) { submitBtn.disabled = true; if (submitBtn.value !== undefined) submitBtn.value = 'Bezig…'; else submitBtn.textContent = 'Bezig…'; }
+
+          fetch(form.action || url, {
+            method:   'POST',
+            body:     new FormData(form),
+            redirect: 'follow'
+          })
+          .then(function (r) { return r.text().then(function (t) { return { url: r.url, text: t }; }); })
+          .then(function (res) {
+            // Success: Drupal redirects to confirmation or admin page.
+            if (res.url.indexOf('/session/admin') !== -1 ||
+                res.url.indexOf('/session/confirmation') !== -1) {
+              closeModal();
+              window.location.reload();
+              return;
+            }
+            // Validation errors: re-render the form from the response.
+            var doc2    = new DOMParser().parseFromString(res.text, 'text/html');
+            var newCard = doc2.querySelector('.admin-form-card') ||
+                          doc2.querySelector('.layout-container form') ||
+                          doc2.querySelector('main form');
+            if (newCard) {
+              newCard.querySelectorAll('a[href*="/session/admin"], a[href*="/session/create"]').forEach(function (a) { a.style.display = 'none'; });
+              modalBody.innerHTML = '';
+              modalBody.appendChild(document.importNode(newCard, true));
+              // Re-attach listener on the refreshed form.
+              var f2 = modalBody.querySelector('form');
+              if (f2) f2.addEventListener('submit', arguments.callee);
+            } else {
+              if (submitBtn) { submitBtn.disabled = false; if (submitBtn.value !== undefined) submitBtn.value = origLabel; else submitBtn.textContent = origLabel; }
+            }
+          })
+          .catch(function () {
+            if (submitBtn) { submitBtn.disabled = false; if (submitBtn.value !== undefined) submitBtn.value = origLabel; else submitBtn.textContent = origLabel; }
+          });
+        });
+      })
+      .catch(function (err) {
+        showError('Fout bij laden: ' + err.message);
+      });
+  }
+
+  // Single delegated listener for all modal-triggering buttons.
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-session-modal-url]');
+    if (!btn) return;
+    var url   = btn.getAttribute('data-session-modal-url');
+    var title = btn.getAttribute('data-session-modal-title') || '';
+    openModal(title);
+    showLoading();
+    loadForm(url);
+  });
+
+  closeBtn.addEventListener('click', closeModal);
+  backdrop.addEventListener('click', closeModal);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !modal.hidden) closeModal();
+  });
+}());
+</script>

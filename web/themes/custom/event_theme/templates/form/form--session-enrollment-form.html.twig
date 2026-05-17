@@ -9,7 +9,8 @@
     - form.submit            : submit button
 #}
 
-{% set sessions_full = form['#sessions_full'] ?? [] %}
+{# sessions_full is injected by event_theme_preprocess_form(); fall back to the form element property #}
+{% set sessions_full = sessions_full is defined ? sessions_full : (form['#sessions_full'] ?? []) %}
 
 <div class="sessions-page">
 
@@ -18,10 +19,26 @@
     <div>
       <h1>{{ 'The programme'|t }}</h1>
       {% if sessions_full %}
-        <p>{{ '@count sessions available. Select the ones you want to attend and click Enroll.'|t({'@count': sessions_full|length}) }}</p>
+        <p>{{ '@count sessions across three days. Filter, search, and enrol — drop sessions any time before the festival starts.'|t({'@count': sessions_full|length}) }}</p>
       {% else %}
         <p>{{ 'Select one or more sessions you want to attend.'|t }}</p>
       {% endif %}
+    </div>
+    <div class="sessions-tools">
+      <div class="search">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input type="text" id="session-search" placeholder="{{ 'Search talks, speakers, or rooms...'|t }}" autocomplete="off">
+      </div>
+      <div class="chip-row" id="chip-row">
+        <button type="button" class="chip is-on" data-filter="all">{{ 'All'|t }}</button>
+        <button type="button" class="chip" data-filter="keynote">{{ 'Keynote'|t }}</button>
+        <button type="button" class="chip" data-filter="workshop">{{ 'Workshop'|t }}</button>
+        <button type="button" class="chip" data-filter="talk">{{ 'Talk'|t }}</button>
+        <button type="button" class="chip" data-filter="panel">{{ 'Panel'|t }}</button>
+        <button type="button" class="chip" data-filter="reception">{{ 'Reception'|t }}</button>
+      </div>
     </div>
   </div>
 
@@ -72,19 +89,57 @@
 
           {% set is_full = session.max_attendees > 0 and session.current_attendees >= session.max_attendees %}
 
-          <article class="session-card{% if is_full %} session-card-full{% endif %}">
+          {% set is_enrolled = session.status == 'enrolled' or session.status == 'confirmed' %}
+
+          {# Build session detail JSON for the popup modal #}
+          {% set speaker_name = session.speaker ? [session.speaker.first_name, session.speaker.last_name]|join(' ')|trim : '' %}
+          {% set speaker_org  = session.speaker.organisation ?? '' %}
+          {% set speaker_email = session.speaker.email ?? '' %}
+          {% set start_parts2 = session.start_datetime ? session.start_datetime|split('T') : [] %}
+          {% set session_date = start_parts2[0] ?? '' %}
+          {% set session_time = start_parts2[1] is defined ? start_parts2[1]|split(':')|slice(0,2)|join(':') : '' %}
+          {% set session_json = {
+            'title':       session.title,
+            'type':        session.session_type,
+            'date':        session_date,
+            'time':        session_time,
+            'duration':    session.duration_minutes ?? 0,
+            'location':    session.location ?? '',
+            'speaker':     speaker_name,
+            'speaker_org': speaker_org,
+            'speaker_email': speaker_email,
+            'description': session.description ?? '',
+            'current':     session.current_attendees ?? 0,
+            'max':         session.max_attendees ?? 0,
+            'enrolled':    is_enrolled,
+            'full':        is_full,
+            'price':       session.price ?? ''
+          }|json_encode %}
+
+          <article class="session-card{% if is_full %} session-card-full{% endif %}"
+                   data-type="{{ session.session_type|lower }}"
+                   data-title="{{ session.title|lower }}"
+                   data-speaker="{% if session.speaker %}{{ [session.speaker.first_name, session.speaker.last_name]|join(' ')|lower }}{% endif %}"
+                   data-location="{{ session.location|lower }}"
+                   data-session="{{ session_json|e('html_attr') }}"
+                   style="cursor:pointer;"
+                   tabindex="0"
+                   role="button"
+                   aria-label="{{ 'View details: '|t }}{{ session.title }}">
 
             {# Time column #}
             <div class="session-time-col">
               {% if session.start_datetime %}
                 {% set start_parts = session.start_datetime|split('T') %}
-                {% set date_part = start_parts[0] ?? session.start_datetime %}
-                {% set time_part = (start_parts[1] ?? '')|split(':')|slice(0,2)|join(':') %}
-                <span class="session-day">{{ date_part }}</span>
-                <span class="session-hour">{{ time_part }}</span>
+                {% set date_str = start_parts[0] ?? '' %}
+                {% set time_str = (start_parts[1] ?? '')|split(':')|slice(0,2)|join(':') %}
+                {# Format date as "TUE 12 MAY" #}
+                <span class="session-day">{{ date_str }}</span>
+                <span class="session-hour">{{ time_str }}</span>
               {% endif %}
-              {% if session.session_type %}
-                <span class="session-dur">{{ session.session_type }}</span>
+              {% if session.duration_minutes is defined and session.duration_minutes %}
+                {% set dur = session.duration_minutes %}
+                <span class="session-dur">{{ dur >= 60 ? (dur // 60) ~ ' hr' : dur ~ ' min' }}</span>
               {% endif %}
             </div>
 
@@ -94,12 +149,17 @@
                 {% if session.session_type %}
                   <span class="tag tag-{{ type_tone }}">{{ session.session_type }}</span>
                 {% endif %}
-                {% if session.status and session.status != 'open' %}
-                  <span class="tag">{{ session.status }}</span>
+                {% if is_enrolled %}
+                  <span class="tag tag-ok">{{ 'enrolled'|t }}</span>
                 {% endif %}
               </div>
 
-              <h3>{{ session.title }}</h3>
+              {% if session.description %}
+                <h3 title="{{ session.description }}">{{ session.title }}</h3>
+                <p class="session-desc">{{ session.description|slice(0, 120) }}{% if session.description|length > 120 %}…{% endif %}</p>
+              {% else %}
+                <h3>{{ session.title }}</h3>
+              {% endif %}
 
               <div class="session-foot">
                 {% if session.speaker %}
@@ -120,9 +180,6 @@
                     {{ session.location }}
                   </span>
                 {% endif %}
-                {% if session.price is not null %}
-                  <span>€{{ session.price|number_format(2) }}</span>
-                {% endif %}
               </div>
             </div>
 
@@ -135,7 +192,7 @@
                   </div>
                   <div class="capacity-meta">
                     <span>{{ session.current_attendees }}&thinsp;/&thinsp;{{ session.max_attendees }}</span>
-                    <span class="capacity-pct">{{ pct }}%</span>
+                    <span class="capacity-pct">{{ pct }}%{{ pct >= 95 ? ' full' : '' }}</span>
                   </div>
                 </div>
               {% endif %}
@@ -144,8 +201,11 @@
                 <span class="btn btn-ghost btn-sm btn-full" style="text-align:center;cursor:not-allowed;opacity:.55;">
                   {{ 'Full'|t }}
                 </span>
+              {% elseif is_enrolled %}
+                <div class="session-checkbox-wrap">
+                  {{ form.session_ids[sid] }}
+                </div>
               {% else %}
-                {# Render individual checkbox for this session #}
                 <div class="session-checkbox-wrap">
                   {{ form.session_ids[sid] }}
                 </div>
@@ -165,3 +225,183 @@
 
   </form>
 </div>
+
+{# ── Session detail modal ── #}
+<div id="sdmodal" class="sdmodal" hidden aria-modal="true" role="dialog" aria-labelledby="sdmodal-title">
+  <div class="sdmodal-backdrop"></div>
+  <div class="sdmodal-box">
+    <div class="sdmodal-header">
+      <div style="flex:1;min-width:0;">
+        <div id="sdmodal-tags" style="margin-bottom:8px;display:flex;gap:6px;flex-wrap:wrap;"></div>
+        <h2 id="sdmodal-title" style="margin:0;font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1.2;"></h2>
+      </div>
+      <button type="button" id="sdmodal-close" class="sdmodal-close" aria-label="{{ 'Sluiten'|t }}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="sdmodal-body">
+      <div id="sdmodal-meta" class="sdmodal-meta"></div>
+      <div id="sdmodal-description" class="sdmodal-description"></div>
+      <div id="sdmodal-capacity" class="sdmodal-capacity-wrap"></div>
+      <div id="sdmodal-footer" class="sdmodal-footer"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  /* ── Filter & search ── */
+  var search  = document.getElementById('session-search');
+  var chipRow = document.getElementById('chip-row');
+  var cards   = document.querySelectorAll('.session-card');
+  var activeFilter = 'all';
+
+  function filterCards() {
+    var q = search ? search.value.toLowerCase() : '';
+    cards.forEach(function(card) {
+      var type    = (card.dataset.type    || '').toLowerCase();
+      var title   = (card.dataset.title   || '').toLowerCase();
+      var speaker = (card.dataset.speaker || '').toLowerCase();
+      var loc     = (card.dataset.location|| '').toLowerCase();
+      var matchFilter = activeFilter === 'all' || type === activeFilter;
+      var matchSearch = !q || title.indexOf(q) > -1 || speaker.indexOf(q) > -1 || loc.indexOf(q) > -1;
+      card.style.display = (matchFilter && matchSearch) ? '' : 'none';
+    });
+  }
+
+  if (search) search.addEventListener('input', filterCards);
+
+  if (chipRow) {
+    chipRow.addEventListener('click', function(e) {
+      var btn = e.target.closest('.chip');
+      if (!btn) return;
+      chipRow.querySelectorAll('.chip').forEach(function(c) { c.classList.remove('is-on'); });
+      btn.classList.add('is-on');
+      activeFilter = btn.dataset.filter;
+      filterCards();
+    });
+  }
+
+  /* ── Session detail modal ── */
+  var modal    = document.getElementById('sdmodal');
+  var backdrop = modal.querySelector('.sdmodal-backdrop');
+  var closeBtn = document.getElementById('sdmodal-close');
+
+  var TONE = { keynote: 'primary', workshop: 'accent', reception: 'warm' };
+
+  function esc(s) {
+    var d = document.createElement('div');
+    d.textContent = s || '';
+    return d.innerHTML;
+  }
+
+  function openModal(data) {
+    /* Tags row */
+    var tagsEl = document.getElementById('sdmodal-tags');
+    tagsEl.innerHTML = '';
+    if (data.type) {
+      var tone = TONE[data.type] || 'neutral';
+      tagsEl.innerHTML += '<span class="tag tag-' + tone + '">' + esc(data.type) + '</span>';
+    }
+    if (data.enrolled) tagsEl.innerHTML += '<span class="tag tag-ok">{{ "ingeschreven"|t }}</span>';
+    if (data.full)     tagsEl.innerHTML += '<span class="tag tag-hot">{{ "vol"|t }}</span>';
+
+    /* Title */
+    document.getElementById('sdmodal-title').textContent = data.title || '';
+
+    /* Meta row: date, time, location, speaker */
+    var meta = '';
+    if (data.date || data.time) {
+      meta += '<div class="sdmodal-meta-item">'
+            + '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 2v4M8 2v4M3 10h18"/></svg>'
+            + '<span>' + esc(data.date) + (data.time ? ' · ' + esc(data.time) : '') + (data.duration ? ' · ' + (data.duration >= 60 ? Math.floor(data.duration/60) + ' hr' : data.duration + ' min') : '') + '</span>'
+            + '</div>';
+    }
+    if (data.location) {
+      meta += '<div class="sdmodal-meta-item">'
+            + '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>'
+            + '<span>' + esc(data.location) + '</span>'
+            + '</div>';
+    }
+    if (data.speaker) {
+      var spk = esc(data.speaker);
+      if (data.speaker_org) spk += ' <span style="color:var(--muted)">· ' + esc(data.speaker_org) + '</span>';
+      if (data.speaker_email) spk += ' <a href="mailto:' + esc(data.speaker_email) + '" style="color:var(--primary);font-size:12px;margin-left:4px;">' + esc(data.speaker_email) + '</a>';
+      meta += '<div class="sdmodal-meta-item">'
+            + '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>'
+            + '<span>' + spk + '</span>'
+            + '</div>';
+    }
+    document.getElementById('sdmodal-meta').innerHTML = meta;
+
+    /* Description */
+    var descEl = document.getElementById('sdmodal-description');
+    descEl.innerHTML = data.description
+      ? '<p style="margin:0;font-size:14px;line-height:1.6;color:var(--ink);">' + esc(data.description) + '</p>'
+      : '';
+
+    /* Capacity */
+    var capEl = document.getElementById('sdmodal-capacity');
+    if (data.max > 0) {
+      var pct  = Math.round((data.current / data.max) * 100);
+      var cls  = pct >= 95 ? 'capacity-hot' : pct >= 75 ? 'capacity-warm' : 'capacity-cool';
+      capEl.innerHTML =
+        '<div class="sdmodal-cap-label">{{ "Capaciteit"|t }}</div>'
+        + '<div class="capacity"><div class="capacity-bar"><div class="capacity-fill ' + cls + '" style="width:' + pct + '%"></div></div>'
+        + '<div class="capacity-meta"><span>' + data.current + ' / ' + data.max + '</span><span class="capacity-pct">' + pct + '%</span></div></div>';
+    } else {
+      capEl.innerHTML = '';
+    }
+
+    /* Footer: price */
+    var footEl = document.getElementById('sdmodal-footer');
+    footEl.innerHTML = (data.price && data.price !== '0' && data.price !== '')
+      ? '<div class="sdmodal-price">€ ' + esc(String(data.price)) + '</div>'
+      : '';
+
+    modal.hidden = false;
+    document.body.classList.add('modal-open');
+    document.getElementById('sdmodal-close').focus();
+  }
+
+  function closeModal() {
+    modal.hidden = true;
+    document.body.classList.remove('modal-open');
+  }
+
+  /* Delegated click on session cards — skip form controls */
+  document.addEventListener('click', function(e) {
+    if (!modal.hidden && e.target.closest('#sdmodal')) return; /* inside modal */
+    var card = e.target.closest('.session-card[data-session]');
+    if (!card) return;
+    /* Ignore clicks on form elements so checkbox still works */
+    if (e.target.closest('input, label, button, a, .session-checkbox-wrap')) return;
+    try {
+      var data = JSON.parse(card.dataset.session);
+      openModal(data);
+    } catch(err) {}
+  });
+
+  /* Keyboard: Enter/Space on card */
+  document.addEventListener('keydown', function(e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var card = e.target.closest('.session-card[data-session]');
+    if (!card) return;
+    if (e.target.closest('input, label, button, a')) return;
+    e.preventDefault();
+    try {
+      var data = JSON.parse(card.dataset.session);
+      openModal(data);
+    } catch(err) {}
+  });
+
+  closeBtn.addEventListener('click', closeModal);
+  backdrop.addEventListener('click', closeModal);
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && !modal.hidden) closeModal();
+  });
+}());
+</script>
+

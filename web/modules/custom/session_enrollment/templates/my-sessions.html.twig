@@ -4,7 +4,8 @@
     - name:             First name of the current user
     - grouped_sessions: Sessions grouped by day (array<string, array[]>)
                         Each session has: title, session_type, location, speaker,
-                        formatted_start, formatted_end, status
+                        formatted_start, formatted_end, status, max_attendees,
+                        current_attendees, price
     - sessions:         Flat session list (fallback)
     - notice:           Optional string message shown instead of the session list
 #}
@@ -51,6 +52,13 @@
               {% elseif s.session_type == 'reception' %}{% set type_tone = 'warm' %}
               {% endif %}
 
+              {% set has_capacity = s.max_attendees is defined and s.max_attendees > 0 %}
+              {% set has_price    = s.price is defined and s.price is not null and s.price != '' %}
+              {% set has_email    = s.speaker is defined and s.speaker and s.speaker.email is defined and s.speaker.email %}
+              {% set has_details  = has_capacity or has_price or has_email %}
+
+              {% set detail_id = 'sd-' ~ loop.parent.loop.index ~ '-' ~ loop.index %}
+
               <div class="schedule-item">
                 <div class="schedule-item-time">
                   <strong>{{ s.formatted_start ?: s.start_datetime }}</strong>
@@ -70,7 +78,7 @@
                       {{ 'Calendar invite confirmed'|t }}
                     </span>
                   </div>
-                  <h3>{{ s.title }}</h3>
+                  <h3{% if has_details %} onclick="toggleDetail('{{ detail_id }}')" title="{{ 'Click to see details'|t }}"{% endif %}>{{ s.title }}</h3>
                   <div class="schedule-item-sub">
                     {% if s.location %}
                       <span>
@@ -90,16 +98,47 @@
                         {% if s.speaker.organisation %}· {{ s.speaker.organisation }}{% endif %}
                       </span>
                     {% endif %}
-                    {% if s.price is not null %}
-                      <span>€{{ s.price|number_format(2) }}</span>
-                    {% endif %}
                   </div>
                 </div>
 
-                {% if s.status %}
-                  <span class="tag tag-{{ s.status == 'confirmed' ? 'ok' : (s.status == 'cancelled' ? 'hot' : 'neutral') }}">
-                    {{ s.status }}
-                  </span>
+                <div class="schedule-item-actions">
+                  {% if has_details %}
+                    <button type="button" class="schedule-detail-btn" id="btn-{{ detail_id }}"
+                            aria-expanded="false" aria-controls="{{ detail_id }}"
+                            onclick="toggleDetail('{{ detail_id }}')">
+                      {{ 'Details'|t }}
+                      <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                      </svg>
+                    </button>
+                  {% endif %}
+                  <a href="/sessions/enroll" class="btn btn-ghost btn-sm schedule-drop-btn">
+                    {{ 'Drop'|t }}
+                  </a>
+                </div>
+
+                {% if has_details %}
+                  <dl class="schedule-item-details" id="{{ detail_id }}" hidden>
+                    {% if has_capacity %}
+                      {% set pct = ((s.current_attendees / s.max_attendees) * 100)|round %}
+                      <div class="schedule-detail-field">
+                        <dt>{{ 'Capacity'|t }}</dt>
+                        <dd>{{ s.current_attendees }}&thinsp;/&thinsp;{{ s.max_attendees }} ({{ pct }}%)</dd>
+                      </div>
+                    {% endif %}
+                    {% if has_price %}
+                      <div class="schedule-detail-field">
+                        <dt>{{ 'Price'|t }}</dt>
+                        <dd>€ {{ s.price }}</dd>
+                      </div>
+                    {% endif %}
+                    {% if has_email %}
+                      <div class="schedule-detail-field">
+                        <dt>{{ 'Speaker contact'|t }}</dt>
+                        <dd><a href="mailto:{{ s.speaker.email }}">{{ s.speaker.email }}</a></dd>
+                      </div>
+                    {% endif %}
+                  </dl>
                 {% endif %}
               </div>
             {% endfor %}
@@ -109,3 +148,14 @@
     </div>
   {% endif %}
 </div>
+
+<script>
+function toggleDetail(id) {
+  var panel = document.getElementById(id);
+  var btn   = document.getElementById('btn-' + id);
+  if (!panel) return;
+  var isOpen = !panel.hidden;
+  panel.hidden = isOpen;
+  if (btn) btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+}
+</script>

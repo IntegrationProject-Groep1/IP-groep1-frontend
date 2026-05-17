@@ -20,7 +20,7 @@ class VatValidationErrorReceiver
     private const QUEUE    = 'frontend.crm.vat.validation.error';
     private const DLQ      = 'frontend.crm.vat.validation.error.dlq';
     private const DLX      = 'frontend.crm.dlx';
-    private const XSD_PATH = 'xsd/vat_validation_error.xsd';
+    private const XSD_PATH = __DIR__ . '/../../../../../xsd/vat_validation_error.xsd';
 
     public function __construct(private readonly RabbitMQClient $client) {}
 

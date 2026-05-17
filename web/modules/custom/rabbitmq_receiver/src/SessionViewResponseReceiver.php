@@ -48,10 +48,24 @@ class SessionViewResponseReceiver
         $xml = $this->parseXml($xmlString);
         $body = $xml->body;
 
+        $requestMessageId  = trim((string) $body->request_message_id);
+        $requestedSessionId = isset($body->requested_session_id) ? trim((string) $body->requested_session_id) : '';
+        $sessionCount       = (int) (string) $body->session_count;
+
         $status = trim((string) $body->status);
         if ($status === '') {
             throw new \InvalidArgumentException('status is required');
         }
+
+        \Drupal::logger('rabbitmq_receiver')->info(
+            'session_view_response: request_message_id=@req, requested_session=@sid, status=@status, session_count=@count.',
+            [
+                '@req'    => $requestMessageId ?: 'n/a',
+                '@sid'    => $requestedSessionId ?: 'all',
+                '@status' => $status,
+                '@count'  => $sessionCount,
+            ]
+        );
 
         if ($status === 'not_found') {
             return [];
@@ -86,6 +100,13 @@ class SessionViewResponseReceiver
                     ] : null,
                 ];
             }
+        }
+
+        if ($sessionCount !== count($sessions)) {
+            \Drupal::logger('rabbitmq_receiver')->warning(
+                'session_view_response: session_count=@declared but parsed @actual sessions (request_message_id=@req).',
+                ['@declared' => $sessionCount, '@actual' => count($sessions), '@req' => $requestMessageId ?: 'n/a']
+            );
         }
 
         return $sessions;
