@@ -33,6 +33,13 @@ class RabbitMQClient
         $this->user     = $user     ?: (string) (getenv('RABBITMQ_USER')  ?: '');
         $this->password = $password ?: (string) (getenv('RABBITMQ_PASS')  ?: '');
         $this->vhost    = $vhost    ?: (string) (getenv('RABBITMQ_VHOST') ?: '/');
+
+        if (empty($this->host)) {
+            throw new \InvalidArgumentException('Host cannot be empty');
+        }
+        if ($this->port <= 0) {
+            throw new \InvalidArgumentException('Port must be greater than 0');
+        }
     }
 
     public function getChannel(): AMQPChannel
