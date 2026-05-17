@@ -18,6 +18,9 @@ $databases['default']['default'] = [
 
 $settings['hash_salt'] = 'local-dev-hash-salt-event-platform-2526';
 
+// Configure private file system for sensitive uploads (e.g., CSV files)
+$settings['file_private_path'] = '../private';
+
 $settings['update_free_access'] = FALSE;
 
 if (file_exists($app_root . '/sites/development.services.yml')) {

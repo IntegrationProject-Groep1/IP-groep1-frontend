@@ -42,7 +42,7 @@ class CompanyInviteForm extends FormBase
             '#type'  => 'managed_file',
             '#title' => $this->t('Upload CSV file'),
             '#description' => $this->t('CSV format: email, first_name, last_name'),
-            '#upload_location' => 'public://company_invite/',
+            '#upload_location' => 'private://company_invite/',
             '#upload_validators' => [
                 'file_validate_extensions' => ['csv txt'],
             ],
@@ -68,7 +68,7 @@ class CompanyInviteForm extends FormBase
         }
 
         if (!empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            $form_state->setErrorByName('section_single][invite_email', $this->t('Please enter a valid email address.'));
+            $form_state->setErrorByName('invite_email', $this->t('Please enter a valid email address.'));
         }
     }
 
@@ -106,7 +106,12 @@ class CompanyInviteForm extends FormBase
 
         foreach ($emails_to_invite as $email_data) {
             try {
-                $inviteService->sendInvite($email_data['email'], $uid);
+                $inviteService->sendInvite(
+                    $email_data['email'],
+                    $uid,
+                    $email_data['first_name'],
+                    $email_data['last_name'],
+                );
                 $success_count++;
             } catch (\Exception $e) {
                 $failed_emails[$email_data['email']] = $e->getMessage();
@@ -144,7 +149,15 @@ class CompanyInviteForm extends FormBase
             return [];
         }
 
+        $row_num = 0;
         while (($row = fgetcsv($handle)) !== false) {
+            $row_num++;
+
+            // Skip header row (first row) if it contains text instead of email
+            if ($row_num === 1 && !filter_var(trim((string) $row[0]), FILTER_VALIDATE_EMAIL)) {
+                continue;
+            }
+
             if (empty($row[0])) {
                 continue;
             }

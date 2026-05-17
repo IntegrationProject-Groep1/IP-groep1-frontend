@@ -38,10 +38,15 @@ class InviteService
     /**
      * Sends a company invite for $inviteeEmail on behalf of the Drupal user $inviterUid.
      *
+     * @param string $inviteeEmail The email address of the invitee.
+     * @param int $inviterUid The Drupal UID of the inviter (company admin).
+     * @param string $firstName Optional first name of the invitee from CSV.
+     * @param string $lastName Optional last name of the invitee from CSV.
+     *
      * @throws \InvalidArgumentException When the inviter has no stored master_uuid (not a company admin).
      * @throws \InvalidArgumentException When the invitee email is invalid.
      */
-    public function sendInvite(string $inviteeEmail, int $inviterUid): void
+    public function sendInvite(string $inviteeEmail, int $inviterUid, string $firstName = '', string $lastName = ''): void
     {
         $logger = $this->loggerFactory->get('company_invite');
 
@@ -66,7 +71,7 @@ class InviteService
 
         // Step 2: notify CRM that this user is pre-registered and belongs to the company.
         if ($inviteeMasterUuid !== '') {
-            $this->notifyCrm($inviteeMasterUuid, $inviteeEmail, $inviterUuid, $logger);
+            $this->notifyCrm($inviteeMasterUuid, $inviteeEmail, $inviterUuid, $firstName, $lastName, $logger);
         }
 
         // Step 3: create invite token and persist it.
@@ -227,8 +232,15 @@ class InviteService
         string $inviteeMasterUuid,
         string $inviteeEmail,
         string $inviterUuid,
-        \Drupal\Core\Logger\LoggerChannelInterface $logger,
+        string $firstName = '',
+        string $lastName = '',
+        \Drupal\Core\Logger\LoggerChannelInterface $logger = null,
     ): void {
+        // Handle backward compatibility
+        if ($logger === null) {
+            $logger = $this->loggerFactory->get('company_invite');
+        }
+
         if ($this->userCreatedSender === null) {
             return;
         }
@@ -237,8 +249,8 @@ class InviteService
             $this->userCreatedSender->send([
                 'identity_uuid' => $inviteeMasterUuid,
                 'email'         => $inviteeEmail,
-                'first_name'    => '',
-                'last_name'     => '',
+                'first_name'    => $firstName,
+                'last_name'     => $lastName,
                 'date_of_birth' => '',
                 'is_company'    => true,
                 'company_id'    => $inviterUuid,
