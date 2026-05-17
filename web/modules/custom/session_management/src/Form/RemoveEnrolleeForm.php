@@ -7,8 +7,6 @@ namespace Drupal\session_management\Form;
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
-use PhpAmqpLib\Message\AMQPMessage;
-use Drupal\rabbitmq_sender\RabbitMQClient;
 
 /**
  * Confirmation form to remove a person from a session.
@@ -77,18 +75,9 @@ class RemoveEnrolleeForm extends ConfirmFormBase
 
         // Step 3: Publish to crm.incoming.
         try {
-            $client = new RabbitMQClient(
-                (string) (getenv('RABBITMQ_HOST')  ?: 'rabbitmq_broker'),
-                (int)    (getenv('RABBITMQ_PORT')  ?: 5672),
-                (string) (getenv('RABBITMQ_USER')  ?: 'guest'),
-                (string) (getenv('RABBITMQ_PASS')  ?: 'guest'),
-                (string) (getenv('RABBITMQ_VHOST') ?: '/'),
-            );
-
-            $channel = $client->getChannel();
-            $channel->queue_declare('crm.incoming', false, true, false, false);
-            $msg = new AMQPMessage($xml, ['delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT]);
-            $channel->basic_publish($msg, '', 'crm.incoming');
+            $client = \Drupal::service('rabbitmq_sender.client');
+            $client->declareQueue('crm.incoming');
+            $client->publishToQueue('crm.incoming', $xml);
 
             $this->messenger()->addStatus(
                 $this->t('The enrollee has been removed and CRM has been notified.')
