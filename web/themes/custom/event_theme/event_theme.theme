@@ -205,6 +205,10 @@ function event_theme_preprocess_page(array &$variables): void {
       $variables[$varName] = '';
     }
   }
+
+  // Read Drupal flash messages so Twig templates can render them as toasts.
+  // messenger()->all() returns and clears the queue, preventing double display.
+  $variables['toast_messages'] = \Drupal::messenger()->all();
 }
 
 /**
