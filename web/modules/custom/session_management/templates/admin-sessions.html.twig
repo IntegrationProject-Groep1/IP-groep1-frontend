@@ -1,0 +1,120 @@
+{#
+  Template: admin-sessions.html.twig
+  Variables:
+    sessions (array) — list of session arrays from planning.sessions Drupal State.
+      Each session has: session_id, title, start_datetime, end_datetime,
+      location, session_type, status, max_attendees, current_attendees.
+#}
+<div class="admin-sessions">
+
+  <div class="admin-head">
+    <p class="eyebrow">Session management</p>
+    <h1>Sessions</h1>
+    <a href="/session/create" class="btn btn-secondary">+ New session</a>
+  </div>
+
+  <div class="card card-pad-none">
+    {% if sessions is empty %}
+      <div style="padding: 2rem 1.5rem; color: #6b7280; text-align: center;">
+        <p class="muted-small">No sessions found. Sessions appear here once the Planning service has responded.</p>
+        <a href="/session/create" class="btn btn-secondary" style="margin-top: 1rem;">Create your first session</a>
+      </div>
+    {% else %}
+      <table class="admin-table">
+        <thead class="admin-table-head">
+          <tr>
+            <th>Title</th>
+            <th>Type</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Location</th>
+            <th>Status</th>
+            <th>Attendees</th>
+            <th><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for session in sessions %}
+            {% set sid = session.session_id %}
+            <tr class="section-label-row">
+              <td class="section-label">{{ session.title }}</td>
+              <td class="muted-small">{{ session.session_type }}</td>
+              <td class="muted-small">{{ session.start_datetime }}</td>
+              <td class="muted-small">{{ session.end_datetime }}</td>
+              <td class="muted-small">{{ session.location }}</td>
+              <td>
+                <span class="muted-small">{{ session.status }}</span>
+              </td>
+              <td class="muted-small">
+                {{ session.current_attendees }} / {{ session.max_attendees }}
+              </td>
+              <td class="invites-actions">
+
+                {# View enrollees button — FIRST, before edit #}
+                <a href="/session/{{ sid|url_encode }}/enrollees"
+                   class="row-act"
+                   title="View enrollees"
+                   aria-label="View enrollees">
+                  <svg xmlns="http://www.w3.org/2000/svg"
+                       viewBox="0 0 24 24"
+                       fill="none"
+                       stroke="currentColor"
+                       stroke-width="2"
+                       stroke-linecap="round"
+                       stroke-linejoin="round"
+                       width="18" height="18"
+                       aria-hidden="true">
+                    <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
+                </a>
+
+                {# Edit session button #}
+                <a href="/session/create?session_id={{ sid|url_encode }}"
+                   class="row-act"
+                   title="Edit session"
+                   aria-label="Edit session">
+                  <svg xmlns="http://www.w3.org/2000/svg"
+                       viewBox="0 0 24 24"
+                       fill="none"
+                       stroke="currentColor"
+                       stroke-width="2"
+                       stroke-linecap="round"
+                       stroke-linejoin="round"
+                       width="18" height="18"
+                       aria-hidden="true">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </a>
+
+                {# Delete / end session button #}
+                <a href="/session/end"
+                   class="row-act row-act-danger"
+                   title="End session"
+                   aria-label="End session">
+                  <svg xmlns="http://www.w3.org/2000/svg"
+                       viewBox="0 0 24 24"
+                       fill="none"
+                       stroke="currentColor"
+                       stroke-width="2"
+                       stroke-linecap="round"
+                       stroke-linejoin="round"
+                       width="18" height="18"
+                       aria-hidden="true">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+                    <path d="M10 11v6"/>
+                    <path d="M14 11v6"/>
+                    <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+                  </svg>
+                </a>
+
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+  </div>
+
+</div>

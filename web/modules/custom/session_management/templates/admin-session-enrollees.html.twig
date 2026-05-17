@@ -1,0 +1,71 @@
+{#
+  Template: admin-session-enrollees.html.twig
+  Variables:
+    session    (array|null) — session data from planning.sessions state.
+    session_id (string)     — the raw session UUID from the route.
+    enrollees  (array)      — list of enrollee arrays from planning.enrollees state,
+                              filtered to this session.
+      Each enrollee has: identity_uuid, session_id, first_name, last_name, email, enrolled_at.
+#}
+<div class="admin-sessions">
+
+  <div class="admin-head">
+    <p class="eyebrow">Session management · Enrollees</p>
+    <h1>{{ session ? session.title : session_id }}</h1>
+    <a href="/session/admin" class="btn btn-secondary">← Back to sessions</a>
+  </div>
+
+  <div class="card card-pad-none">
+    {% if enrollees is empty %}
+      <div style="padding: 2rem 1.5rem; color: #6b7280; text-align: center;">
+        <p class="muted-small">No enrollees found for this session.</p>
+      </div>
+    {% else %}
+      <table class="admin-table">
+        <thead class="admin-table-head">
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Enrolled at</th>
+            <th><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in enrollees %}
+            <tr class="section-label-row">
+              <td class="section-label">{{ e.first_name }} {{ e.last_name }}</td>
+              <td class="muted-small">{{ e.email }}</td>
+              <td class="muted-small">{{ e.enrolled_at }}</td>
+              <td class="invites-actions">
+
+                {# Remove enrollee button #}
+                <a href="/session/{{ session_id|url_encode }}/enrollees/{{ e.identity_uuid|url_encode }}/remove"
+                   class="row-act row-act-danger"
+                   title="Remove from session"
+                   aria-label="Remove from session">
+                  <svg xmlns="http://www.w3.org/2000/svg"
+                       viewBox="0 0 24 24"
+                       fill="none"
+                       stroke="currentColor"
+                       stroke-width="2"
+                       stroke-linecap="round"
+                       stroke-linejoin="round"
+                       width="18" height="18"
+                       aria-hidden="true">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+                    <path d="M10 11v6"/>
+                    <path d="M14 11v6"/>
+                    <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+                  </svg>
+                </a>
+
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+  </div>
+
+</div>
