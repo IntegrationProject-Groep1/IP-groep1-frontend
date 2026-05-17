@@ -12,22 +12,27 @@ use PhpAmqpLib\Message\AMQPMessage;
  */
 class RabbitMQClient
 {
+    private readonly string $host;
+    private readonly int $port;
+    private readonly string $user;
+    private readonly string $password;
+    private readonly string $vhost;
+
     private ?AMQPStreamConnection $connection = null;
     private ?AMQPChannel $channel = null;
 
     public function __construct(
-        private readonly string $host,
-        private readonly int $port,
-        private readonly string $user,
-        private readonly string $password,
-        private readonly string $vhost = '/'
+        string $host = '',
+        int $port = 0,
+        string $user = '',
+        string $password = '',
+        string $vhost = ''
     ) {
-        if (empty($host)) {
-            throw new \InvalidArgumentException('Host cannot be empty');
-        }
-        if ($port <= 0) {
-            throw new \InvalidArgumentException('Port must be greater than 0');
-        }
+        $this->host     = $host     ?: (string) (getenv('RABBITMQ_HOST')  ?: '');
+        $this->port     = $port > 0 ? $port : (int) (getenv('RABBITMQ_PORT') ?: 5672);
+        $this->user     = $user     ?: (string) (getenv('RABBITMQ_USER')  ?: '');
+        $this->password = $password ?: (string) (getenv('RABBITMQ_PASS')  ?: '');
+        $this->vhost    = $vhost    ?: (string) (getenv('RABBITMQ_VHOST') ?: '/');
     }
 
     public function getChannel(): AMQPChannel
