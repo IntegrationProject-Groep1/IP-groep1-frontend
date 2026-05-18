@@ -283,6 +283,9 @@ function event_theme_preprocess_page__front(array &$variables): void {
     }
   }
   $variables['front_sessions'] = $frontSessions;
+
+  $allSessions = \Drupal::state()->get('planning.sessions', []);
+  $variables['total_sessions_count'] = count((array) $allSessions);
 }
 
 /* ── Private helpers ─────────────────────────────────────── */

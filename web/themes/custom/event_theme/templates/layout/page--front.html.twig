@@ -246,7 +246,7 @@
             <div class="stat">
               <div class="stat-label">{{ 'Sessies'|t }}</div>
               <div class="stat-value">{{ front_sessions|length }}</div>
-              <div class="stat-sub">{{ 'van 84 beschikbaar'|t }}</div>
+              <div class="stat-sub">{{ 'van @count beschikbaar'|t({'@count': total_sessions_count}) }}</div>
             </div>
             <div class="stat">
               <div class="stat-label">{{ 'Wallet'|t }}</div>
