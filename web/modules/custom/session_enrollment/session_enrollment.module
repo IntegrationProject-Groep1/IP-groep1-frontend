@@ -27,6 +27,11 @@ function session_enrollment_theme(): array
                 'notice'           => null,
             ],
         ],
+        'sessions_overview' => [
+            'variables' => [
+                'sessions' => [],
+            ],
+        ],
     ];
 }
 

@@ -1,0 +1,107 @@
+{#
+  Template: sessions-overview.html.twig
+  Variables:
+    - sessions: Array of available sessions from Planning.
+                Each session: session_id, title, session_type, start_datetime,
+                end_datetime, location, speaker, max_attendees, current_attendees,
+                status, price
+#}
+
+<div class="sessions-overview">
+  <div class="sessions-overview-head">
+    <h1>{{ 'Programme'|t }}</h1>
+    <p>{{ 'Browse the available sessions and enroll directly. Calendar invites are sent automatically.'|t }}</p>
+  </div>
+
+  {% if sessions is empty %}
+    <div class="empty">
+      <div class="empty-dot"></div>
+      <h3>{{ 'No sessions available yet.'|t }}</h3>
+      <p>{{ 'Check back later or contact the event organisers.'|t }}</p>
+    </div>
+
+  {% else %}
+    <div class="session-cards">
+      {% for s in sessions %}
+        {% set type_tone = 'neutral' %}
+        {% if s.session_type == 'keynote' %}{% set type_tone = 'primary' %}
+        {% elseif s.session_type == 'workshop' %}{% set type_tone = 'accent' %}
+        {% elseif s.session_type == 'reception' %}{% set type_tone = 'warm' %}
+        {% endif %}
+
+        {% set is_full = s.max_attendees is defined and s.max_attendees > 0
+                         and s.current_attendees is defined
+                         and s.current_attendees >= s.max_attendees %}
+
+        <div class="session-card{% if is_full %} session-card--full{% endif %}">
+          <div class="session-card-header">
+            {% if s.session_type %}
+              <span class="tag tag-{{ type_tone }}">{{ s.session_type }}</span>
+            {% endif %}
+            {% if is_full %}
+              <span class="tag tag-warn">{{ 'Full'|t }}</span>
+            {% endif %}
+          </div>
+
+          <h2 class="session-card-title">{{ s.title }}</h2>
+
+          <div class="session-card-meta">
+            {% if s.start_datetime %}
+              <span class="session-card-time">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                {{ s.start_datetime|date('H:i, D d M Y') }}
+                {% if s.end_datetime %}
+                  &ndash; {{ s.end_datetime|date('H:i') }}
+                {% endif %}
+              </span>
+            {% endif %}
+
+            {% if s.location %}
+              <span>
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                {{ s.location }}
+              </span>
+            {% endif %}
+
+            {% if s.speaker %}
+              <span>
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+                {{ [s.speaker.first_name, s.speaker.last_name]|join(' ')|trim }}
+                {% if s.speaker.organisation %}&middot; {{ s.speaker.organisation }}{% endif %}
+              </span>
+            {% endif %}
+
+            {% if s.max_attendees is defined and s.max_attendees > 0 %}
+              <span class="session-card-capacity">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                {{ s.current_attendees|default(0) }}&thinsp;/&thinsp;{{ s.max_attendees }}
+              </span>
+            {% endif %}
+          </div>
+
+          <div class="session-card-actions">
+            {% if is_full %}
+              <span class="btn btn-disabled" aria-disabled="true">{{ 'Session full'|t }}</span>
+            {% else %}
+              <a href="/sessions/{{ s.session_id }}/enroll" class="btn btn-primary btn-sm">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                {{ 'Enroll'|t }}
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>

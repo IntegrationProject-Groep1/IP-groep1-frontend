@@ -1,3 +1,20 @@
+session_enrollment.overview:
+  path: '/sessions'
+  defaults:
+    _controller: '\Drupal\session_enrollment\Controller\SessionsOverviewController::page'
+    _title: 'Sessions'
+  requirements:
+    _role: 'authenticated'
+
+session_enrollment.enroll_single:
+  path: '/sessions/{session_id}/enroll'
+  defaults:
+    _form: '\Drupal\session_enrollment\Form\SessionEnrollSingleForm'
+    _title: 'Enroll in session'
+  requirements:
+    _role: 'authenticated'
+    session_id: '[0-9a-f-]+'
+
 session_enrollment.enroll:
   path: '/sessions/enroll'
   defaults:

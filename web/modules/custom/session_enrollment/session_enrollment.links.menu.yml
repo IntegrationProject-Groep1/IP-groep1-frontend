@@ -1,3 +1,9 @@
+session_enrollment.overview:
+  title: 'Sessions'
+  route_name: session_enrollment.overview
+  menu_name: main
+  weight: 19
+
 session_enrollment.enroll:
   title: 'Enroll in sessions'
   route_name: session_enrollment.enroll
