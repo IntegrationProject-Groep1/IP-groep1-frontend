@@ -46,6 +46,7 @@
   {% if message %}
     <div class="alert alert-error" style="margin-bottom:20px;">{{ message }}</div>
   {% endif %}
+  {{ drupal_messages() }}
 
   <form{{ attributes }}>
     {{ form.form_build_id }}
@@ -207,7 +208,7 @@
               {% else %}
                 <div style="display:none;">{{ form.session_ids[sid] }}</div>
                 <button type="button" class="btn btn-ink btn-sm btn-full"
-                        onclick="enrollSingle({{ sid|json_encode }})">
+                        onclick="enrollSingle({{ sid|json_encode }}, this)">
                   {{ 'Enroll'|t }}
                 </button>
               {% endif %}
@@ -406,13 +407,29 @@
 }());
 
 /* ── Per-session enroll ── */
-function enrollSingle(sid) {
+function enrollSingle(sid, triggerBtn) {
   var cb = document.querySelector('input[type="checkbox"][value="' + sid + '"]');
   if (!cb) return;
   cb.checked = true;
+
+  /* Show loading state on the clicked button */
+  if (triggerBtn) {
+    triggerBtn.disabled = true;
+    triggerBtn.textContent = '{{ 'Enrolling…'|t }}';
+    triggerBtn.style.opacity = '0.7';
+  }
+
   /* Click the real submit button so Drupal's form handlers fire correctly */
-  var btn = document.querySelector('.sessions-submit-row input[type="submit"]');
-  if (btn) { btn.click(); } else { cb.form.submit(); }
+  var submitBtn = document.querySelector('.sessions-submit-row input[type="submit"]');
+  if (submitBtn) { submitBtn.click(); } else { cb.form.submit(); }
 }
+
+/* ── Scroll to messages on page load if any ── */
+(function () {
+  var msgs = document.querySelector('.messages, .alert-error');
+  if (msgs) {
+    msgs.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}());
 </script>
 
