@@ -511,3 +511,60 @@
 </div>{# /landing #}
 
 {% endif %}
+
+{# ── Hidden Drupal messages → toast renderer ── #}
+<div id="drupal-messages" style="display:none;" aria-hidden="true">
+  {% for type, messages in toast_messages %}
+    {% for message in messages %}
+      <div class="messages messages--{{ type }}">
+        <ul class="messages__list"><li class="messages__item">{{ message }}</li></ul>
+      </div>
+    {% endfor %}
+  {% endfor %}
+</div>
+<script>
+(function () {
+  var svgCheck = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+  var svgWarn  = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+  var svgError = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+
+  function showToast(text, type) {
+    var el = document.createElement('div');
+    el.className = 'toast' + (type === 'error' ? ' toast-error' : type === 'warning' ? ' toast-error' : ' toast-success');
+    var icon = type === 'error' || type === 'warning' ? (type === 'warning' ? svgWarn : svgError) : svgCheck;
+    el.innerHTML = icon + '<span>' + text + '</span>';
+    document.body.appendChild(el);
+    var offset = 24;
+    document.querySelectorAll('.toast').forEach(function (t) {
+      if (t !== el) offset += t.offsetHeight + 8;
+    });
+    el.style.top = offset + 'px';
+    setTimeout(function () {
+      el.style.transition = 'opacity .3s, transform .3s';
+      el.style.opacity = '0';
+      el.style.transform = 'translateX(12px)';
+      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 320);
+    }, 4000);
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var container = document.getElementById('drupal-messages');
+    if (!container) return;
+    container.querySelectorAll('.messages').forEach(function (block) {
+      var type = block.classList.contains('messages--error') ? 'error'
+               : block.classList.contains('messages--warning') ? 'warning'
+               : 'success';
+      var items = block.querySelectorAll('.messages__item');
+      if (items.length) {
+        items.forEach(function (item) {
+          var text = item.textContent.trim();
+          if (text) showToast(text, type);
+        });
+      } else {
+        var text = block.textContent.trim();
+        if (text) showToast(text, type);
+      }
+    });
+  });
+})();
+</script>

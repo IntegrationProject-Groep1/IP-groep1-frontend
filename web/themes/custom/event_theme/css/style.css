@@ -746,20 +746,23 @@ html[data-sidebar="light"] .shell-user .icon-btn { border-color: var(--line-2); 
    ──────────────────────────────────────────────────────────────── */
 
 .toast {
-  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  position: fixed; top: 24px; right: 24px;
   display: flex; align-items: center; gap: 10px;
   padding: 12px 18px;
   background: var(--ink); color: white;
   border-radius: 100px;
   font-size: 13px; font-weight: 500;
   box-shadow: var(--shadow-lg);
-  z-index: 60;
+  z-index: 9999;
   animation: toast-in .22s ease-out;
+  max-width: 360px;
 }
-.toast svg { color: var(--accent); }
+.toast svg { color: var(--accent); flex-shrink: 0; }
+.toast-success { background: #18a058; }
+.toast-success svg { color: white; }
 .toast-error { background: var(--hot); }
 .toast-error svg { color: white; }
-@keyframes toast-in { from { transform: translate(-50%, 12px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+@keyframes toast-in { from { transform: translateX(12px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
 /* ────────────────────────────────────────────────────────────────
    EMPTY STATE
