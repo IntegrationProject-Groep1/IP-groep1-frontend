@@ -124,6 +124,9 @@ class SessionForm extends FormBase
 
         try {
             $this->sessionService->createSession($data);
+            $this->messenger()->addStatus($this->t('Session "@title" has been created and sent to Planning.', [
+                '@title' => $data['title'],
+            ]));
             $form_state->setRedirectUrl(Url::fromRoute('session_management.confirmation'));
         } catch (\InvalidArgumentException $e) {
             $this->messenger()->addError($e->getMessage());
