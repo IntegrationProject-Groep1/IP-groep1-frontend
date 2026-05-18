@@ -71,7 +71,7 @@ class SessionEnrollForm extends FormBase
 
     public function validateForm(array &$form, FormStateInterface $form_state): void
     {
-        $selected = (array) ($form_state->getValue('session_ids') ?? []);
+        $selected = array_filter((array) ($form_state->getValue('session_ids') ?? []));
         if (empty($selected)) {
             $form_state->setErrorByName('session_ids', $this->t('Please select at least one session.'));
         }
@@ -80,11 +80,16 @@ class SessionEnrollForm extends FormBase
     public function submitForm(array &$form, FormStateInterface $form_state): void
     {
         $currentUser = $this->currentUser();
-        $sessionIds  = array_values((array) ($form_state->getValue('session_ids') ?? []));
+        $sessionIds  = array_keys(array_filter((array) ($form_state->getValue('session_ids') ?? [])));
         $sessionMap  = $this->buildSessionMap();
 
         $userId     = (int) $currentUser->id();
         $masterUuid = \Drupal::service('user.data')->get('registration_form', $userId, 'master_uuid') ?? '';
+
+        if (!preg_match('/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/', $masterUuid)) {
+            $this->messenger()->addError($this->t('Your account is not fully set up. Please complete your registration before enrolling in sessions.'));
+            return;
+        }
 
         $userData = [
             'email'         => $currentUser->getEmail(),

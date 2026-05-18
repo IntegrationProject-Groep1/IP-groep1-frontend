@@ -410,7 +410,9 @@ function enrollSingle(sid) {
   var cb = document.querySelector('input[type="checkbox"][value="' + sid + '"]');
   if (!cb) return;
   cb.checked = true;
-  cb.form.submit();
+  /* Click the real submit button so Drupal's form handlers fire correctly */
+  var btn = document.querySelector('.sessions-submit-row input[type="submit"]');
+  if (btn) { btn.click(); } else { cb.form.submit(); }
 }
 </script>
 
