@@ -1,3 +1,11 @@
+session_enrollment.seed_test_data:
+  path: '/admin/sessions/seed-test'
+  defaults:
+    _controller: '\Drupal\session_enrollment\Controller\TestDataController::seed'
+    _title: 'Seed test sessions'
+  requirements:
+    _role: 'administrator'
+
 session_enrollment.enroll:
   path: '/sessions/enroll'
   defaults:
