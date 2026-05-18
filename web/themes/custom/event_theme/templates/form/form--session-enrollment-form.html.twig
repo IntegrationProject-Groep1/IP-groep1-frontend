@@ -202,13 +202,14 @@
                   {{ 'Full'|t }}
                 </span>
               {% elseif is_enrolled %}
-                <div class="session-checkbox-wrap">
-                  {{ form.session_ids[sid] }}
-                </div>
+                <span class="tag tag-ok" style="justify-content:center;">{{ 'enrolled'|t }}</span>
+                <div style="display:none;">{{ form.session_ids[sid] }}</div>
               {% else %}
-                <div class="session-checkbox-wrap">
-                  {{ form.session_ids[sid] }}
-                </div>
+                <div style="display:none;">{{ form.session_ids[sid] }}</div>
+                <button type="button" class="btn btn-ink btn-sm btn-full"
+                        onclick="enrollSingle({{ sid|json_encode }})">
+                  {{ 'Enroll'|t }}
+                </button>
               {% endif %}
             </div>
 
@@ -403,5 +404,13 @@
     if (e.key === 'Escape' && !modal.hidden) closeModal();
   });
 }());
+
+/* ── Per-session enroll ── */
+function enrollSingle(sid) {
+  var cb = document.querySelector('input[type="checkbox"][value="' + sid + '"]');
+  if (!cb) return;
+  cb.checked = true;
+  cb.form.submit();
+}
 </script>
 
