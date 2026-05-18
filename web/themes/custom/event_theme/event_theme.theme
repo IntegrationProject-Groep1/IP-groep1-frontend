@@ -286,6 +286,11 @@ function event_theme_preprocess_page__front(array &$variables): void {
 
   $allSessions = \Drupal::state()->get('planning.sessions', []);
   $variables['total_sessions_count'] = count((array) $allSessions);
+
+  $festivalStart = new \DateTime('2026-05-12');
+  $now = new \DateTime('today');
+  $diff = (int) $now->diff($festivalStart)->days;
+  $variables['days_until_festival'] = $festivalStart > $now ? $diff : 0;
 }
 
 /* ── Private helpers ─────────────────────────────────────── */

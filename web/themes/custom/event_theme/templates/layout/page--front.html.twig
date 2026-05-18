@@ -27,7 +27,7 @@
 
     <nav class="shell-nav" aria-label="{{ 'Hoofdnavigatie'|t }}">
       <div class="shell-nav-group">
-        <div class="shell-nav-label">{{ 'Festival'|t }}</div>
+        <div class="shell-nav-label">{{ 'Event'|t }}</div>
 
         <a href="{{ path('<front>') }}" class="shell-nav-item is-active">
           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>
@@ -123,7 +123,7 @@
         <header class="dash-hero">
           <div class="dash-hero-lhs">
             <span class="eyebrow">{{ 'Welkom terug'|t }}</span>
-            <h1>{{ 'Hi'|t }} {{ current_first_name }} — {{ 'je festival start over'|t }} <strong>{{ 'dagen'|t }}</strong>.</h1>
+            <h1>{{ 'Hi'|t }} {{ current_first_name }} — {{ 'je event start over'|t }} <strong>{{ days_until_festival }} {{ 'dagen'|t }}</strong>.</h1>
             <p>{% if front_sessions is not empty %}{{ 'Er staan'|t }} <strong>{{ front_sessions|length }}</strong> {{ 'sessies op het programma. Je digitale badge is klaar voor gebruik.'|t }}{% else %}{{ 'Je digitale badge is klaar voor gebruik aan de deur.'|t }}{% endif %}</p>
             <div class="dash-hero-ctas">
               {% if qr_url %}
@@ -262,8 +262,8 @@
             {% endif %}
             <div class="stat">
               <div class="stat-label">{{ 'Aftellen'|t }}</div>
-              <div class="stat-value">4</div>
-              <div class="stat-sub">{{ 'dagen tot festival'|t }}</div>
+              <div class="stat-value">{{ days_until_festival }}</div>
+              <div class="stat-sub">{{ 'dagen tot event'|t }}</div>
             </div>
           </div>
 
@@ -326,7 +326,7 @@
         <div class="hero-ctas">
           {% if register_url %}
             <a href="{{ register_url }}" class="btn btn-primary btn-lg">
-              {{ 'Registreer voor het festival'|t }}
+              {{ 'Registreer voor het event'|t }}
               <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
             </a>
           {% endif %}
@@ -402,7 +402,7 @@
   <section class="program" id="program">
     <div class="section-head">
       <span class="section-eyebrow">{{ 'Dag één · Dinsdag'|t }}</span>
-      <h2>{{ 'Een festivalprogramma, geen conferentieagenda.'|t }}</h2>
+      <h2>{{ 'Een eventprogramma, geen conferentieagenda.'|t }}</h2>
       <p>{{ 'Een voorproefje van wat er op het programma staat. Na registratie kun je je inschrijven voor sessies met nog beschikbare plaatsen.'|t }}</p>
     </div>
     <div class="program-grid">
@@ -443,7 +443,7 @@
         <article class="program-card">
           <div class="program-card-top"><span class="tag">talk</span><span class="program-card-time">14:00</span></div>
           <h3>{{ 'Digitale badges & identiteit'|t }}</h3>
-          <p>{{ 'QR-codes, wallets en check-in systemen: hoe het festival zijn eigen backend in productie heeft gebracht.'|t }}</p>
+          <p>{{ 'QR-codes, wallets en check-in systemen: hoe het event zijn eigen backend in productie heeft gebracht.'|t }}</p>
           <div class="program-card-foot"><span>{{ 'Studio B'|t }}</span></div>
         </article>
         <article class="program-card">
