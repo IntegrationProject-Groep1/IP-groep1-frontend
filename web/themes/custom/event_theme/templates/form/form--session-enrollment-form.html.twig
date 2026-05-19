@@ -52,6 +52,14 @@
     {{ form.form_token }}
     {{ form.form_id }}
 
+    {% if form.enrollment_success %}
+      {{ form.enrollment_success }}
+    {% endif %}
+
+    {% if form.enrollment_error %}
+      {{ form.enrollment_error }}
+    {% endif %}
+
     {% if form.notice %}
       <div class="alert alert-error" style="margin-bottom:20px;">{{ form.notice }}</div>
     {% endif %}
@@ -423,9 +431,9 @@ function enrollSingle(sid, triggerBtn) {
   if (submitBtn) { submitBtn.click(); } else { cb.form.submit(); }
 }
 
-/* ── Scroll to messages on page load if any ── */
+/* ── Scroll to feedback on load ── */
 (function () {
-  var msgs = document.querySelector('.messages, .alert-error');
+  var msgs = document.querySelector('#enrollment-success, #enrollment-error, .messages, .alert-error');
   if (msgs) {
     msgs.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }

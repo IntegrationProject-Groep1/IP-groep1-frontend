@@ -32,6 +32,24 @@ class SessionEnrollForm extends FormBase
 
     public function buildForm(array $form, FormStateInterface $form_state): array
     {
+        if ($titles = $form_state->get('success_titles')) {
+            $label = count($titles) === 1
+                ? $this->t('Je bent nu ingeschreven voor sessie: @s', ['@s' => implode(', ', $titles)])
+                : $this->t('Je bent nu ingeschreven voor de volgende sessies: @s', ['@s' => implode(', ', $titles)]);
+            $form['enrollment_success'] = [
+                '#markup' => '<div class="alert alert-success" id="enrollment-success">' . $label . '</div>',
+                '#weight' => -100,
+            ];
+        }
+
+        if ($err = $form_state->get('error_message')) {
+            $form['enrollment_error'] = [
+                '#markup' => '<div class="alert alert-error" id="enrollment-error">'
+                    . $this->t('Inschrijving mislukt: @e', ['@e' => $err]) . '</div>',
+                '#weight' => -100,
+            ];
+        }
+
         // Fetch sessions on-demand: send request to Planning and poll for response.
         // This avoids dependency on cron for showing available sessions.
         $this->fetchSessionsFromPlanning();
@@ -105,19 +123,11 @@ class SessionEnrollForm extends FormBase
             $sessionOptions = $this->getSessionOptions();
             $enrolledTitles = array_map(fn(string $id) => $sessionOptions[$id] ?? $id, $sessionIds);
 
-            if (count($enrolledTitles) === 1) {
-                $this->messenger()->addStatus($this->t(
-                    'Je bent nu ingeschreven voor sessie: @sessions',
-                    ['@sessions' => implode(', ', $enrolledTitles)]
-                ));
-            } else {
-                $this->messenger()->addStatus($this->t(
-                    'Je bent nu ingeschreven voor de volgende sessies: @sessions',
-                    ['@sessions' => implode(', ', $enrolledTitles)]
-                ));
-            }
+            $form_state->set('success_titles', $enrolledTitles);
+            $form_state->setRebuild(true);
         } catch (\Throwable $e) {
-            $this->messenger()->addError($this->t('Enrollment failed: @error', ['@error' => $e->getMessage()]));
+            $form_state->set('error_message', $e->getMessage());
+            $form_state->setRebuild(true);
         }
     }
 
