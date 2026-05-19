@@ -6,8 +6,6 @@ namespace Drupal\session_enrollment\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\TempStore\PrivateTempStoreFactory;
-use Drupal\Core\Url;
 use Drupal\session_enrollment\Service\SessionEnrollmentService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -18,14 +16,12 @@ class SessionEnrollForm extends FormBase
 {
     public function __construct(
         private readonly SessionEnrollmentService $enrollmentService,
-        private readonly PrivateTempStoreFactory $tempStoreFactory,
     ) {}
 
     public static function create(ContainerInterface $container): static
     {
         return new static(
             $container->get('session_enrollment.enrollment_service'),
-            $container->get('tempstore.private'),
         );
     }
 
@@ -106,15 +102,8 @@ class SessionEnrollForm extends FormBase
         try {
             $this->enrollmentService->enroll($userData, $sessionIds, $sessionMap);
 
-            $sessionOptions  = $this->getSessionOptions();
-            $enrolledTitles  = array_map(fn(string $id) => $sessionOptions[$id] ?? $id, $sessionIds);
-
-            $this->tempStoreFactory
-                ->get('session_enrollment')
-                ->set('confirmation', [
-                    'name'     => trim($userData['first_name'] . ' ' . $userData['last_name']),
-                    'sessions' => $enrolledTitles,
-                ]);
+            $sessionOptions = $this->getSessionOptions();
+            $enrolledTitles = array_map(fn(string $id) => $sessionOptions[$id] ?? $id, $sessionIds);
 
             if (count($enrolledTitles) === 1) {
                 $this->messenger()->addStatus($this->t(
@@ -127,8 +116,6 @@ class SessionEnrollForm extends FormBase
                     ['@sessions' => implode(', ', $enrolledTitles)]
                 ));
             }
-
-            $form_state->setRedirectUrl(Url::fromRoute('session_enrollment.confirmation'));
         } catch (\Throwable $e) {
             $this->messenger()->addError($this->t('Enrollment failed: @error', ['@error' => $e->getMessage()]));
         }
