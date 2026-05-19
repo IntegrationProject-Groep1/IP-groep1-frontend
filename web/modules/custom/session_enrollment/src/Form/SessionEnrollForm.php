@@ -106,16 +106,27 @@ class SessionEnrollForm extends FormBase
         try {
             $this->enrollmentService->enroll($userData, $sessionIds, $sessionMap);
 
-            $sessionOptions = $this->getSessionOptions();
+            $sessionOptions  = $this->getSessionOptions();
+            $enrolledTitles  = array_map(fn(string $id) => $sessionOptions[$id] ?? $id, $sessionIds);
+
             $this->tempStoreFactory
                 ->get('session_enrollment')
                 ->set('confirmation', [
                     'name'     => trim($userData['first_name'] . ' ' . $userData['last_name']),
-                    'sessions' => array_map(
-                        fn(string $id) => $sessionOptions[$id] ?? $id,
-                        $sessionIds
-                    ),
+                    'sessions' => $enrolledTitles,
                 ]);
+
+            if (count($enrolledTitles) === 1) {
+                $this->messenger()->addStatus($this->t(
+                    'Je bent nu ingeschreven voor sessie: @sessions',
+                    ['@sessions' => implode(', ', $enrolledTitles)]
+                ));
+            } else {
+                $this->messenger()->addStatus($this->t(
+                    'Je bent nu ingeschreven voor de volgende sessies: @sessions',
+                    ['@sessions' => implode(', ', $enrolledTitles)]
+                ));
+            }
 
             $form_state->setRedirectUrl(Url::fromRoute('session_enrollment.confirmation'));
         } catch (\Throwable $e) {

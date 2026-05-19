@@ -149,10 +149,6 @@ class NewRegistrationSender
         }
         $customer->appendChild($xml->createElement('address', htmlspecialchars($addressStr, ENT_XML1, 'UTF-8')));
 
-        if (!empty($data['company_id'])) {
-            $customer->appendChild($xml->createElement('company_id', htmlspecialchars((string) $data['company_id'], ENT_XML1, 'UTF-8')));
-        }
-
         // payment_due is required per contract; always send with amount 0.00 eur / unpaid
         $paymentDue = $xml->createElement('payment_due');
         $amountValue = '0.00';

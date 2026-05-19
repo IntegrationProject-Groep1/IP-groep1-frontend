@@ -4,3 +4,4 @@ services:
     arguments:
       - '@logger.factory'
       - '@rabbitmq_sender.calendar_invite_sender'
+      - '@rabbitmq_sender.user_registered_sender'

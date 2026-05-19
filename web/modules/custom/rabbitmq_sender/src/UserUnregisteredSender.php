@@ -6,7 +6,7 @@ namespace Drupal\rabbitmq_sender;
 use PhpAmqpLib\Message\AMQPMessage;
 
 /**
- * Publishes user_deleted events to RabbitMQ (v2.0 contract, section 5.3).
+ * Publishes user_unregistered events to RabbitMQ (v2.0 contract, section 5.5b).
  */
 class UserUnregisteredSender
 {
@@ -17,9 +17,9 @@ class UserUnregisteredSender
 
     private const QUEUE_NAME = 'crm.incoming';
     private const SOURCE     = 'frontend';
-    private const TYPE       = 'user_deleted';
+    private const TYPE       = 'user_unregistered';
     private const VERSION    = '2.0';
-    private const XSD_PATH   = __DIR__ . '/../../../../../xsd/user_deleted.xsd';
+    private const XSD_PATH   = __DIR__ . '/../../../../../xsd/user_unregistered.xsd';
 
     public function __construct(?RabbitMQClient $client = null)
     {
@@ -32,13 +32,13 @@ class UserUnregisteredSender
             throw new \InvalidArgumentException('identity_uuid is required');
         }
         $this->assertValidUuid((string) $data['identity_uuid'], 'identity_uuid');
-        if (empty($data['email'])) {
-            throw new \InvalidArgumentException('email is required');
+        if (empty($data['session_id'])) {
+            throw new \InvalidArgumentException('session_id is required');
         }
 
-        \Drupal::logger('rabbitmq_sender')->info('Sending user deleted event', [
-            'user_id' => $data['user_id'],
-            'email'   => $data['email'],
+        \Drupal::logger('rabbitmq_sender')->info('Sending user_unregistered event', [
+            'identity_uuid' => $data['identity_uuid'],
+            'session_id'    => $data['session_id'],
         ]);
 
         $xml = $this->buildXml($data);
@@ -75,13 +75,11 @@ class UserUnregisteredSender
         $message->appendChild($header);
 
         $body = $dom->createElement('body');
-        // identity_uuid in body per contract §5.3 (not user_id)
-        $identityUuid = (string) ($data['identity_uuid'] ?? '');
-        $body->appendChild($dom->createElement('identity_uuid', htmlspecialchars($identityUuid, ENT_XML1, 'UTF-8')));
-        $body->appendChild($dom->createElement('email', htmlspecialchars((string) ($data['email'] ?? ''), ENT_XML1, 'UTF-8')));
+        $body->appendChild($dom->createElement('identity_uuid', htmlspecialchars((string) $data['identity_uuid'], ENT_XML1, 'UTF-8')));
+        $body->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
 
-        if (!empty($data['reason'])) {
-            $body->appendChild($dom->createElement('reason', htmlspecialchars((string) $data['reason'], ENT_XML1, 'UTF-8')));
+        if (!empty($data['session_title'])) {
+            $body->appendChild($dom->createElement('session_title', htmlspecialchars((string) $data['session_title'], ENT_XML1, 'UTF-8')));
         }
 
         $message->appendChild($body);

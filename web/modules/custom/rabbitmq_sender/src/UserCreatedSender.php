@@ -98,9 +98,6 @@ class UserCreatedSender
             if (!empty($data['vat_number'])) {
                 $customer->appendChild($dom->createElement('vat_number', htmlspecialchars((string) $data['vat_number'], ENT_XML1, 'UTF-8')));
             }
-            if (!empty($data['company_id'])) {
-                $customer->appendChild($dom->createElement('company_id', htmlspecialchars((string) $data['company_id'], ENT_XML1, 'UTF-8')));
-            }
         }
 
         $body->appendChild($customer);
