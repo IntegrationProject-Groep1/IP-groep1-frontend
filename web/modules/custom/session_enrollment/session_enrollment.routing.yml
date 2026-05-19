@@ -6,6 +6,15 @@ session_enrollment.enroll:
   requirements:
     _role: 'authenticated'
 
+session_enrollment.enroll_single:
+  path: '/sessions/enroll-single/{session_id}'
+  defaults:
+    _controller: '\Drupal\session_enrollment\Controller\EnrollSingleController::enroll'
+    _title: 'Inschrijven voor sessie'
+  requirements:
+    _role: 'authenticated'
+    session_id: '.+'
+
 session_enrollment.confirmation:
   path: '/sessions/enroll/confirmation'
   defaults:

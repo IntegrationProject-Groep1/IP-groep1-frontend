@@ -32,6 +32,24 @@ class SessionEnrollForm extends FormBase
 
     public function buildForm(array $form, FormStateInterface $form_state): array
     {
+        // Pick up feedback from EnrollSingleController (redirect flow).
+        $feedback = \Drupal::service('tempstore.private')->get('session_enrollment_feedback');
+        if ($success = $feedback->get('success')) {
+            $feedback->delete('success');
+            $form['enrollment_success'] = [
+                '#markup' => '<div class="alert alert-success" id="enrollment-success">' . $success . '</div>',
+                '#weight' => -100,
+            ];
+        }
+        if ($error = $feedback->get('error')) {
+            $feedback->delete('error');
+            $form['enrollment_error'] = [
+                '#markup' => '<div class="alert alert-error" id="enrollment-error">' . $error . '</div>',
+                '#weight' => -100,
+            ];
+        }
+
+        // Pick up feedback from form submit (setRebuild flow).
         if ($titles = $form_state->get('success_titles')) {
             $label = count($titles) === 1
                 ? $this->t('Je bent nu ingeschreven voor sessie: @s', ['@s' => implode(', ', $titles)])
@@ -41,7 +59,6 @@ class SessionEnrollForm extends FormBase
                 '#weight' => -100,
             ];
         }
-
         if ($err = $form_state->get('error_message')) {
             $form['enrollment_error'] = [
                 '#markup' => '<div class="alert alert-error" id="enrollment-error">'
