@@ -55,6 +55,28 @@ class RegistrationService
         if ($masterUuid !== '') {
             $this->storeMasterUuidOnUser((int) $user->id(), $masterUuid);
             $data['master_uuid'] = $masterUuid;
+
+            // === Toevoeging: user_registered event sturen ===
+            try {
+                /** @var \Drupal\rabbitmq_sender\UserRegisteredSender $userRegisteredSender */
+                $userRegisteredSender = \Drupal::service('rabbitmq_sender.user_registered_sender');
+                $userRegisteredSender->send([
+                    'identity_uuid' => $masterUuid,
+                    'email'         => (string) $data['email'],
+                    'session_id'    => (string) ($data['session_id'] ?? ''),
+                    'first_name'    => (string) ($data['first_name'] ?? ''),
+                    'last_name'     => (string) ($data['last_name'] ?? ''),
+                    'is_company'    => (bool) ($data['is_company'] ?? false),
+                    'company_name'  => (string) ($data['company_name'] ?? ''),
+                    'vat_number'    => (string) ($data['vat_number'] ?? ''),
+                ]);
+                $logger->info('user_registered event verstuurd naar CRM voor @email.', ['@email' => $data['email']]);
+            } catch (\Throwable $e) {
+                $logger->error('user_registered RabbitMQ publish failed: @message', [
+                    '@message' => $e->getMessage(),
+                ]);
+            }
+            // === einde toevoeging ===
         } elseif ($this->identityClient !== null && $this->mustRequireRabbitMqSync()) {
             // Identity Service is configured but did not return a UUID. Sending a
             // registration to CRM without a real identity_uuid would create corrupt data,
@@ -82,6 +104,9 @@ class RegistrationService
                     'is_company'    => (bool) ($data['is_company'] ?? false),
                     'company_name'  => (string) ($data['company_name'] ?? ''),
                     'vat_number'    => (string) ($data['vat_number'] ?? ''),
+                    'street'        => (string) ($data['street']       ?? ''),
+                    'postal_code'   => (string) ($data['postal_code']  ?? ''),
+                    'municipality'  => (string) ($data['municipality'] ?? ''),
                 ]);
                 $logger->info('user_created verstuurd naar CRM voor @email.', ['@email' => $data['email']]);
             } catch (\Throwable $e) {
@@ -150,6 +175,15 @@ class RegistrationService
         if (strlen((string) $data['password']) < 8) {
             throw new \InvalidArgumentException('password must be at least 8 characters long');
         }
+
+        // Address fields are required for company accounts.
+        if (!empty($data['is_company'])) {
+            foreach (['street', 'postal_code', 'municipality'] as $addrField) {
+                if (empty(trim((string) ($data[$addrField] ?? '')))) {
+                    throw new \InvalidArgumentException($addrField . ' is required for company accounts');
+                }
+            }
+        }
     }
 
     private function assertEmailNotInUse(string $email): void
@@ -185,6 +219,13 @@ class RegistrationService
         $this->setIfFieldExists($user, $this->resolveUserFieldName('DRUPAL_USER_FIELD_FIRST_NAME', self::DEFAULT_FIRST_NAME_FIELD), (string) $data['first_name']);
         $this->setIfFieldExists($user, $this->resolveUserFieldName('DRUPAL_USER_FIELD_LAST_NAME', self::DEFAULT_LAST_NAME_FIELD), (string) $data['last_name']);
         $this->setIfFieldExists($user, $this->resolveUserFieldName('DRUPAL_USER_FIELD_DATE_OF_BIRTH', self::DEFAULT_DATE_OF_BIRTH_FIELD), (string) $data['date_of_birth']);
+
+        // Address fields (company accounts only).
+        if (!empty($data['is_company'])) {
+            $this->setIfFieldExists($user, 'field_street',       (string) ($data['street']       ?? ''));
+            $this->setIfFieldExists($user, 'field_postal_code',  (string) ($data['postal_code']  ?? ''));
+            $this->setIfFieldExists($user, 'field_municipality', (string) ($data['municipality'] ?? ''));
+        }
 
         $user->save();
 

@@ -1,0 +1,72 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * @file
+ * Install, update and uninstall hooks for the registration_form module.
+ */
+
+/**
+ * Implements hook_install().
+ *
+ * Creates address fields on the user entity type when the module is first installed.
+ */
+function registration_form_install(): void
+{
+    _registration_form_ensure_address_fields();
+}
+
+/**
+ * Creates field_street, field_postal_code and field_municipality on user entities.
+ */
+function registration_form_update_8001(): void
+{
+    _registration_form_ensure_address_fields();
+}
+
+/**
+ * Helper: creates the three address fields if they do not already exist.
+ */
+function _registration_form_ensure_address_fields(): void
+{
+    $fields = [
+        'field_street' => [
+            'label'       => 'Street',
+            'description' => 'Street address (required for company accounts).',
+        ],
+        'field_postal_code' => [
+            'label'       => 'Postal code',
+            'description' => 'Postal / ZIP code (required for company accounts).',
+        ],
+        'field_municipality' => [
+            'label'       => 'Municipality',
+            'description' => 'City / municipality (required for company accounts).',
+        ],
+    ];
+
+    foreach ($fields as $fieldName => $info) {
+        // 1. Create the field storage if it does not exist.
+        if (\Drupal::entityTypeManager()->getStorage('field_storage_config')->load("user.$fieldName") === null) {
+            \Drupal\field\Entity\FieldStorageConfig::create([
+                'field_name'  => $fieldName,
+                'entity_type' => 'user',
+                'type'        => 'string',
+                'cardinality' => 1,
+                'settings'    => ['max_length' => 255],
+            ])->save();
+        }
+
+        // 2. Create the field instance on the user bundle if it does not exist.
+        if (\Drupal::entityTypeManager()->getStorage('field_config')->load("user.user.$fieldName") === null) {
+            \Drupal\field\Entity\FieldConfig::create([
+                'field_name'  => $fieldName,
+                'entity_type' => 'user',
+                'bundle'      => 'user',
+                'label'       => $info['label'],
+                'description' => $info['description'],
+                'required'    => false,
+            ])->save();
+        }
+    }
+}
