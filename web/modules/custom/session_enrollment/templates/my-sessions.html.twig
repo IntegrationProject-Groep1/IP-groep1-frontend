@@ -1,0 +1,160 @@
+{#
+  Template: my-sessions.html.twig
+  Variables:
+    - name:             First name of the current user
+    - grouped_sessions: Sessions grouped by day (array<string, array[]>)
+                        Each session has: title, session_type, location, speaker,
+                        formatted_start, formatted_end, status, max_attendees,
+                        current_attendees, price
+    - sessions:         Flat session list (fallback)
+    - notice:           Optional string message shown instead of the session list
+#}
+
+<div class="my-sessions">
+  <div class="my-sessions-head">
+    <div>
+      <h1>{{ 'My schedule'|t }}</h1>
+      {% if name %}
+        <p>{{ 'Hi @name — here are all the sessions you\'re enrolled in. Calendar invites are sent automatically.'|t({'@name': name}) }}</p>
+      {% else %}
+        <p>{{ 'The sessions you\'ve enrolled in, grouped by day. Calendar invites are sent automatically.'|t }}</p>
+      {% endif %}
+    </div>
+    <a href="/sessions/enroll" class="btn btn-primary btn-sm">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      {{ 'Add more sessions'|t }}
+    </a>
+  </div>
+
+  {% if notice %}
+    <div class="alert alert-error">{{ notice }}</div>
+
+  {% elseif grouped_sessions is empty and sessions is empty %}
+    <div class="empty">
+      <div class="empty-dot"></div>
+      <h3>{{ 'No sessions on your schedule yet.'|t }}</h3>
+      <p>{{ 'Pick a few from the programme — you can always drop them later.'|t }}</p>
+    </div>
+
+  {% else %}
+    <div class="schedule-stack">
+      {% for day, items in grouped_sessions %}
+        <section class="schedule-day">
+          <h2 class="schedule-day-title">{{ day }}</h2>
+          <div class="schedule-day-items">
+            {% for s in items %}
+              {% set type_tone = 'neutral' %}
+              {% if s.session_type == 'keynote' %}{% set type_tone = 'primary' %}
+              {% elseif s.session_type == 'workshop' %}{% set type_tone = 'accent' %}
+              {% elseif s.session_type == 'reception' %}{% set type_tone = 'warm' %}
+              {% endif %}
+
+              {% set has_capacity = s.max_attendees is defined and s.max_attendees > 0 %}
+              {% set has_price    = s.price is defined and s.price is not null and s.price != '' %}
+              {% set has_email    = s.speaker is defined and s.speaker and s.speaker.email is defined and s.speaker.email %}
+              {% set has_details  = has_capacity or has_price or has_email %}
+
+              {% set detail_id = 'sd-' ~ loop.parent.loop.index ~ '-' ~ loop.index %}
+
+              <div class="schedule-item">
+                <div class="schedule-item-time">
+                  <strong>{{ s.formatted_start ?: s.start_datetime }}</strong>
+                  <span>—</span>
+                  <strong>{{ s.formatted_end ?: s.end_datetime }}</strong>
+                </div>
+
+                <div class="schedule-item-main">
+                  <div class="schedule-item-tags">
+                    {% if s.session_type %}
+                      <span class="tag tag-{{ type_tone }}">{{ s.session_type }}</span>
+                    {% endif %}
+                    <span class="schedule-item-confirm">
+                      <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      {{ 'Calendar invite confirmed'|t }}
+                    </span>
+                  </div>
+                  <h3{% if has_details %} onclick="toggleDetail('{{ detail_id }}')" title="{{ 'Click to see details'|t }}"{% endif %}>{{ s.title }}</h3>
+                  <div class="schedule-item-sub">
+                    {% if s.location %}
+                      <span>
+                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        {{ s.location }}
+                      </span>
+                    {% endif %}
+                    {% if s.speaker %}
+                      <span>
+                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        {{ [s.speaker.first_name, s.speaker.last_name]|join(' ')|trim }}
+                        {% if s.speaker.organisation %}· {{ s.speaker.organisation }}{% endif %}
+                      </span>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div class="schedule-item-actions">
+                  {% if has_details %}
+                    <button type="button" class="schedule-detail-btn" id="btn-{{ detail_id }}"
+                            aria-expanded="false" aria-controls="{{ detail_id }}"
+                            onclick="toggleDetail('{{ detail_id }}')">
+                      {{ 'Details'|t }}
+                      <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                      </svg>
+                    </button>
+                  {% endif %}
+                  <a href="/sessions/enroll" class="btn btn-ghost btn-sm schedule-drop-btn">
+                    {{ 'Drop'|t }}
+                  </a>
+                </div>
+
+                {% if has_details %}
+                  <dl class="schedule-item-details" id="{{ detail_id }}" hidden>
+                    {% if has_capacity %}
+                      {% set pct = ((s.current_attendees / s.max_attendees) * 100)|round %}
+                      <div class="schedule-detail-field">
+                        <dt>{{ 'Capacity'|t }}</dt>
+                        <dd>{{ s.current_attendees }}&thinsp;/&thinsp;{{ s.max_attendees }} ({{ pct }}%)</dd>
+                      </div>
+                    {% endif %}
+                    {% if has_price %}
+                      <div class="schedule-detail-field">
+                        <dt>{{ 'Price'|t }}</dt>
+                        <dd>€ {{ s.price }}</dd>
+                      </div>
+                    {% endif %}
+                    {% if has_email %}
+                      <div class="schedule-detail-field">
+                        <dt>{{ 'Speaker contact'|t }}</dt>
+                        <dd><a href="mailto:{{ s.speaker.email }}">{{ s.speaker.email }}</a></dd>
+                      </div>
+                    {% endif %}
+                  </dl>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        </section>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+
+<script>
+function toggleDetail(id) {
+  var panel = document.getElementById(id);
+  var btn   = document.getElementById('btn-' + id);
+  if (!panel) return;
+  var isOpen = !panel.hidden;
+  panel.hidden = isOpen;
+  if (btn) btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+}
+</script>
