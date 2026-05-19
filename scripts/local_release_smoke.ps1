@@ -234,7 +234,6 @@ $payload = @{
     password = $smokePassword
     password_confirm = $smokePassword
     date_of_birth = '1991-01-01'
-    session_id = '550e8400-e29b-41d4-a716-446655440001'
     company_name = ''
     vat_number = ''
     form_build_id = $formBuildId

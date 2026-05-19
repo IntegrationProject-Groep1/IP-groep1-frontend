@@ -16,14 +16,15 @@ namespace Drupal\rabbitmq_sender;
 class SessionDeleteRequestSender
 {
     use RetryTrait;
+    use XmlValidationTrait;
 
     private const EXCHANGE      = 'planning.exchange';
     private const ROUTING_KEY   = 'frontend.to.planning.session.delete';
     private const EXCHANGE_TYPE = 'topic';
     private const SOURCE        = 'frontend';
     private const TYPE          = 'session_delete_request';
-    private const NAMESPACE     = 'urn:integration:planning:v1';
-    private const VERSION       = '1.0';
+    private const VERSION       = '2.0';
+    private const XSD_PATH      = __DIR__ . '/../../../../../xsd/session_delete_request.xsd';
 
     private ?RabbitMQClient $client;
 
@@ -35,10 +36,12 @@ class SessionDeleteRequestSender
     public function send(array $data): void
     {
         $xml = $this->buildXml($data);
+        $this->validateXml($xml, self::XSD_PATH);
 
         $this->sendWithRetry(function () use ($xml): void {
             $this->resolveClient()->declareExchange(self::EXCHANGE, self::EXCHANGE_TYPE);
             $this->resolveClient()->publishToExchange(self::EXCHANGE, self::ROUTING_KEY, $xml);
+            $this->logOutboundSuccess(self::TYPE, self::ROUTING_KEY, $xml);
         });
     }
 
@@ -49,12 +52,12 @@ class SessionDeleteRequestSender
         }
 
         $messageId = $this->generateUuidV4();
-        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
+        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z');
 
         $dom = new \DOMDocument('1.0', 'UTF-8');
         $dom->formatOutput = false;
 
-        $message = $dom->createElementNS(self::NAMESPACE, 'message');
+        $message = $dom->createElement('message');
         $dom->appendChild($message);
 
         $header = $dom->createElement('header');

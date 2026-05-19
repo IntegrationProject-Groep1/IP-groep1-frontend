@@ -1,53 +1,343 @@
 {#
-  Base page layout template for the event theme.
-  Provides shared header, navigation, content container, and footer structure.
+  page.html.twig — Shift Festival 2026
+  Drie branches:
+    1. Ingelogd (niet auth-pagina) → sidebar shell (.shell)
+    2. Auth-pagina (login/register/reset) → .auth-wrap split layout
+    3. Overige niet-ingelogd → alleen {{ page.content }}
 #}
-<!DOCTYPE html>
-<html{{ html_attributes }}>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ head_title }}</title>
-  {{ head }}
-  {{ styles }}
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body{{ attributes.addClass('layout-no-sidebars') }}>
-  {{ page_top }}
 
-  <header class="site-header">
-    <div class="layout-container site-header__inner">
-      <a href="{{ path('<front>') }}" class="site-header__logo">
-        🎓 Desideriushogeschool
-      </a>
-      <nav class="site-nav" aria-label="Main navigation">
-        <a href="{{ path('<front>') }}"
-          {% if is_front %}class="is-active"{% endif %}>
-          Home
+{% set is_auth_page = current_route in [
+  'registration_form.register',
+  'user.login',
+  'user.register',
+  'user.pass',
+  'user.reset',
+] %}
+
+{% if logged_in and not is_auth_page %}
+
+  {# ════════════════════════════════════ AUTHENTICATED SHELL ════ #}
+  <div class="shell">
+
+    {# ── Sidebar ── #}
+    <aside class="shell-side">
+
+      {# Brand #}
+      <div class="shell-brand">
+        <a href="{{ path('<front>') }}" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+            <rect x="2" y="2" width="24" height="24" rx="7" fill="white"/>
+            <path d="M9 18.5L14 9.5L19 18.5" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="14" cy="14" r="1.6" fill="var(--accent)"/>
+          </svg>
+          <div>
+            <div class="brand-name brand-name-stack">{{ site_name }}</div>
+            <div class="brand-tag">2026 · Deelnemer</div>
+          </div>
         </a>
-        <a href="{{ path('registration_form.register') }}"
-          {% if current_path == '/register' %}class="is-active"{% endif %}>
-          Register
-        </a>
+      </div>
+
+      {# Navigatie #}
+      <nav class="shell-nav" aria-label="{{ 'Hoofdnavigatie'|t }}">
+
+        <div class="shell-nav-group">
+          <div class="shell-nav-label">{{ 'Festival'|t }}</div>
+
+          <a href="{{ path('<front>') }}"
+             class="shell-nav-item {{ is_front ? 'is-active' : '' }}">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>
+            <span>{{ 'Dashboard'|t }}</span>
+          </a>
+
+          {% if qr_url %}
+            <a href="{{ qr_url }}"
+               class="shell-nav-item {{ current_route starts with 'qr_code' ? 'is-active' : '' }}">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v3M14 19v2M17 21h4M19 17v0"/></svg>
+              <span>{{ 'Mijn Badge'|t }}</span>
+            </a>
+          {% endif %}
+
+          {% if nav_show_enroll and enroll_url %}
+            <a href="{{ enroll_url }}"
+               class="shell-nav-item {{ current_route == 'session_enrollment.enroll' ? 'is-active' : '' }}">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+              <span>{{ 'Browse Sessions'|t }}</span>
+            </a>
+          {% endif %}
+
+          {% if my_sessions_url %}
+            <a href="{{ my_sessions_url }}"
+               class="shell-nav-item {{ current_route == 'session_enrollment.my_sessions' ? 'is-active' : '' }}">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 12l2 2 4-4"/></svg>
+              <span>{{ 'My Sessions'|t }}</span>
+            </a>
+          {% endif %}
+
+          {% if wallet_url %}
+            <a href="{{ wallet_url }}"
+               class="shell-nav-item {{ current_route == 'wallet.page' ? 'is-active' : '' }}">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M16 14h.01"/></svg>
+              <span>{{ 'Wallet'|t }}</span>
+            </a>
+          {% endif %}
+        </div>
+
+        {% if is_company_user or is_admin %}
+          <div class="shell-nav-group">
+            <div class="shell-nav-label">{{ 'Company Admin'|t }}</div>
+
+            {% if is_admin and session_admin_url %}
+              <a href="{{ session_admin_url }}"
+                 class="shell-nav-item {{ current_route starts with 'session_management' ? 'is-active' : '' }}">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09c0 .68.41 1.29 1.03 1.56a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.27.62.88 1.03 1.56 1.03H21a2 2 0 1 1 0 4h-.09c-.68 0-1.29.41-1.51 1z"/></svg>
+                <span>{{ 'Manage Sessions'|t }}</span>
+              </a>
+            {% endif %}
+
+            {% if is_company_user and invite_url %}
+              <a href="{{ invite_url }}"
+                 class="shell-nav-item {{ current_route starts with 'company_invite' ? 'is-active' : '' }}">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <span>{{ 'Team &amp; Invites'|t }}</span>
+              </a>
+            {% endif %}
+          </div>
+        {% endif %}
+
       </nav>
-    </div>
-  </header>
 
-  <main role="main">
-    <div class="layout-container">
-      {{ page.content }}
-    </div>
-  </main>
+      <a href="{{ path('entity.user.edit_form', {'user': user.id}) }}"
+         class="shell-nav-item {{ current_route == 'entity.user.edit_form' ? 'is-active' : '' }}"
+         style="margin: 0 12px 8px;">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/></svg>
+        <span>{{ 'Instellingen'|t }}</span>
+      </a>
 
-  <footer class="site-footer">
-    <div class="layout-container">
-      &copy; {{ "now"|date("Y") }} Desideriushogeschool Event Platform
-    </div>
-  </footer>
+      {# Gebruiker + uitloggen #}
+      <div class="shell-user">
+        <div class="shell-user-avatar">{{ current_first_name|slice(0,1)|upper }}</div>
+        <div class="shell-user-meta">
+          <div class="shell-user-name">{{ current_full_name }}</div>
+          <div class="shell-user-sub">{{ current_display_name }}</div>
+        </div>
+        <a href="{{ path('user.logout') }}" class="shell-logout-btn" title="{{ 'Afmelden'|t }}">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+          </svg>
+        </a>
+      </div>
 
-  {{ page_bottom }}
-  {{ scripts }}
-</body>
-</html>
+    </aside>
+
+    {# ── Hoofd content ── #}
+    <main class="shell-main" role="main">
+
+      <div class="shell-topbar">
+        <div class="shell-crumbs">
+          {% set route_labels = {
+            'qr_code.page':                  'My Badge',
+            'session_enrollment.enroll':     'Browse Sessions',
+            'session_enrollment.my_sessions':'My Sessions',
+            'company_invite.invite_form':    'Team & Invites',
+            'session_management.admin':      'Manage Sessions',
+            'session_management.end':        'End Session',
+            'wallet.page':                   'Wallet',
+            'entity.user.edit_form':         'Instellingen',
+          } %}
+          {{ route_labels[current_route] ?? 'Dashboard' }}
+        </div>
+        <div class="shell-topbar-actions">
+          <div class="event-pill">
+            <span class="event-pill-dot"></span>
+            <span>{{ 'Live · 12–14 MEI'|t }}</span>
+          </div>
+          {% if qr_url %}
+            <a href="{{ qr_url }}" class="icon-btn" title="{{ 'Mijn Badge'|t }}">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v3M14 19v2M17 21h4M19 17v0"/></svg>
+            </a>
+          {% endif %}
+          {% if wallet_balance %}
+            <span style="font-size:12px;color:var(--muted);font-weight:500;">€{{ wallet_balance }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="shell-content">
+        {{ page.content }}
+      </div>
+
+    </main>
+  </div>
+
+{% elseif is_auth_page %}
+
+  {# ════════════════════════════════════ AUTH SPLIT LAYOUT ════ #}
+  <div class="auth-wrap">
+
+    {# ── Dark sidebar ── #}
+    <aside class="auth-side">
+      <div class="auth-side-top">
+        <a href="{{ path('<front>') }}" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+            <rect x="2" y="2" width="24" height="24" rx="7" fill="white"/>
+            <path d="M9 18.5L14 9.5L19 18.5" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="14" cy="14" r="1.6" fill="var(--accent)"/>
+          </svg>
+          <span style="font-weight:700;font-size:16px;color:white;">Shift Festival</span>
+        </a>
+      </div>
+
+      <div class="auth-side-body">
+        {% if current_route in ['registration_form.register', 'user.register'] %}
+          <h2>{{ 'Haal je festivalbadge op.'|t }}</h2>
+          <p>{{ 'Twee minuten. Na registratie ontvang je een digitale badge met een QR-code — zo check je in aan de deur, aan de bar en bij elke sessie.'|t }}</p>
+          <ul>
+            <li>{{ 'Reserveer je plek in 84 sessies'|t }}</li>
+            <li>{{ 'Laad een digitale wallet op voor eten, drinken en merch'|t }}</li>
+            <li>{{ "Nodig tot 20 collega's uit als bedrijfsdeelnemer"|t }}</li>
+          </ul>
+        {% else %}
+          <h2>{{ 'Welkom terug.'|t }}</h2>
+          <p>{{ 'Log in om je badge te bekijken, het programma te verkennen en je sessies te beheren.'|t }}</p>
+          <ul>
+            <li>{{ 'Je QR-badge is altijd een tik verwijderd'|t }}</li>
+            <li>{{ 'Schrijf je in of meld je af voor sessies in real time'|t }}</li>
+            <li>{{ 'Wallet-saldo gesynchroniseerd met de kassa'|t }}</li>
+          </ul>
+        {% endif %}
+      </div>
+
+      <div class="auth-side-foot">
+        <div class="badge-mini">
+          <div class="badge-mini-top">
+            <span>SHIFT · 2026</span>
+            <span>12 – 14 MEI</span>
+          </div>
+          <div class="badge-mini-body">
+            <svg width="56" height="56" viewBox="0 0 56 56" fill="none" aria-label="{{ 'Badge QR-code'|t }}">
+              <rect width="56" height="56" fill="white"/>
+              <rect x="4" y="4" width="14" height="14" rx="2" fill="var(--ink)"/>
+              <rect x="6" y="6" width="10" height="10" rx="1" fill="white"/>
+              <rect x="8" y="8" width="6" height="6" fill="var(--ink)"/>
+              <rect x="38" y="4" width="14" height="14" rx="2" fill="var(--ink)"/>
+              <rect x="40" y="6" width="10" height="10" rx="1" fill="white"/>
+              <rect x="42" y="8" width="6" height="6" fill="var(--ink)"/>
+              <rect x="4" y="38" width="14" height="14" rx="2" fill="var(--ink)"/>
+              <rect x="6" y="40" width="10" height="10" rx="1" fill="white"/>
+              <rect x="8" y="42" width="6" height="6" fill="var(--ink)"/>
+              <rect x="22" y="22" width="4" height="4" fill="var(--accent)"/>
+              <rect x="28" y="22" width="4" height="4" fill="var(--ink)"/>
+              <rect x="34" y="22" width="4" height="4" fill="var(--ink)"/>
+              <rect x="22" y="28" width="4" height="4" fill="var(--ink)"/>
+              <rect x="34" y="28" width="4" height="4" fill="var(--ink)"/>
+            </svg>
+            <div>
+              <div class="badge-mini-name">Shift Festival</div>
+              <div class="badge-mini-role">{{ 'Deelnemer 2026'|t }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    {# ── Form pane ── #}
+    <main class="auth-form-pane">
+      <div class="auth-form-inner">
+
+        <a href="{{ path('<front>') }}" class="auth-back">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          {{ 'Terug'|t }}
+        </a>
+
+        {% if current_route in ['registration_form.register', 'user.register'] %}
+          <h1>{{ 'Maak je account aan'|t }}</h1>
+          <p class="auth-form-sub">
+            {{ 'Al geregistreerd?'|t }}
+            <a href="{{ path('user.login') }}">{{ 'Log hier in'|t }}</a>.
+          </p>
+        {% elseif current_route == 'user.login' %}
+          <h1>{{ 'Inloggen'|t }}</h1>
+          <p class="auth-form-sub">
+            {{ 'Nog geen account?'|t }}
+            <a href="{{ path('registration_form.register') }}">{{ 'Maak er hier een aan'|t }}</a>.
+          </p>
+        {% elseif current_route == 'user.pass' %}
+          <h1>{{ 'Wachtwoord vergeten'|t }}</h1>
+          <p class="auth-form-sub">{{ 'Vul je gebruikersnaam of e-mailadres in om een reset-link te ontvangen.'|t }}</p>
+        {% else %}
+          <h1>{{ 'Account'|t }}</h1>
+        {% endif %}
+
+        {# Drupal renders page title block (hidden by CSS) + main content block with the form #}
+        {{ page.content }}
+
+      </div>
+    </main>
+
+  </div>
+
+{% else %}
+
+  {# ════════════════════════════════════ NIET INGELOGD (publiek) ════ #}
+  {{ page.content }}
+
+{% endif %}
+
+{# ── Hidden Drupal messages → toast renderer ── #}
+<div id="drupal-messages" style="display:none;" aria-hidden="true">
+  {% for type, messages in toast_messages %}
+    {% for message in messages %}
+      <div class="messages messages--{{ type }}">
+        <ul class="messages__list"><li class="messages__item">{{ message }}</li></ul>
+      </div>
+    {% endfor %}
+  {% endfor %}
+</div>
+<script>
+(function () {
+  var svgCheck = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+  var svgWarn  = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+  var svgError = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+
+  function showToast(text, type) {
+    var el = document.createElement('div');
+    el.className = 'toast' + (type === 'error' ? ' toast-error' : type === 'warning' ? ' toast-error' : ' toast-success');
+    var icon = type === 'error' || type === 'warning' ? (type === 'warning' ? svgWarn : svgError) : svgCheck;
+    el.innerHTML = icon + '<span>' + text + '</span>';
+    document.body.appendChild(el);
+    var offset = 24;
+    document.querySelectorAll('.toast').forEach(function (t) {
+      if (t !== el) offset += t.offsetHeight + 8;
+    });
+    el.style.top = offset + 'px';
+    setTimeout(function () {
+      el.style.transition = 'opacity .3s, transform .3s';
+      el.style.opacity = '0';
+      el.style.transform = 'translateX(12px)';
+      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 320);
+    }, 4000);
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var container = document.getElementById('drupal-messages');
+    if (!container) return;
+    container.querySelectorAll('.messages').forEach(function (block) {
+      var type = block.classList.contains('messages--error') ? 'error'
+               : block.classList.contains('messages--warning') ? 'warning'
+               : 'success';
+      var items = block.querySelectorAll('.messages__item');
+      if (items.length) {
+        items.forEach(function (item) {
+          var text = item.textContent.trim();
+          if (text) showToast(text, type);
+        });
+      } else {
+        var text = block.textContent.trim();
+        if (text) showToast(text, type);
+      }
+    });
+  });
+})();
+</script>

@@ -8,11 +8,11 @@ namespace Drupal\rabbitmq_sender;
  *
  * Frontend publishes on:
  *   Exchange:    planning.exchange      (topic, durable)
- *   Routing key: planning.session.view.request
+ *   Routing key: frontend.to.planning.session.view
  *
  * Planning responds via:
  *   Exchange:    planning.exchange
- *   Routing key: planning.session.view.response
+ *   Routing key: planning.to.frontend.session.view.response
  *   Queue:       frontend.planning.session.view.response  (handled by SessionViewResponseReceiver)
  *
  * The optional session_id body field scopes the request to a single session.
@@ -21,14 +21,15 @@ namespace Drupal\rabbitmq_sender;
 class SessionViewRequestSender
 {
     use RetryTrait;
+    use XmlValidationTrait;
 
     private const EXCHANGE      = 'planning.exchange';
-    private const ROUTING_KEY   = 'planning.session.view.request';
+    private const ROUTING_KEY   = 'frontend.to.planning.session.view';
     private const EXCHANGE_TYPE = 'topic';
     private const SOURCE        = 'frontend';
     private const TYPE          = 'session_view_request';
-    private const NAMESPACE     = 'urn:integration:planning:v1';
-    private const VERSION       = '1.0';
+    private const VERSION       = '2.0';
+    private const XSD_PATH      = __DIR__ . '/../../../../../xsd/session_view_request.xsd';
 
     private ?RabbitMQClient $client;
 
@@ -40,22 +41,24 @@ class SessionViewRequestSender
     public function send(array $data = []): void
     {
         $xml = $this->buildXml($data);
+        $this->validateXml($xml, self::XSD_PATH);
 
         $this->sendWithRetry(function () use ($xml): void {
             $this->resolveClient()->declareExchange(self::EXCHANGE, self::EXCHANGE_TYPE);
             $this->resolveClient()->publishToExchange(self::EXCHANGE, self::ROUTING_KEY, $xml);
+            $this->logOutboundSuccess(self::TYPE, self::ROUTING_KEY, $xml);
         });
     }
 
     public function buildXml(array $data = []): string
     {
         $messageId = $this->generateUuidV4();
-        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
+        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z');
 
         $dom = new \DOMDocument('1.0', 'UTF-8');
         $dom->formatOutput = false;
 
-        $message = $dom->createElementNS(self::NAMESPACE, 'message');
+        $message = $dom->createElement('message');
         $dom->appendChild($message);
 
         $header = $dom->createElement('header');

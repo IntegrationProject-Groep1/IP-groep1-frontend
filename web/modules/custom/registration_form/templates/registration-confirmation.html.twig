@@ -1,31 +1,91 @@
 {#
-  Template: registration-confirmation.html.twig
-  Variables:
-    - name: Full name of the registrant
-    - session: Name of the session they registered for
+  registration-confirmation.html.twig
+  Shift Festival 2026 — registratie bevestiging.
+  Wordt gerenderd binnen de authenticated shell (page.html.twig).
 #}
-<div class="registration-confirmation">
-  <div class="confirmation-card">
-    <div class="confirmation-icon">✓</div>
-    <h1>{{ 'You are registered!'|t }}</h1>
 
+<div class="dash" style="max-width:560px;">
+
+  {# Success header #}
+  <div style="text-align:center;padding:40px 0 32px;">
+    <div style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:var(--ok);margin-bottom:20px;">
+      <svg width="28" height="28" fill="none" stroke="white" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    </div>
+    <h1 style="font-size:26px;font-weight:700;color:var(--ink);margin:0 0 8px;">{{ 'Registratie gelukt!'|t }}</h1>
     {% if name %}
-      <p class="confirmation-greeting">{{ 'Hello, @name!'|t({'@name': name}) }}</p>
+      <p style="color:var(--muted);font-size:15px;margin:0;">{{ 'Welkom, @name. Je account is aangemaakt.'|t({'@name': name}) }}</p>
+    {% else %}
+      <p style="color:var(--muted);font-size:15px;margin:0;">{{ 'Je account is aangemaakt en klaar voor gebruik.'|t }}</p>
     {% endif %}
-
-    <div class="confirmation-details">
-      <h2>{{ 'Your registration details'|t }}</h2>
-      {% if session %}
-        <p><strong>{{ 'Session:'|t }}</strong> {{ session }}</p>
-      {% endif %}
-      <p><strong>{{ 'Payment status:'|t }}</strong> {{ 'Pending — pay at the event desk'|t }}</p>
-    </div>
-
-    <div class="confirmation-info">
-      <p>{{ 'A confirmation will be sent to your email shortly.'|t }}</p>
-      <p>{{ 'Please pay your registration fee at the event desk when you arrive.'|t }}</p>
-    </div>
-
-    <a href="/register" class="btn-register-another">{{ 'Register another person'|t }}</a>
   </div>
+
+  {# Badge preview card #}
+  <div class="card card-pad-lg" style="margin-bottom:16px;text-align:center;">
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-bottom:16px;">SHIFT · 2026 · 12–14 MEI</div>
+    <svg width="80" height="80" viewBox="0 0 56 56" fill="none" style="background:var(--surface-2);padding:8px;border-radius:10px;margin-bottom:12px;" aria-hidden="true">
+      <rect width="56" height="56" fill="white"/>
+      <rect x="4" y="4" width="14" height="14" rx="2" fill="var(--ink)"/>
+      <rect x="6" y="6" width="10" height="10" rx="1" fill="white"/>
+      <rect x="8" y="8" width="6" height="6" fill="var(--ink)"/>
+      <rect x="38" y="4" width="14" height="14" rx="2" fill="var(--ink)"/>
+      <rect x="40" y="6" width="10" height="10" rx="1" fill="white"/>
+      <rect x="42" y="8" width="6" height="6" fill="var(--ink)"/>
+      <rect x="4" y="38" width="14" height="14" rx="2" fill="var(--ink)"/>
+      <rect x="6" y="40" width="10" height="10" rx="1" fill="white"/>
+      <rect x="8" y="42" width="6" height="6" fill="var(--ink)"/>
+      <rect x="22" y="22" width="4" height="4" fill="var(--accent)"/>
+      <rect x="28" y="22" width="4" height="4" fill="var(--ink)"/>
+      <rect x="34" y="22" width="4" height="4" fill="var(--ink)"/>
+      <rect x="22" y="28" width="4" height="4" fill="var(--ink)"/>
+      <rect x="34" y="28" width="4" height="4" fill="var(--ink)"/>
+    </svg>
+    <div style="font-weight:600;color:var(--ink);margin-bottom:4px;">{{ name ?: 'Deelnemer' }}</div>
+    <div style="font-size:13px;color:var(--muted);">{{ 'Deelnemer 2026'|t }}</div>
+    <div style="margin-top:16px;font-size:12px;color:var(--muted);background:var(--surface-2);border-radius:8px;padding:10px 14px;">
+      {{ 'Je digitale badge is klaar. Scan hem bij incheck, aan de bar en bij elke sessie.'|t }}
+    </div>
+  </div>
+
+  {# Next steps #}
+  <div class="card card-pad-lg" style="margin-bottom:24px;">
+    <div class="section-label-row" style="margin-bottom:16px;">
+      <span class="section-label">{{ 'Volgende stappen'|t }}</span>
+    </div>
+    <ul class="how-list">
+      <li>
+        <span class="how-num">1</span>
+        <div>
+          <strong>{{ 'Bekijk je badge'|t }}</strong>
+          <br>{{ 'Je QR-code staat klaar onder "Mijn Badge".'|t }}
+        </div>
+      </li>
+      <li>
+        <span class="how-num">2</span>
+        <div>
+          <strong>{{ 'Schrijf je in voor sessies'|t }}</strong>
+          <br>{{ 'Kies uit 84 sessies en reserveer je plek.'|t }}
+        </div>
+      </li>
+      <li>
+        <span class="how-num">3</span>
+        <div>
+          <strong>{{ 'Tot op het festival!'|t }}</strong>
+          <br>{{ '12 – 14 mei 2026, Desideriushogeschool.'|t }}
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  {# CTA buttons #}
+  <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    <a href="{{ path('<front>') }}" class="btn btn-primary btn-lg" style="flex:1;text-align:center;min-width:160px;">
+      {{ 'Naar dashboard'|t }}
+    </a>
+    <a href="/sessions/enroll" class="btn btn-lg" style="flex:1;text-align:center;min-width:160px;background:var(--surface);border:1px solid var(--line);color:var(--ink);">
+      {{ 'Sessies bekijken'|t }}
+    </a>
+  </div>
+
 </div>

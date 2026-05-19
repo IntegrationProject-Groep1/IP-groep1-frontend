@@ -8,6 +8,8 @@ use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\rabbitmq_sender\IdentityServiceClient;
 use Drupal\rabbitmq_sender\NewRegistrationSender;
+use Drupal\rabbitmq_sender\UserCreatedSender;
+use Drupal\rabbitmq_sender\MonitoringLogSender;
 use Drupal\user\Entity\User;
 
 /**
@@ -25,6 +27,8 @@ class RegistrationService
         private readonly NewRegistrationSender $registrationSender,
         private readonly ?RegistrationCrmPayloadBuilder $crmPayloadBuilder = null,
         private readonly ?IdentityServiceClient $identityClient = null,
+        private readonly ?UserCreatedSender $userCreatedSender = null,
+        private readonly ?MonitoringLogSender $monitoringLogger = null,
     ) {}
 
     /**
@@ -39,20 +43,78 @@ class RegistrationService
         $this->validateRegistrationInput($data);
         $this->assertEmailNotInUse((string) $data['email']);
 
-        $logger->info('Registration attempt for @email on session @session', [
+        $logger->info('Registration attempt for @email', [
             '@email'   => $data['email'] ?? 'unknown',
-            '@session' => $data['session_id'] ?? 'unknown',
         ]);
 
         $user = $this->createLocalUser($data);
 
-        // Retrieve the master UUID from the Identity Service so CRM can correlate
-        // this user across all downstream systems. Non-fatal: if Identity Service
-        // is unavailable the registration still succeeds locally.
+        // Retrieve the master UUID from the Identity Service FIRST — contract §5.4 says
+        // user_created must be published AFTER the Identity RPC so we can include identity_uuid.
         $masterUuid = $this->resolveMasterUuid((string) $data['email'], $logger);
         if ($masterUuid !== '') {
             $this->storeMasterUuidOnUser((int) $user->id(), $masterUuid);
             $data['master_uuid'] = $masterUuid;
+
+            // === Toevoeging: user_registered event sturen ===
+            try {
+                /** @var \Drupal\rabbitmq_sender\UserRegisteredSender $userRegisteredSender */
+                $userRegisteredSender = \Drupal::service('rabbitmq_sender.user_registered_sender');
+                $userRegisteredSender->send([
+                    'identity_uuid' => $masterUuid,
+                    'email'         => (string) $data['email'],
+                    'session_id'    => (string) ($data['session_id'] ?? ''),
+                    'first_name'    => (string) ($data['first_name'] ?? ''),
+                    'last_name'     => (string) ($data['last_name'] ?? ''),
+                    'is_company'    => (bool) ($data['is_company'] ?? false),
+                    'company_name'  => (string) ($data['company_name'] ?? ''),
+                    'vat_number'    => (string) ($data['vat_number'] ?? ''),
+                ]);
+                $logger->info('user_registered event verstuurd naar CRM voor @email.', ['@email' => $data['email']]);
+            } catch (\Throwable $e) {
+                $logger->error('user_registered RabbitMQ publish failed: @message', [
+                    '@message' => $e->getMessage(),
+                ]);
+            }
+            // === einde toevoeging ===
+        } elseif ($this->identityClient !== null && $this->mustRequireRabbitMqSync()) {
+            // Identity Service is configured but did not return a UUID. Sending a
+            // registration to CRM without a real identity_uuid would create corrupt data,
+            // so we abort and roll back the local user.
+            $user->delete();
+            throw new \InvalidArgumentException('Registratie tijdelijk niet beschikbaar omdat de Identity Service niet bereikbaar is. Probeer het over enkele minuten opnieuw.');
+        }
+
+        $isCompany = (bool) ($data['is_company'] ?? false);
+        $this->storeIsCompanyOnUser((int) $user->id(), $isCompany);
+        if ($isCompany) {
+            $this->grantCompanyInvitePermission($user);
+        }
+
+        // Notify CRM that a new user account was created (non-fatal).
+        if ($this->userCreatedSender !== null) {
+            try {
+                $this->userCreatedSender->send([
+                    'identity_uuid' => $masterUuid !== '' ? $masterUuid : (string) $user->id(),
+                    'user_id'       => (string) $user->id(),
+                    'email'         => (string) $data['email'],
+                    'first_name'    => (string) ($data['first_name'] ?? ''),
+                    'last_name'     => (string) ($data['last_name'] ?? ''),
+                    'date_of_birth' => (string) ($data['date_of_birth'] ?? ''),
+                    'is_company'    => (bool) ($data['is_company'] ?? false),
+                    'company_name'  => (string) ($data['company_name'] ?? ''),
+                    'vat_number'    => (string) ($data['vat_number'] ?? ''),
+                    'street'        => (string) ($data['street']       ?? ''),
+                    'postal_code'   => (string) ($data['postal_code']  ?? ''),
+                    'municipality'  => (string) ($data['municipality'] ?? ''),
+                ]);
+                $logger->info('user_created verstuurd naar CRM voor @email.', ['@email' => $data['email']]);
+            } catch (\Throwable $e) {
+                $logger->error('user_created mislukt voor @email: @message', [
+                    '@email'   => $data['email'],
+                    '@message' => $e->getMessage(),
+                ]);
+            }
         }
 
         $payloadBuilder = $this->crmPayloadBuilder ?? new RegistrationCrmPayloadBuilder();
@@ -61,8 +123,10 @@ class RegistrationService
         $rabbitSent = false;
 
         try {
-            $this->registrationSender->send($payload);
-            $rabbitSent = true;
+            if ($this->registrationSender !== null) {
+                $this->registrationSender->send($payload);
+                $rabbitSent = true;
+            }
         } catch (\Throwable $e) {
             $logger->error('RabbitMQ publish failed to host @host: @message', [
                 '@host' => $this->resolveRabbitMqHost(),
@@ -83,6 +147,11 @@ class RegistrationService
             $logger->info('Registration sent to RabbitMQ for @email.', [
                 '@email' => $data['email'],
             ]);
+
+            // Notify Monitoring team of successful registration
+            if ($this->monitoringLogger !== null) {
+                $this->monitoringLogger->send('info', 'registration', "New user registered: {$data['email']}");
+            }
         } else {
             $logger->warning('Registration stored locally for @email, but CRM synchronization is pending.', [
                 '@email' => $data['email'],
@@ -105,6 +174,15 @@ class RegistrationService
 
         if (strlen((string) $data['password']) < 8) {
             throw new \InvalidArgumentException('password must be at least 8 characters long');
+        }
+
+        // Address fields are required for company accounts.
+        if (!empty($data['is_company'])) {
+            foreach (['street', 'postal_code', 'municipality'] as $addrField) {
+                if (empty(trim((string) ($data[$addrField] ?? '')))) {
+                    throw new \InvalidArgumentException($addrField . ' is required for company accounts');
+                }
+            }
         }
     }
 
@@ -141,6 +219,13 @@ class RegistrationService
         $this->setIfFieldExists($user, $this->resolveUserFieldName('DRUPAL_USER_FIELD_FIRST_NAME', self::DEFAULT_FIRST_NAME_FIELD), (string) $data['first_name']);
         $this->setIfFieldExists($user, $this->resolveUserFieldName('DRUPAL_USER_FIELD_LAST_NAME', self::DEFAULT_LAST_NAME_FIELD), (string) $data['last_name']);
         $this->setIfFieldExists($user, $this->resolveUserFieldName('DRUPAL_USER_FIELD_DATE_OF_BIRTH', self::DEFAULT_DATE_OF_BIRTH_FIELD), (string) $data['date_of_birth']);
+
+        // Address fields (company accounts only).
+        if (!empty($data['is_company'])) {
+            $this->setIfFieldExists($user, 'field_street',       (string) ($data['street']       ?? ''));
+            $this->setIfFieldExists($user, 'field_postal_code',  (string) ($data['postal_code']  ?? ''));
+            $this->setIfFieldExists($user, 'field_municipality', (string) ($data['municipality'] ?? ''));
+        }
 
         $user->save();
 
@@ -221,6 +306,40 @@ class RegistrationService
         }
 
         \Drupal::service('user.data')->set('registration_form', $userId, 'master_uuid', $masterUuid);
+    }
+
+    /**
+     * Assigns the company_admin role to the user so the "Invite member" menu
+     * link and route are only accessible to company accounts.
+     */
+    private function grantCompanyInvitePermission(User $user): void
+    {
+        if (!class_exists('\Drupal') || !\Drupal::hasContainer()) {
+            return;
+        }
+
+        $roleStorage = $this->entityTypeManager->getStorage('user_role');
+        if (!$roleStorage->load('company_admin')) {
+            $role = $roleStorage->create(['id' => 'company_admin', 'label' => 'Company admin']);
+            $role->grantPermission('access company invite');
+            $role->save();
+        }
+
+        $user->addRole('company_admin');
+        $user->save();
+    }
+
+    /**
+     * Stores whether the user registered as a company so other modules can check
+     * this without loading CRM data (e.g. company_invite checks it for access control).
+     */
+    private function storeIsCompanyOnUser(int $userId, bool $isCompany): void
+    {
+        if (!class_exists('\Drupal') || !\Drupal::hasContainer()) {
+            return;
+        }
+
+        \Drupal::service('user.data')->set('registration_form', $userId, 'is_company', $isCompany);
     }
 
 }

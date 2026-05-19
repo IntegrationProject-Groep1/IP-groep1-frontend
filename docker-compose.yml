@@ -25,11 +25,21 @@ services:
     image: frontend-drupal:local
     container_name: frontend_drupal
     restart: unless-stopped
-    command: >
-      sh -lc "mkdir -p /var/www/html/sites/default/files
-      && chown -R www-data:www-data /var/www/html/sites/default/files
-      && chmod -R 775 /var/www/html/sites/default/files
-      && exec apache2-foreground"
+    command:
+      - sh
+      - -c
+      - >-
+        mkdir -p /var/www/html/sites/default/files/config_sync &&
+        chown -R www-data:www-data /var/www/html/sites/default/files &&
+        chmod -R 775 /var/www/html/sites/default/files &&
+        (sleep 15 &&
+        timeout 90 /opt/drupal/vendor/bin/drush --root=/var/www/html en
+        rabbitmq_sender rabbitmq_receiver registration_form session_enrollment
+        session_management company_invite qr_code --yes &&
+        timeout 60 /opt/drupal/vendor/bin/drush --root=/var/www/html updb --yes &&
+        timeout 60 /opt/drupal/vendor/bin/drush --root=/var/www/html cr ||
+        true) &
+        exec apache2-foreground
     ports:
       - "${FRONTEND_HTTP_PORT:-30020}:80"
     environment:
@@ -37,10 +47,10 @@ services:
       DRUPAL_DB_NAME: ${DRUPAL_DB_NAME:-drupal}
       DRUPAL_DB_USER: ${DRUPAL_DB_USER:-drupal_user}
       DRUPAL_DB_PASSWORD: ${DRUPAL_DB_PASS}
-      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-}
       RABBITMQ_PORT: ${RABBITMQ_PORT:-30000}
-      RABBITMQ_USER: ${RABBITMQ_USER}
-      RABBITMQ_PASS: ${RABBITMQ_PASS}
+      RABBITMQ_USER: ${RABBITMQ_USER:-}
+      RABBITMQ_PASS: ${RABBITMQ_PASS:-}
       RABBITMQ_VHOST: ${RABBITMQ_VHOST:-/}
       RABBITMQ_PREFIX: ${RABBITMQ_PREFIX:-frontend.}
       REGISTRATION_REQUIRE_RABBITMQ_SYNC: ${REGISTRATION_REQUIRE_RABBITMQ_SYNC:-1}
@@ -51,6 +61,24 @@ services:
     depends_on:
       frontend_db:
         condition: service_healthy
+    networks:
+      - shift_net
+
+  frontend_mcp:
+    build:
+      context: ./integratie
+    image: frontend-mcp:local
+    container_name: frontend_mcp
+    restart: unless-stopped
+    ports:
+      - "${MCP_FRONTEND_PORT:-8006}:8006"
+    environment:
+      FRONTEND_BASE_URL: http://frontend_drupal:80
+      DRUPAL_ADMIN_USER: ${DRUPAL_ADMIN_USER:-}
+      DRUPAL_ADMIN_PASS: ${DRUPAL_ADMIN_PASS:-}
+      PORT: "8006"
+    depends_on:
+      - frontend_drupal
     networks:
       - shift_net
 

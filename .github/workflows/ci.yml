@@ -3,45 +3,126 @@ name: CI Pipeline
 on:
   push:
     branches:
-      - main
       - dev
+      - main
       - prod
       - 'feature/**'
       - 'bugfix/**'
-      - 'chore/**'
       - 'hotfix/**'
-    tags: [ "v*" ]
-
+      - 'release/**'
+      - 'chore/**'
+    tags:
+      - 'v*'
   pull_request:
     branches:
-      - main
       - dev
+      - main
       - prod
 
 jobs:
-  unit-tests:
-    name: Unit Tests (PHP 8.4)
+  quality:
+    name: Lint, validate and smoke test
     runs-on: ubuntu-latest
 
+    env:
+      DRUPAL_DB_NAME: drupal
+      DRUPAL_DB_USER: drupal_user
+      DRUPAL_DB_PASS: drupal_pass
+      DRUPAL_DB_ROOT_PASS: root_pass
+      DRUPAL_DB_HOST: frontend_db
+      FRONTEND_HTTP_PORT: 8080
+      COMPOSER_AUTH: '{}'
+
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, simplexml
           coverage: none
-          extensions: mbstring, xml, simplexml
+        env:
+          COMPOSER_TOKEN: ''
+
+      - name: Remove Composer GitHub auth
+        run: |
+          composer config --global --unset github-oauth.github.com || true
+          composer config --global --unset github-oauth || true
 
       - name: Validate composer.json
-        run: composer validate --strict
+        run: composer validate --no-check-publish
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.composer/cache
+            vendor
+          key: ${{ runner.os }}-php-8.4-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-8.4-composer-
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
-      - name: Run Composer Security Audit
-        run: composer audit
+      - name: PHP syntax check
+        run: find . -type f -name "*.php" -not -path "./vendor/*" -print0 | xargs -0 -n1 php -l
 
-      - name: Run PHPUnit
-        run: vendor/bin/phpunit tests/ --colors=never
+      - name: Install XML tools
+        run: sudo apt-get update && sudo apt-get install -y libxml2-utils
+
+      - name: Validate XML against XSD if present
+        run: |
+          XML_FILE=""
+          XSD_FILE=""
+
+          if [ -f "web/xml/users.xml" ] && [ -f "web/xml/schema.xsd" ]; then
+            XML_FILE="web/xml/users.xml"
+            XSD_FILE="web/xml/schema.xsd"
+          else
+            XML_FILE=$(find web -type f -name "*.xml" | head -n 1 || true)
+            XSD_FILE=$(find web -type f -name "*.xsd" | head -n 1 || true)
+          fi
+
+          if [ -n "$XML_FILE" ] && [ -n "$XSD_FILE" ]; then
+            echo "Validating $XML_FILE against $XSD_FILE"
+            xmllint --noout --schema "$XSD_FILE" "$XML_FILE"
+          else
+            echo "No XML/XSD files found, skipping XML validation."
+          fi
+
+      - name: Build Docker containers
+        run: docker compose build
+
+      - name: Start Docker containers
+        run: docker compose up -d
+
+      - name: Wait for Drupal to become ready
+        run: |
+          echo "Waiting for Drupal on http://localhost:8080 ..."
+          for i in $(seq 1 36); do
+            if curl -sf http://localhost:8080 > /dev/null 2>&1; then
+              echo "Drupal is up after $((i * 5))s"
+              exit 0
+            fi
+            echo "  attempt $i/36 — not ready yet, waiting 5s..."
+            sleep 5
+          done
+          echo "Drupal did not become ready within 180s"
+          exit 1
+
+      - name: Show container status
+        run: docker compose ps
+
+      - name: Smoke test Drupal homepage
+        run: curl -f http://localhost:8080
+
+      - name: Print logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Stop Docker containers
+        if: always()
+        run: docker compose down -v

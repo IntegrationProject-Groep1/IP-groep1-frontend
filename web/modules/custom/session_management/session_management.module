@@ -10,11 +10,13 @@ declare(strict_types=1);
 /**
  * Implements hook_theme().
  */
-function session_management_theme(): array {
+function session_management_theme(): array
+{
     return [
         'admin_sessions' => [
             'variables' => [
-                'sessions' => [],
+                'sessions'   => [],
+                'create_url' => '',
             ],
         ],
         'admin_session_enrollees' => [

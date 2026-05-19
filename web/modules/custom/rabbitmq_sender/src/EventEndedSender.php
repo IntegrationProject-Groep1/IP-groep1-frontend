@@ -11,13 +11,17 @@ use PhpAmqpLib\Message\AMQPMessage;
 class EventEndedSender
 {
     use RetryTrait;
+    use XmlValidationTrait;
 
     private ?RabbitMQClient $client;
 
-    private const QUEUE_NAME = 'event.ended';
+    private const QUEUE_NAME      = 'event.ended';
+    private const QUEUE_FACTURATIE = 'facturatie.incoming';
+    private const QUEUE_KASSA      = 'kassa.incoming';
     private const TYPE       = 'event_ended';
     private const VERSION    = '2.0';
     private const SOURCE     = 'frontend';
+    private const XSD_PATH   = __DIR__ . '/../../../../../xsd/event_ended.xsd';
 
     public function __construct(?RabbitMQClient $client = null)
     {
@@ -32,13 +36,26 @@ class EventEndedSender
 
         $xml = $this->buildXml($data);
 
+        // Validate XML against XSD
+        $this->validateXml($xml, self::XSD_PATH);
+
         $this->sendWithRetry(function () use ($xml): void {
+            $client = $this->resolveClient();
             $msg = new AMQPMessage($xml, [
                 'delivery_mode' => 2,
                 'content_type'  => 'application/xml',
             ]);
-            $this->resolveClient()->declareQueue(self::QUEUE_NAME);
-            $this->resolveClient()->getChannel()->basic_publish($msg, '', self::QUEUE_NAME);
+            $client->declareQueue(self::QUEUE_NAME);
+            $client->getChannel()->basic_publish($msg, '', self::QUEUE_NAME);
+            $this->logOutboundSuccess(self::TYPE, self::QUEUE_NAME, $xml);
+
+            $client->declareQueue(self::QUEUE_FACTURATIE);
+            $client->getChannel()->basic_publish($msg, '', self::QUEUE_FACTURATIE);
+            $this->logOutboundSuccess(self::TYPE, self::QUEUE_FACTURATIE, $xml);
+
+            $client->declareQueue(self::QUEUE_KASSA);
+            $client->getChannel()->basic_publish($msg, '', self::QUEUE_KASSA);
+            $this->logOutboundSuccess(self::TYPE, self::QUEUE_KASSA, $xml);
         });
     }
 
@@ -49,16 +66,16 @@ class EventEndedSender
         }
 
         $messageId = $this->generateUuidV4();
-        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
+        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z');
 
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>';
         $xml .= '<message>';
         $xml .= '<header>';
         $xml .= "<message_id>{$messageId}</message_id>";
-        $xml .= '<version>' . self::VERSION . '</version>';
-        $xml .= '<type>' . self::TYPE . '</type>';
         $xml .= "<timestamp>{$timestamp}</timestamp>";
         $xml .= '<source>' . self::SOURCE . '</source>';
+        $xml .= '<type>' . self::TYPE . '</type>';
+        $xml .= '<version>' . self::VERSION . '</version>';
         $xml .= '</header>';
         $xml .= '<body>';
         $xml .= '<session_id>' . htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8') . '</session_id>';

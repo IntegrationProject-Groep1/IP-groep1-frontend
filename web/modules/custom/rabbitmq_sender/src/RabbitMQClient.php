@@ -22,17 +22,17 @@ class RabbitMQClient
     private ?AMQPChannel $channel = null;
 
     public function __construct(
-        string $host = '',
-        int $port = 0,
-        string $user = '',
-        string $password = '',
-        string $vhost = ''
+        ?string $host = null,
+        ?int $port = null,
+        ?string $user = null,
+        ?string $password = null,
+        ?string $vhost = null
     ) {
-        $this->host     = $host     ?: (string) (getenv('RABBITMQ_HOST')  ?: '');
-        $this->port     = $port > 0 ? $port : (int) (getenv('RABBITMQ_PORT') ?: 5672);
-        $this->user     = $user     ?: (string) (getenv('RABBITMQ_USER')  ?: '');
-        $this->password = $password ?: (string) (getenv('RABBITMQ_PASS')  ?: '');
-        $this->vhost    = $vhost    ?: (string) (getenv('RABBITMQ_VHOST') ?: '/');
+        $this->host = $host ?? (string) (getenv('RABBITMQ_HOST') ?: 'rabbitmq_broker');
+        $this->port = $port ?? (int) (getenv('RABBITMQ_PORT') ?: 5672);
+        $this->user = $user ?? (string) (getenv('RABBITMQ_USER') ?: 'guest');
+        $this->password = $password ?? (string) (getenv('RABBITMQ_PASS') ?: 'guest');
+        $this->vhost = $vhost ?? (string) (getenv('RABBITMQ_VHOST') ?: '/');
 
         if (empty($this->host)) {
             throw new \InvalidArgumentException('Host cannot be empty');
@@ -51,7 +51,16 @@ class RabbitMQClient
                     $this->port,
                     $this->user,
                     $this->password,
-                    $this->vhost
+                    $this->vhost,
+                    false,   // insist
+                    'AMQPLAIN', // login_method
+                    null,    // login_response
+                    'en_US', // locale
+                    10.0,    // connection_timeout (seconds)
+                    10.0,    // read_write_timeout (seconds)
+                    null,    // context
+                    false,   // keepalive
+                    60       // heartbeat
                 );
 
                 $this->channel = $this->connection->channel();
@@ -75,18 +84,38 @@ class RabbitMQClient
     public function declareQueue(string $queueName, bool $durable = true): void
     {
         try {
+            // Try active declare first. This succeeds when:
+            // - The queue does not yet exist (creates it), or
+            // - The queue already exists with identical parameters (no-op).
             $this->getChannel()->queue_declare($queueName, false, $durable, false, false);
 
             \Drupal::logger('rabbitmq_sender')->info('Queue declared', [
                 'queue' => $queueName,
             ]);
-
         } catch (\Throwable $e) {
-            \Drupal::logger('rabbitmq_sender')->error('Failed to declare queue', [
-                'queue' => $queueName,
+            // AMQP 406 PRECONDITION_FAILED: queue exists with different parameters
+            // (declared by another service such as CRM). The channel is now closed by
+            // the broker. Reopen it and use passive=true to attach to the existing queue.
+            \Drupal::logger('rabbitmq_sender')->warning('Queue declare failed (possibly already exists with different params), retrying passive: @error', [
                 'error' => $e->getMessage(),
             ]);
-            throw $e;
+
+            // Reset the closed channel so getChannel() opens a fresh one.
+            $this->channel = null;
+
+            try {
+                $this->getChannel()->queue_declare($queueName, true, $durable, false, false);
+
+                \Drupal::logger('rabbitmq_sender')->info('Queue attached (passive)', [
+                    'queue' => $queueName,
+                ]);
+            } catch (\Throwable $e2) {
+                \Drupal::logger('rabbitmq_sender')->error('Failed to declare queue', [
+                    'queue' => $queueName,
+                    'error' => $e2->getMessage(),
+                ]);
+                throw $e2;
+            }
         }
     }
 

@@ -1,0 +1,7 @@
+name: 'QR Code'
+type: module
+description: 'Shows the attendee QR code (master_uuid) and wallet balance for kassa check-in.'
+core_version_requirement: ^10
+package: Custom
+dependencies:
+  - drupal:user

@@ -1,0 +1,7 @@
+name: 'Festival Wallet'
+type: module
+description: 'Festival wallet display page — shows balance and transaction history.'
+core_version_requirement: ^10
+package: Custom
+dependencies:
+  - drupal:user

@@ -62,8 +62,8 @@ try {
     // ── planning.calendar.invite (queue) ─────────────────────────────────────
     // Planning's consumer queue — we create it locally so test sends land somewhere.
     $channel->queue_declare('planning.calendar.invite', false, true, false, false);
-    $channel->queue_bind('planning.calendar.invite', 'calendar.exchange', 'calendar.invite');
-    echo "✓ Queue declared & bound: planning.calendar.invite → calendar.exchange (calendar.invite)\n";
+    $channel->queue_bind('planning.calendar.invite', 'calendar.exchange', 'frontend.to.planning.calendar.invite');
+    echo "✓ Queue declared & bound: planning.calendar.invite → calendar.exchange (frontend.to.planning.calendar.invite)\n";
 
     $channel->close();
     echo "\nAll exchanges and queues are ready.\n";

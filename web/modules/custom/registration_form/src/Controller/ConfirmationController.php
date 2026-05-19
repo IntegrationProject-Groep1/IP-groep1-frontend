@@ -34,6 +34,7 @@ class ConfirmationController extends ControllerBase
             '#theme'   => 'registration_confirmation',
             '#name'    => $name,
             '#session' => $session,
+            '#cache'   => ['max-age' => 0],
         ];
     }
 }

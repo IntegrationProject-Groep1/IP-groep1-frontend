@@ -36,6 +36,21 @@ class RegistrationForm extends FormBase
 
     public function buildForm(array $form, FormStateInterface $form_state): array
     {
+        // Check for an invite token in the query string.
+        // FormBase already owns $requestStack; use \Drupal::request() to avoid redeclaring it.
+        $inviteToken  = (string) (\Drupal::request()->query->get('invite_token') ?? '');
+        $invitedEmail = '';
+        if ($inviteToken !== '' && \Drupal::hasService('company_invite.invite_service')) {
+            /** @var \Drupal\company_invite\Service\InviteService $inviteService */
+            $inviteService = \Drupal::service('company_invite.invite_service');
+            $invitedEmail  = $inviteService->getEmailForToken($inviteToken) ?? '';
+        }
+
+        // Store the validated token in form state for use during submit.
+        if ($invitedEmail !== '') {
+            $form_state->set('invite_token', $inviteToken);
+        }
+
         $form['first_name'] = [
             '#type'     => 'textfield',
             '#title'    => $this->t('First name'),
@@ -48,10 +63,21 @@ class RegistrationForm extends FormBase
             '#required' => true,
         ];
 
+        $emailAttributes = [];
+        if ($invitedEmail !== '') {
+            // Lock the email field when the user arrives via a company invite link.
+            $emailAttributes = [
+                'readonly' => 'readonly',
+                'class'    => ['invited-email'],
+            ];
+        }
+
         $form['email'] = [
-            '#type'     => 'email',
-            '#title'    => $this->t('Email address'),
-            '#required' => true,
+            '#type'          => 'email',
+            '#title'         => $this->t('Email address'),
+            '#required'      => true,
+            '#default_value' => $invitedEmail,
+            '#attributes'    => $emailAttributes,
         ];
 
         $form['password'] = [
@@ -113,6 +139,47 @@ class RegistrationForm extends FormBase
             ],
         ];
 
+        $form['company_fields']['street'] = [
+            '#type'        => 'textfield',
+            '#title'       => $this->t('Street and number'),
+            '#placeholder' => $this->t('e.g. Keizersgracht 123'),
+            '#states' => [
+                'required' => [
+                    ':input[name="is_company"]' => ['checked' => true],
+                ],
+            ],
+        ];
+
+        $form['company_fields']['postal_code'] = [
+            '#type'        => 'textfield',
+            '#title'       => $this->t('Postal code'),
+            '#placeholder' => $this->t('e.g. 1234 AB'),
+            '#states' => [
+                'required' => [
+                    ':input[name="is_company"]' => ['checked' => true],
+                ],
+            ],
+        ];
+
+        $form['company_fields']['municipality'] = [
+            '#type'        => 'textfield',
+            '#title'       => $this->t('Municipality / City'),
+            '#placeholder' => $this->t('e.g. Amsterdam'),
+            '#states' => [
+                'required' => [
+                    ':input[name="is_company"]' => ['checked' => true],
+                ],
+            ],
+        ];
+
+        $form['terms_accepted'] = [
+            '#type'     => 'checkbox',
+            '#title'    => $this->t(
+                'Ik ga akkoord met de <a href="/algemene-voorwaarden" target="_blank">algemene voorwaarden</a> en het <a href="/privacybeleid" target="_blank">privacybeleid</a>.'
+            ),
+            '#required' => false,
+        ];
+
         $form['submit'] = [
             '#type'  => 'submit',
             '#value' => $this->t('Register'),
@@ -140,7 +207,23 @@ class RegistrationForm extends FormBase
         }
 
         if ($isCompany && empty(trim((string) $form_state->getValue('vat_number')))) {
-            $form_state->setErrorByName('company_fields][vat_number', $this->t('VAT number is required for companies.'));
+            $form_state->setErrorByName('company_fields][vat_number', $this->t('BTW-nummer is verplicht voor bedrijven.'));
+        }
+
+        if ($isCompany && empty(trim((string) $form_state->getValue('street')))) {
+            $form_state->setErrorByName('company_fields][street', $this->t('Straat is verplicht voor bedrijven.'));
+        }
+
+        if ($isCompany && empty(trim((string) $form_state->getValue('postal_code')))) {
+            $form_state->setErrorByName('company_fields][postal_code', $this->t('Postcode is verplicht voor bedrijven.'));
+        }
+
+        if ($isCompany && empty(trim((string) $form_state->getValue('municipality')))) {
+            $form_state->setErrorByName('company_fields][municipality', $this->t('Gemeente is verplicht voor bedrijven.'));
+        }
+
+        if (!$form_state->getValue('terms_accepted')) {
+            $form_state->setErrorByName('terms_accepted', $this->t('Je moet akkoord gaan met de algemene voorwaarden en het privacybeleid om je te kunnen registreren.'));
         }
     }
 
@@ -155,10 +238,21 @@ class RegistrationForm extends FormBase
             'is_company'    => (bool) $form_state->getValue('is_company'),
             'company_name'  => $form_state->getValue('company_name') ?? '',
             'vat_number'    => $form_state->getValue('vat_number') ?? '',
+            'street'        => $form_state->getValue('street') ?? '',
+            'postal_code'   => $form_state->getValue('postal_code') ?? '',
+            'municipality'  => $form_state->getValue('municipality') ?? '',
         ];
 
         try {
             $this->registrationService->register($data);
+
+            // Mark the invite token as used so it cannot be replayed.
+            $inviteToken = (string) ($form_state->get('invite_token') ?? '');
+            if ($inviteToken !== '' && \Drupal::hasService('company_invite.invite_service')) {
+                /** @var \Drupal\company_invite\Service\InviteService $inviteService */
+                $inviteService = \Drupal::service('company_invite.invite_service');
+                $inviteService->markTokenUsed($inviteToken);
+            }
 
             $this->tempStoreFactory
                 ->get('registration_form')

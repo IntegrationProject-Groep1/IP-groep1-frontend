@@ -1,0 +1,8 @@
+name: 'Company Invite'
+type: module
+description: 'Enables company admins to invite team members via email. Invited users are pre-registered in CRM and linked to the company before they complete signup.'
+core_version_requirement: ^10 || ^11
+package: Custom
+dependencies:
+  - drupal:user
+  - rabbitmq_sender

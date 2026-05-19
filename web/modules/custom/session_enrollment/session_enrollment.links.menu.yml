@@ -3,3 +3,9 @@ session_enrollment.enroll:
   route_name: session_enrollment.enroll
   menu_name: main
   weight: 20
+
+session_enrollment.my_sessions:
+  title: 'My Sessions'
+  route_name: session_enrollment.my_sessions
+  menu_name: main
+  weight: 21

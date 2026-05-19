@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\rabbitmq_receiver;
 
 use Drupal\rabbitmq_sender\RabbitMQClient;
+use Drupal\rabbitmq_sender\XmlValidationTrait;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
 
@@ -13,12 +14,16 @@ use PhpAmqpLib\Wire\AMQPTable;
  */
 class SessionCreatedReceiver
 {
+    use XmlValidationTrait;
+    use ReceiverLogTrait;
+
     private const EXCHANGE      = 'planning.exchange';
     private const EXCHANGE_TYPE = 'topic';
     private const ROUTING_KEY   = 'planning.to.frontend.session.created';
     private const QUEUE         = 'frontend.planning.session.created';
     private const DLQ           = 'frontend.planning.session.created.dlq';
     private const DLX           = 'frontend.planning.dlx';
+    private const XSD_PATH      = __DIR__ . '/../../../../../xsd/session_created.xsd';
 
     public function __construct(private readonly RabbitMQClient $client) {}
 
@@ -30,6 +35,12 @@ class SessionCreatedReceiver
      */
     public function processMessageFromXml(string $xmlString): array
     {
+        $this->validateXml($xmlString, self::XSD_PATH);
+        $this->logReceiverSuccess(
+            $this->extractXmlValue($xmlString, 'type') ?: 'session_created',
+            $this->extractXmlValue($xmlString, 'source') ?: 'Planning'
+        );
+        
         $xml = $this->parseXml($xmlString);
         $body = $xml->body;
 
@@ -63,6 +74,13 @@ class SessionCreatedReceiver
             'status'            => trim((string) $body->status),
             'max_attendees'     => (int) (string) $body->max_attendees,
             'current_attendees' => (int) (string) $body->current_attendees,
+            'speaker'           => isset($body->speaker) ? [
+                'identity_uuid' => trim((string) ($body->speaker->identity_uuid ?? '')),
+                'first_name'    => trim((string) ($body->speaker->contact->first_name ?? '')),
+                'last_name'     => trim((string) ($body->speaker->contact->last_name ?? '')),
+                'organisation'  => trim((string) ($body->speaker->organisation ?? '')),
+                'email'         => trim((string) ($body->speaker->email ?? '')),
+            ] : null,
         ];
     }
 
@@ -91,9 +109,11 @@ class SessionCreatedReceiver
             false,
             function (AMQPMessage $msg): void {
                 try {
-                    $this->processMessageFromXml($msg->body);
+                    $session = $this->processMessageFromXml($msg->body);
+                    $this->upsertSessionInState($session);
                     $msg->ack();
                 } catch (\Throwable $e) {
+                    $this->logReceiverError($e, self::QUEUE, $msg->body);
                     $msg->nack(false, false);
                 }
             }
@@ -121,5 +141,65 @@ class SessionCreatedReceiver
         }
 
         return $xml;
+    }
+
+    /**
+     * Poll the session_created queue once (non-blocking) and process any waiting message.
+     *
+     * Upserts the session into planning.sessions state so the enrollment form
+     * has a populated session cache after cron runs.
+     * Returns true when a message was processed, false when the queue was empty.
+     */
+    public function pollOnce(): bool
+    {
+        $channel = $this->client->getChannel();
+
+        $args = new AMQPTable([
+            'x-dead-letter-exchange'    => self::DLX,
+            'x-dead-letter-routing-key' => self::DLQ,
+        ]);
+
+        $channel->exchange_declare(self::EXCHANGE, self::EXCHANGE_TYPE, false, true, false);
+        $channel->queue_declare(self::QUEUE, false, true, false, false, false, $args);
+        $channel->queue_bind(self::QUEUE, self::EXCHANGE, self::ROUTING_KEY);
+
+        $msg = $channel->basic_get(self::QUEUE);
+
+        if ($msg === null) {
+            return false;
+        }
+
+        try {
+            $session = $this->processMessageFromXml($msg->body);
+            $this->upsertSessionInState($session);
+            $msg->ack();
+        } catch (\Throwable $e) {
+            $this->logReceiverError($e, self::QUEUE, $msg->body);
+            $msg->nack(false, false);
+        }
+
+        return true;
+    }
+
+    /**
+     * Upserts a session into the planning.sessions Drupal state array.
+     * Replaces an existing entry with the same session_id, or appends a new one.
+     */
+    private function upsertSessionInState(array $session): void
+    {
+        $sessions = \Drupal::state()->get('planning.sessions', []);
+        $found = false;
+        foreach ($sessions as &$existing) {
+            if ($existing['session_id'] === $session['session_id']) {
+                $existing = $session;
+                $found = true;
+                break;
+            }
+        }
+        unset($existing);
+        if (!$found) {
+            $sessions[] = $session;
+        }
+        \Drupal::state()->set('planning.sessions', $sessions);
     }
 }

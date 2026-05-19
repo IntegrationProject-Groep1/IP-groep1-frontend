@@ -13,7 +13,8 @@
             "Drupal\\rabbitmq_sender\\": "web/modules/custom/rabbitmq_sender/src/",
             "Drupal\\rabbitmq_receiver\\": "web/modules/custom/rabbitmq_receiver/src/",
             "Drupal\\registration_form\\": "web/modules/custom/registration_form/src/",
-            "Drupal\\session_enrollment\\": "web/modules/custom/session_enrollment/src/"
+            "Drupal\\session_enrollment\\": "web/modules/custom/session_enrollment/src/",
+            "Drupal\\qr_code\\": "web/modules/custom/qr_code/src/"
         }
     },
     "autoload-dev": {

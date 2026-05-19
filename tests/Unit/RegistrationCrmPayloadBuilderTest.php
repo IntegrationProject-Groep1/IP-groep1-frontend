@@ -20,7 +20,6 @@ class RegistrationCrmPayloadBuilderTest extends TestCase
             'first_name' => 'Jan',
             'last_name' => 'Janssen',
             'date_of_birth' => '1990-05-15',
-            'session_id' => '550e8400-e29b-41d4-a716-446655440001',
             'registration_date' => '2026-03-31',
             'is_company' => false,
         ], '42');
@@ -30,7 +29,6 @@ class RegistrationCrmPayloadBuilderTest extends TestCase
         $this->assertSame('Janssen', $payload['last_name']);
         $this->assertSame('1990-05-15', $payload['date_of_birth']);
         $this->assertSame('2026-03-31', $payload['registration_date']);
-        $this->assertSame('550e8400-e29b-41d4-a716-446655440001', $payload['session_id']);
         $this->assertSame('42', $payload['user_id']);
         $this->assertSame('private', $payload['type']);
         $this->assertFalse($payload['is_company_linked']);
@@ -46,7 +44,6 @@ class RegistrationCrmPayloadBuilderTest extends TestCase
             'first_name' => 'Lotte',
             'last_name' => 'Peeters',
             'date_of_birth' => '1988-11-30',
-            'session_id' => '550e8400-e29b-41d4-a716-446655440002',
             'is_company' => true,
             'company_name' => 'Acme NV',
             'vat_number' => 'BE0123456789',
@@ -67,7 +64,6 @@ class RegistrationCrmPayloadBuilderTest extends TestCase
         $this->assertSame('BE0123456789', $payload['vat_number']);
         $this->assertSame(['country' => 'be'], $payload['address']);
         $this->assertSame('BADGE-001', $payload['badge_id']);
-        $this->assertSame('550e8400-e29b-41d4-a716-446655440002', $payload['session_id']);
         $this->assertSame('99', $payload['user_id']);
     }
 
@@ -83,11 +79,10 @@ class RegistrationCrmPayloadBuilderTest extends TestCase
         ], '7');
 
         $this->assertSame([], $payload['address']);
-        $this->assertSame([], $payload['registration_fee']);
+        $this->assertSame(['amount' => '0.00', 'status' => 'unpaid'], $payload['registration_fee']);
         $this->assertSame('', $payload['company_name']);
         $this->assertSame('', $payload['vat_number']);
         $this->assertSame('', $payload['badge_id']);
-        $this->assertSame('', $payload['session_id']);
         $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}$/', $payload['registration_date']);
     }
 
@@ -120,50 +115,6 @@ class RegistrationCrmPayloadBuilderTest extends TestCase
         ], '12');
 
         $this->assertSame([], $payload['address']);
-        $this->assertSame([], $payload['registration_fee']);
-    }
-
-    public function test_build_joins_session_ids_array_into_comma_separated_session_id(): void
-    {
-        $builder = new RegistrationCrmPayloadBuilder();
-
-        $payload = $builder->build([
-            'email'       => 'jan@example.com',
-            'first_name'  => 'Jan',
-            'last_name'   => 'Janssen',
-            'date_of_birth' => '1990-05-15',
-            'session_ids' => ['sess-001', 'sess-002', 'sess-003'],
-        ], '5');
-
-        $this->assertSame('sess-001,sess-002,sess-003', $payload['session_id']);
-    }
-
-    public function test_build_falls_back_to_session_id_string_when_session_ids_not_provided(): void
-    {
-        $builder = new RegistrationCrmPayloadBuilder();
-
-        $payload = $builder->build([
-            'email'       => 'jan@example.com',
-            'first_name'  => 'Jan',
-            'last_name'   => 'Janssen',
-            'date_of_birth' => '1990-05-15',
-            'session_id'  => 'sess-single-001',
-        ], '5');
-
-        $this->assertSame('sess-single-001', $payload['session_id']);
-    }
-
-    public function test_build_returns_empty_session_id_when_neither_key_provided(): void
-    {
-        $builder = new RegistrationCrmPayloadBuilder();
-
-        $payload = $builder->build([
-            'email'       => 'jan@example.com',
-            'first_name'  => 'Jan',
-            'last_name'   => 'Janssen',
-            'date_of_birth' => '1990-05-15',
-        ], '5');
-
-        $this->assertSame('', $payload['session_id']);
+        $this->assertSame(['amount' => '0.00', 'status' => 'unpaid'], $payload['registration_fee']);
     }
 }

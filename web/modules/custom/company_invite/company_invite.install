@@ -1,0 +1,95 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Defines the invite token schema and provides uninstall cleanup.
+ */
+function company_invite_schema(): array
+{
+    return [
+        'company_invite_tokens' => [
+            'description' => 'Stores pending company invite tokens.',
+            'fields' => [
+                'token' => [
+                    'description' => 'Unique 64-char hex invite token.',
+                    'type'        => 'varchar',
+                    'length'      => 64,
+                    'not null'    => true,
+                ],
+                'email' => [
+                    'description' => 'Email address that was invited.',
+                    'type'        => 'varchar',
+                    'length'      => 255,
+                    'not null'    => true,
+                ],
+                'business_owner_uuid' => [
+                    'description' => 'master_uuid of the company admin who sent the invite.',
+                    'type'        => 'varchar',
+                    'length'      => 36,
+                    'not null'    => true,
+                ],
+                'created' => [
+                    'description' => 'Unix timestamp when the invite was created.',
+                    'type'        => 'int',
+                    'unsigned'    => true,
+                    'not null'    => true,
+                    'default'     => 0,
+                ],
+                'expires' => [
+                    'description' => 'Unix timestamp after which the invite is no longer valid.',
+                    'type'        => 'int',
+                    'unsigned'    => true,
+                    'not null'    => true,
+                    'default'     => 0,
+                ],
+                'used' => [
+                    'description' => '1 when the invited user has completed registration.',
+                    'type'        => 'int',
+                    'size'        => 'tiny',
+                    'unsigned'    => true,
+                    'not null'    => true,
+                    'default'     => 0,
+                ],
+            ],
+            'primary key' => ['token'],
+            'indexes' => [
+                'email' => ['email'],
+            ],
+        ],
+    ];
+}
+
+function company_invite_uninstall(): void
+{
+    \Drupal::database()->schema()->dropTable('company_invite_tokens');
+}
+
+/**
+ * Creates the company_admin role with the invite permission if it doesn't exist yet.
+ * Also run as an update hook so existing installs get the role too.
+ */
+function company_invite_install(): void
+{
+    _company_invite_ensure_role();
+}
+
+function company_invite_update_8001(): void
+{
+    _company_invite_ensure_role();
+}
+
+function _company_invite_ensure_role(): void
+{
+    $roleStorage = \Drupal::entityTypeManager()->getStorage('user_role');
+    if ($roleStorage->load('company_admin')) {
+        return;
+    }
+
+    $role = $roleStorage->create([
+        'id'    => 'company_admin',
+        'label' => 'Company admin',
+    ]);
+    $role->grantPermission('access company invite');
+    $role->save();
+}

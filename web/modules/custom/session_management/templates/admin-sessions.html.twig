@@ -1,60 +1,149 @@
 {#
   Template: admin-sessions.html.twig
   Variables:
-    sessions (array) — list of session arrays from planning.sessions Drupal State.
-      Each session has: session_id, title, start_datetime, end_datetime,
-      location, session_type, status, max_attendees, current_attendees.
+    - sessions:   Array of session objects from Planning state
+    - create_url: URL to the session create form
 #}
+
 <div class="admin-sessions">
 
+  {# ── Header ── #}
   <div class="admin-head">
-    <p class="eyebrow">Session management</p>
-    <h1>Sessions</h1>
-    <a href="/session/create" class="btn btn-secondary">+ New session</a>
+    <div>
+      <span class="eyebrow">{{ 'Programme tools · Planning service'|t }}</span>
+      <h1>{{ 'Manage sessions'|t }}</h1>
+      <p>{{ 'Create, edit, or delete sessions. Changes are sent to the Planning service via RabbitMQ.'|t }}</p>
+    </div>
+    <button type="button" class="btn btn-primary" data-session-modal-url="{{ create_url }}" data-session-modal-title="{{ 'New session'|t }}">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      {{ 'New session'|t }}
+    </button>
   </div>
 
-  <div class="card card-pad-none">
-    {% if sessions is empty %}
-      <div style="padding: 2rem 1.5rem; color: #6b7280; text-align: center;">
-        <p class="muted-small">No sessions found. Sessions appear here once the Planning service has responded.</p>
-        <a href="/session/create" class="btn btn-secondary" style="margin-top: 1rem;">Create your first session</a>
+  {# ── Session table ── #}
+  {% if sessions is empty %}
+    <div class="empty">
+      <div class="empty-dot"></div>
+      <h3>{{ 'No sessions available.'|t }}</h3>
+      <p>{{ 'No sessions were returned from the Planning service. Create one to get started.'|t }}</p>
+      {% if create_url %}
+        <a href="{{ create_url }}" class="btn btn-primary">{{ 'Create first session'|t }}</a>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="card card-pad-none">
+      <div class="admin-table-head">
+        <div class="section-label-row">
+          <span class="section-label">{{ 'Sessions'|t }}</span>
+          <span class="muted-small">{{ sessions|length }} {{ 'sessions'|t }}</span>
+        </div>
       </div>
-    {% else %}
+
       <table class="admin-table">
-        <thead class="admin-table-head">
+        <thead>
           <tr>
-            <th>Title</th>
-            <th>Type</th>
-            <th>Start</th>
-            <th>End</th>
-            <th>Location</th>
-            <th>Status</th>
-            <th>Attendees</th>
-            <th><span class="sr-only">Actions</span></th>
+            <th>{{ 'Titel'|t }}</th>
+            <th>{{ 'When'|t }}</th>
+            <th>{{ 'Location'|t }}</th>
+            <th>{{ 'Capacity'|t }}</th>
+            <th>{{ 'Status'|t }}</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
-          {% for session in sessions %}
-            {% set sid = session.session_id %}
-            <tr class="section-label-row">
-              <td class="section-label">{{ session.title }}</td>
-              <td class="muted-small">{{ session.session_type }}</td>
-              <td class="muted-small">{{ session.start_datetime }}</td>
-              <td class="muted-small">{{ session.end_datetime }}</td>
-              <td class="muted-small">{{ session.location }}</td>
-              <td>
-                <span class="muted-small">{{ session.status }}</span>
-              </td>
-              <td class="muted-small">
-                {{ session.current_attendees }} / {{ session.max_attendees }}
-              </td>
-              <td class="invites-actions">
+          {% for s in sessions %}
+            {% set sid = s.session_id %}
 
-                {# View enrollees button — FIRST, before edit #}
+            {% set type_tone = 'neutral' %}
+            {% if s.session_type == 'keynote' %}{% set type_tone = 'primary' %}
+            {% elseif s.session_type == 'workshop' %}{% set type_tone = 'accent' %}
+            {% elseif s.session_type == 'reception' %}{% set type_tone = 'warm' %}
+            {% endif %}
+
+            {% set pct = 0 %}
+            {% if s.max_attendees > 0 %}
+              {% set pct = ((s.current_attendees / s.max_attendees) * 100)|round %}
+            {% endif %}
+
+            {% set cap_class = 'capacity-cool' %}
+            {% if pct >= 95 %}{% set cap_class = 'capacity-hot' %}
+            {% elseif pct >= 75 %}{% set cap_class = 'capacity-warm' %}
+            {% endif %}
+
+            {% set seat_tone = 'ok' %}
+            {% set seat_label = 'Open'|t %}
+            {% if s.max_attendees > 0 and s.current_attendees >= s.max_attendees %}
+              {% set seat_tone = 'hot' %}
+              {% set seat_label = 'Full'|t %}
+            {% elseif pct >= 90 %}
+              {% set seat_tone = 'warm' %}
+              {% set seat_label = 'Last seats'|t %}
+            {% endif %}
+
+            <tr>
+              <td>
+                <div class="admin-title-cell">
+                  {% if s.session_type %}
+                    <span class="tag tag-{{ type_tone }}">{{ s.session_type }}</span>
+                  {% endif %}
+                  <div>
+                    <div class="admin-title">{{ s.title }}</div>
+                    <div class="admin-sub">
+                      {{ sid }}
+                      {% if s.speaker %}
+                        · {{ [s.speaker.first_name, s.speaker.last_name]|join(' ')|trim }}
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <td class="nowrap">
+                {% if s.start_datetime %}
+                  {% set start_parts = s.start_datetime|split('T') %}
+                  <div>{{ start_parts[0] ?? s.start_datetime }}</div>
+                  {% if start_parts[1] is defined %}
+                    <div class="admin-sub">{{ start_parts[1]|split(':')|slice(0,2)|join(':') }}</div>
+                  {% endif %}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+
+              <td>{{ s.location ?: '—' }}</td>
+
+              <td>
+                <div class="cap-cell">
+                  {% if s.max_attendees > 0 %}
+                    <div class="capacity">
+                      <div class="capacity-bar">
+                        <div class="capacity-fill {{ cap_class }}" style="width:{{ pct }}%"></div>
+                      </div>
+                      <div class="capacity-meta">
+                        <span>{{ s.current_attendees }}&thinsp;/&thinsp;{{ s.max_attendees }}</span>
+                        <span class="capacity-pct">{{ pct }}%</span>
+                      </div>
+                    </div>
+                  {% else %}
+                    <span class="admin-sub">{{ 'Unlimited'|t }}</span>
+                  {% endif %}
+                </div>
+              </td>
+
+              <td>
+                <span class="tag tag-{{ seat_tone }}">{{ seat_label }}</span>
+                {% if s.status and s.status != 'published' %}
+                  <span class="tag" style="margin-left:4px;">{{ s.status }}</span>
+                {% endif %}
+              </td>
+
+              <td class="admin-row-actions">
                 <a href="/session/{{ sid|url_encode }}/enrollees"
                    class="row-act"
-                   title="View enrollees"
-                   aria-label="View enrollees">
+                   title="{{ 'View enrollees'|t }}"
+                   aria-label="{{ 'View enrollees'|t }}">
                   <svg xmlns="http://www.w3.org/2000/svg"
                        viewBox="0 0 24 24"
                        fill="none"
@@ -62,59 +151,185 @@
                        stroke-width="2"
                        stroke-linecap="round"
                        stroke-linejoin="round"
-                       width="18" height="18"
+                       width="13" height="13"
                        aria-hidden="true">
                     <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                   </svg>
                 </a>
-
-                {# Edit session button #}
-                <a href="/session/create?session_id={{ sid|url_encode }}"
-                   class="row-act"
-                   title="Edit session"
-                   aria-label="Edit session">
-                  <svg xmlns="http://www.w3.org/2000/svg"
-                       viewBox="0 0 24 24"
-                       fill="none"
-                       stroke="currentColor"
-                       stroke-width="2"
-                       stroke-linecap="round"
-                       stroke-linejoin="round"
-                       width="18" height="18"
-                       aria-hidden="true">
-                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                <button type="button"
+                        class="row-act"
+                        title="{{ 'Edit'|t }}"
+                        aria-label="{{ 'Edit session'|t }}"
+                        data-session-modal-url="/session/{{ sid|url_encode }}/edit"
+                        data-session-modal-title="{{ 'Edit session'|t }}">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                   </svg>
-                </a>
-
-                {# Delete / end session button #}
-                <a href="/session/end"
+                </button>
+                <a href="/session/{{ sid|url_encode }}/delete"
                    class="row-act row-act-danger"
-                   title="End session"
-                   aria-label="End session">
-                  <svg xmlns="http://www.w3.org/2000/svg"
-                       viewBox="0 0 24 24"
-                       fill="none"
-                       stroke="currentColor"
-                       stroke-width="2"
-                       stroke-linecap="round"
-                       stroke-linejoin="round"
-                       width="18" height="18"
-                       aria-hidden="true">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
-                    <path d="M10 11v6"/>
-                    <path d="M14 11v6"/>
-                    <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+                   title="{{ 'Delete'|t }}"
+                   aria-label="{{ 'Delete session'|t }}">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                   </svg>
                 </a>
-
               </td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
-    {% endif %}
-  </div>
+    </div>
+  {% endif %}
 
 </div>
+
+{# ── Edit modal ── #}
+<div id="session-edit-modal" class="session-modal" hidden aria-modal="true" role="dialog" aria-labelledby="session-modal-title">
+  <div class="session-modal-backdrop"></div>
+  <div class="session-modal-box">
+    <div class="session-modal-header">
+      <h2 id="session-modal-title">{{ 'Edit session'|t }}</h2>
+      <button type="button" id="session-modal-close" class="session-modal-close" aria-label="{{ 'Close'|t }}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div id="session-modal-body" class="session-modal-body">
+      {# filled dynamically #}
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var modal      = document.getElementById('session-edit-modal');
+  var modalTitle = document.getElementById('session-modal-title');
+  var modalBody  = document.getElementById('session-modal-body');
+  var closeBtn   = document.getElementById('session-modal-close');
+  var backdrop   = modal.querySelector('.session-modal-backdrop');
+
+  function openModal(title) {
+    modalTitle.textContent = title || '';
+    modal.hidden = false;
+    document.body.classList.add('modal-open');
+  }
+
+  function closeModal() {
+    modal.hidden = true;
+    document.body.classList.remove('modal-open');
+    modalBody.innerHTML = '';
+  }
+
+  function showLoading() {
+    modalBody.innerHTML =
+      '<div class="session-modal-loading">' +
+        '<svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="animation:spin .8s linear infinite;flex-shrink:0">' +
+          '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>' +
+        '</svg>' +
+        'Even geduld…' +
+      '</div>';
+  }
+
+  function showError(msg) {
+    modalBody.innerHTML = '<div class="alert alert-error" style="margin:0;">' + msg + '</div>';
+  }
+
+  function loadForm(url) {
+    fetch(url)
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.text();
+      })
+      .then(function (html) {
+        var doc  = new DOMParser().parseFromString(html, 'text/html');
+
+        // Prefer a styled card; fall back to the raw form element.
+        var card = doc.querySelector('.admin-form-card') ||
+                   doc.querySelector('.layout-container form') ||
+                   doc.querySelector('main form');
+
+        if (!card) {
+          showError('Formulier kon niet worden geladen. Probeer opnieuw.');
+          return;
+        }
+
+        // Remove "Back" links that belong to the full-page version.
+        card.querySelectorAll('a[href*="/session/admin"], a[href*="/session/create"]').forEach(function (a) {
+          a.style.display = 'none';
+        });
+
+        modalBody.innerHTML = '';
+        modalBody.appendChild(document.importNode(card, true));
+
+        // Intercept form submit so we stay on the admin page after saving.
+        var form = modalBody.querySelector('form');
+        if (!form) return;
+
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var submitBtn = form.querySelector('[type="submit"]');
+          var origLabel = submitBtn ? submitBtn.value || submitBtn.textContent : '';
+          if (submitBtn) { submitBtn.disabled = true; if (submitBtn.value !== undefined) submitBtn.value = 'Bezig…'; else submitBtn.textContent = 'Bezig…'; }
+
+          fetch(form.action || url, {
+            method:   'POST',
+            body:     new FormData(form),
+            redirect: 'follow'
+          })
+          .then(function (r) { return r.text().then(function (t) { return { url: r.url, text: t }; }); })
+          .then(function (res) {
+            // Success: Drupal redirects to confirmation or admin page.
+            if (res.url.indexOf('/session/admin') !== -1 ||
+                res.url.indexOf('/session/confirmation') !== -1) {
+              closeModal();
+              window.location.reload();
+              return;
+            }
+            // Validation errors: re-render the form from the response.
+            var doc2    = new DOMParser().parseFromString(res.text, 'text/html');
+            var newCard = doc2.querySelector('.admin-form-card') ||
+                          doc2.querySelector('.layout-container form') ||
+                          doc2.querySelector('main form');
+            if (newCard) {
+              newCard.querySelectorAll('a[href*="/session/admin"], a[href*="/session/create"]').forEach(function (a) { a.style.display = 'none'; });
+              modalBody.innerHTML = '';
+              modalBody.appendChild(document.importNode(newCard, true));
+              // Re-attach listener on the refreshed form.
+              var f2 = modalBody.querySelector('form');
+              if (f2) f2.addEventListener('submit', arguments.callee);
+            } else {
+              if (submitBtn) { submitBtn.disabled = false; if (submitBtn.value !== undefined) submitBtn.value = origLabel; else submitBtn.textContent = origLabel; }
+            }
+          })
+          .catch(function () {
+            if (submitBtn) { submitBtn.disabled = false; if (submitBtn.value !== undefined) submitBtn.value = origLabel; else submitBtn.textContent = origLabel; }
+          });
+        });
+      })
+      .catch(function (err) {
+        showError('Fout bij laden: ' + err.message);
+      });
+  }
+
+  // Single delegated listener for all modal-triggering buttons.
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-session-modal-url]');
+    if (!btn) return;
+    var url   = btn.getAttribute('data-session-modal-url');
+    var title = btn.getAttribute('data-session-modal-title') || '';
+    openModal(title);
+    showLoading();
+    loadForm(url);
+  });
+
+  closeBtn.addEventListener('click', closeModal);
+  backdrop.addEventListener('click', closeModal);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !modal.hidden) closeModal();
+  });
+}());
+</script>

@@ -12,14 +12,23 @@ RUN docker-php-ext-install sockets
 # Add php-amqplib to Drupal's project root vendor.
 # Drupal's runtime autoload resolves through /opt/drupal/autoload.php.
 WORKDIR /opt/drupal
-RUN composer require php-amqplib/php-amqplib:^3.7 --no-interaction --optimize-autoloader
+RUN composer require php-amqplib/php-amqplib:^3.7 drush/drush --no-interaction --optimize-autoloader
 
 # Copy custom modules and themes into the Drupal web root
 COPY web/modules/custom /var/www/html/modules/custom
 COPY web/themes/custom  /var/www/html/themes/custom
 
+# Copy XSD validation schemas — resolves to /opt/drupal/xsd/ which is 5 levels above src/
+COPY xsd /opt/drupal/xsd
+
 # Copy settings.php — uses getenv() so credentials come from environment variables
 COPY web/sites/default/settings.php /var/www/html/sites/default/settings.php
+
+# Copy services.yml — disables Twig cache so template changes take effect immediately
+COPY web/sites/default/services.yml /var/www/html/sites/default/services.yml
+
+# Suppress the "Could not reliably determine the server's fully qualified domain name" warning
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
 # Create the public files directory and set correct ownership
 RUN mkdir -p /var/www/html/sites/default/files \

@@ -35,6 +35,8 @@ $data = [
     'start_datetime' => '2026-05-15T14:00:00Z',
     'end_datetime'   => '2026-05-15T15:00:00Z',
     'location'       => 'Aula A - Campus Jette (lokaal)',
+    'identity_uuid'  => '550e8400-e29b-41d4-a716-446655440000',
+    'attendee_email' => 'test@example.com',
 ];
 
 $client = null;
@@ -44,12 +46,14 @@ try {
     $client = new RabbitMQClient($host, $port, $user, $pass, $vhost);
     $sender = new CalendarInviteSender($client);
 
-    echo "Sending calendar.invite → calendar.exchange (routing: calendar.invite)\n";
-    echo "  session_id : {$data['session_id']}\n";
-    echo "  title      : {$data['title']}\n";
-    echo "  start      : {$data['start_datetime']}\n";
-    echo "  end        : {$data['end_datetime']}\n";
-    echo "  location   : {$data['location']}\n\n";
+    echo "Sending calendar_invite → calendar.exchange (routing: frontend.to.planning.calendar.invite)\n";
+    echo "  session_id    : {$data['session_id']}\n";
+    echo "  title         : {$data['title']}\n";
+    echo "  start         : {$data['start_datetime']}\n";
+    echo "  end           : {$data['end_datetime']}\n";
+    echo "  location      : {$data['location']}\n";
+    echo "  identity_uuid : {$data['identity_uuid']}\n";
+    echo "  attendee_email: {$data['attendee_email']}\n\n";
 
     $sender->send($data);
 

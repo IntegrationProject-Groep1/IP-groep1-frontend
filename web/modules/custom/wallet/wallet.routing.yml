@@ -1,0 +1,7 @@
+wallet.page:
+  path: '/user/wallet'
+  defaults:
+    _controller: '\Drupal\wallet\Controller\WalletController::page'
+    _title: 'Wallet'
+  requirements:
+    _user_is_logged_in: 'TRUE'

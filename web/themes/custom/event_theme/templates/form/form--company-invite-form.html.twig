@@ -1,0 +1,133 @@
+{#
+  form--company-invite-form.html.twig
+  Shift Festival 2026 company invite pagina.
+  Toont: paginaheader met stats, uitnodigingsformulier, en uitnodigingstabel.
+#}
+
+{% set invites      = form['#invites']      ?? [] %}
+{% set invite_count = invites|length %}
+{% set accepted     = invites|filter(i => i.status == 'accepted')|length %}
+{% set pending      = invites|filter(i => i.status == 'pending')|length %}
+{% set company_name = form['#company_name'] ?? null %}
+
+<div class="company">
+
+  {# ── Header ── #}
+  <div class="company-head">
+    <div>
+      {% if company_name %}
+        <span class="eyebrow">{{ company_name }}</span>
+      {% endif %}
+      <h1>{{ 'Team &amp; uitnodigingen'|t|raw }}</h1>
+      <p>{{ 'Nodig tot <strong>20 collega\'s</strong> uit voor je bedrijfsaccount. Ze registreren onder jouw BTW-nummer en worden centraal gefactureerd.'|t|raw }}</p>
+    </div>
+    {% if invite_count > 0 %}
+      <div class="company-stats">
+        <div class="stat">
+          <div class="stat-label">{{ 'Gebruikt'|t }}</div>
+          <div class="stat-value">{{ invite_count + 1 }} / 20</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">{{ 'Geaccepteerd'|t }}</div>
+          <div class="stat-value">{{ accepted }}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">{{ 'In afwachting'|t }}</div>
+          <div class="stat-value">{{ pending }}</div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  {# ── Messages ── #}
+  {% if message %}
+    <div style="margin-bottom:20px;">{{ message }}</div>
+  {% endif %}
+
+  {# ── Invite form ── #}
+  <div class="card card-pad-lg" style="margin-bottom:16px;">
+    <div class="section-label-row">
+      <span class="section-label">{{ 'Nieuwe uitnodiging sturen'|t }}</span>
+    </div>
+    <form{{ attributes }} class="invite-form">
+      {{ form.form_build_id }}
+      {{ form.form_token }}
+      {{ form.form_id }}
+
+      <div>{{ form.invite_email }}</div>
+      <div>{{ form.submit }}</div>
+
+      {{ form|without('invite_email','submit','form_build_id','form_token','form_id') }}
+    </form>
+  </div>
+
+  {# ── Invites table ── #}
+  {% if invites is not empty %}
+    <div class="card" style="padding:0;">
+      <div class="invites-head">
+        <div class="section-label-row">
+          <span class="section-label">{{ 'Uitnodigingen (@count)'|t({'@count': invite_count}) }}</span>
+        </div>
+      </div>
+      <table class="invites-table">
+        <thead>
+          <tr>
+            <th>{{ 'Persoon'|t }}</th>
+            <th>{{ 'E-mail'|t }}</th>
+            <th>{{ 'Verstuurd'|t }}</th>
+            <th>{{ 'Status'|t }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for invite in invites %}
+            <tr>
+              <td>
+                <div class="invite-name">
+                  <div class="invite-avatar {% if invite.status != 'accepted' %}invite-avatar-muted{% endif %}">
+                    {% if invite.name %}
+                      {{ invite.name|split(' ')|map(w => w[0:1])|join('')|upper|slice(0,2) }}
+                    {% else %}
+                      ?
+                    {% endif %}
+                  </div>
+                  <span>
+                    {% if invite.name %}
+                      {{ invite.name }}
+                    {% else %}
+                      <em style="color:var(--muted);">{{ 'Nog niet geregistreerd'|t }}</em>
+                    {% endif %}
+                  </span>
+                </div>
+              </td>
+              <td>{{ invite.email }}</td>
+              <td>{{ invite.sent }}</td>
+              <td>
+                {% if invite.status == 'accepted' %}
+                  <span class="tag tag-ok">{{ 'Geaccepteerd'|t }}</span>
+                {% else %}
+                  <span class="tag tag-warm">{{ 'In afwachting'|t }}</span>
+                {% endif %}
+              </td>
+              <td class="invites-actions">
+                {% if invite.status == 'pending' and invite.resend_url is defined %}
+                  <a href="{{ invite.resend_url }}" class="row-act">{{ 'Opnieuw sturen'|t }}</a>
+                {% endif %}
+                {% if invite.remove_url is defined %}
+                  <a href="{{ invite.remove_url }}" class="row-act row-act-danger"
+                     onclick="return confirm('{{ 'Uitnodiging verwijderen?'|t }}');"
+                     title="{{ 'Verwijderen'|t }}">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                  </a>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+
+</div>

@@ -9,13 +9,15 @@ namespace Drupal\rabbitmq_sender;
 class CalendarInviteSender
 {
     use RetryTrait;
+    use XmlValidationTrait;
 
     private const EXCHANGE      = 'calendar.exchange';
     private const ROUTING_KEY   = 'frontend.to.planning.calendar.invite';
     private const EXCHANGE_TYPE = 'topic';
     private const SOURCE        = 'frontend';
-    private const TYPE          = 'calendar.invite';
-    private const NAMESPACE     = 'urn:integration:planning:v1';
+    private const TYPE          = 'calendar_invite';
+    private const VERSION       = '2.0';
+    private const XSD_PATH      = __DIR__ . '/../../../../../xsd/calendar_invite.xsd';
 
     private ?RabbitMQClient $client;
 
@@ -38,17 +40,26 @@ class CalendarInviteSender
         if (empty($data['end_datetime'])) {
             throw new \InvalidArgumentException('end_datetime is required');
         }
+        if (empty($data['identity_uuid'])) {
+            throw new \InvalidArgumentException('identity_uuid is required');
+        }
+        if (empty($data['attendee_email'])) {
+            throw new \InvalidArgumentException('attendee_email is required');
+        }
 
         // ✅ FIX: safe logging
         $this->log('info', 'Sending calendar invite', [
-            'session_id' => $data['session_id'],
+            'session_id'    => $data['session_id'],
+            'identity_uuid' => $data['identity_uuid'],
         ]);
 
         $xml = $this->buildXml($data);
+        $this->validateXml($xml, self::XSD_PATH);
 
         $this->sendWithRetry(function () use ($xml): void {
             $this->resolveClient()->declareExchange(self::EXCHANGE, self::EXCHANGE_TYPE);
             $this->resolveClient()->publishToExchange(self::EXCHANGE, self::ROUTING_KEY, $xml);
+            $this->logOutboundSuccess(self::TYPE, self::ROUTING_KEY, $xml);
         });
     }
 
@@ -66,14 +77,20 @@ class CalendarInviteSender
         if (empty($data['end_datetime'])) {
             throw new \InvalidArgumentException('end_datetime is required');
         }
+        if (empty($data['identity_uuid'])) {
+            throw new \InvalidArgumentException('identity_uuid is required');
+        }
+        if (empty($data['attendee_email'])) {
+            throw new \InvalidArgumentException('attendee_email is required');
+        }
 
         $messageId = $this->generateUuidV4();
-        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c');
+        $timestamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z');
 
         $dom = new \DOMDocument('1.0', 'UTF-8');
         $dom->formatOutput = false;
 
-        $message = $dom->createElementNS(self::NAMESPACE, 'message');
+        $message = $dom->createElement('message');
         $dom->appendChild($message);
 
         $header = $dom->createElement('header');
@@ -81,9 +98,11 @@ class CalendarInviteSender
         $header->appendChild($dom->createElement('timestamp', $timestamp));
         $header->appendChild($dom->createElement('source', self::SOURCE));
         $header->appendChild($dom->createElement('type', self::TYPE));
+        $header->appendChild($dom->createElement('version', self::VERSION));
         $message->appendChild($header);
 
         $body = $dom->createElement('body');
+        $body->appendChild($dom->createElement('identity_uuid', htmlspecialchars((string) $data['identity_uuid'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('session_id', htmlspecialchars((string) $data['session_id'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('title', htmlspecialchars((string) $data['title'], ENT_XML1, 'UTF-8')));
         $body->appendChild($dom->createElement('start_datetime', htmlspecialchars((string) $data['start_datetime'], ENT_XML1, 'UTF-8')));
@@ -93,10 +112,7 @@ class CalendarInviteSender
             $body->appendChild($dom->createElement('location', htmlspecialchars((string) $data['location'], ENT_XML1, 'UTF-8')));
         }
 
-        if (!empty($data['user_id'])) {
-            $body->appendChild($dom->createElement('user_id', htmlspecialchars((string) $data['user_id'], ENT_XML1, 'UTF-8')));
-        }
-
+        $body->appendChild($dom->createElement('attendee_email', htmlspecialchars((string) $data['attendee_email'], ENT_XML1, 'UTF-8')));
         $message->appendChild($body);
 
         return $dom->saveXML() ?: '';

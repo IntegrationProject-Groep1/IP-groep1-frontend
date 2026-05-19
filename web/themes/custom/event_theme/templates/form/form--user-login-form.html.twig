@@ -1,0 +1,12 @@
+{#
+  form--user-login-form.html.twig
+  Rendert alleen het formulier; de auth-wrap layout staat in page.html.twig.
+#}
+
+{% if message %}
+  <div style="margin-bottom:16px;">{{ message }}</div>
+{% endif %}
+
+<form{{ attributes.addClass('form-grid') }}>
+  {{ children }}
+</form>
