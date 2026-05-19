@@ -211,13 +211,12 @@
                 </span>
               {% elseif is_enrolled %}
                 <span class="tag tag-ok" style="justify-content:center;">{{ 'enrolled'|t }}</span>
-                <div style="display:none;">{{ form.session_ids[sid] }}</div>
               {% else %}
-                <div style="display:none;">{{ form.session_ids[sid] }}</div>
-                <button type="button" class="btn btn-ink btn-sm btn-full"
-                        onclick="enrollSingle({{ sid|json_encode }}, this)">
+                <a href="/sessions/enroll-single/{{ sid }}"
+                   class="btn btn-ink btn-sm btn-full"
+                   style="text-align:center;display:block;">
                   {{ 'Enroll'|t }}
-                </button>
+                </a>
               {% endif %}
             </div>
 
@@ -412,24 +411,6 @@
     if (e.key === 'Escape' && !modal.hidden) closeModal();
   });
 }());
-
-/* ── Per-session enroll ── */
-function enrollSingle(sid, triggerBtn) {
-  var cb = document.querySelector('input[type="checkbox"][value="' + sid + '"]');
-  if (!cb) return;
-  cb.checked = true;
-
-  /* Show loading state on the clicked button */
-  if (triggerBtn) {
-    triggerBtn.disabled = true;
-    triggerBtn.textContent = '{{ 'Enrolling…'|t }}';
-    triggerBtn.style.opacity = '0.7';
-  }
-
-  /* Click the real submit button so Drupal's form handlers fire correctly */
-  var submitBtn = document.querySelector('.sessions-submit-row input[type="submit"]');
-  if (submitBtn) { submitBtn.click(); } else { cb.form.submit(); }
-}
 
 /* ── Scroll to feedback on load ── */
 (function () {
