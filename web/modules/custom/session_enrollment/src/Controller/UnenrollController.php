@@ -6,6 +6,7 @@ namespace Drupal\session_enrollment\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\rabbitmq_sender\UserUnregisteredSender;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
 /**
@@ -13,6 +14,17 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
  */
 class UnenrollController extends ControllerBase
 {
+    public function __construct(
+        private readonly UserUnregisteredSender $userUnregisteredSender,
+    ) {}
+
+    public static function create(ContainerInterface $container): static
+    {
+        return new static(
+            $container->get('rabbitmq_sender.user_unregistered_sender'),
+        );
+    }
+
     public function unenroll(string $session_id): RedirectResponse
     {
         $currentUser  = $this->currentUser();
@@ -27,7 +39,7 @@ class UnenrollController extends ControllerBase
         $sessionTitle = $this->resolveSessionTitle($session_id);
 
         try {
-            (new UserUnregisteredSender())->send([
+            $this->userUnregisteredSender->send([
                 'identity_uuid' => $identityUuid,
                 'session_id'    => $session_id,
                 'session_title' => $sessionTitle,
