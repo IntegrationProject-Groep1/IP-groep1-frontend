@@ -19,9 +19,13 @@ use PhpAmqpLib\Message\AMQPMessage;
  */
 class IdentityServiceClient
 {
-    private const REQUEST_QUEUE = 'identity.user.create.request';
-    private const SOURCE_SYSTEM = 'frontend';
-    private const RPC_TIMEOUT   = 5.0; // seconds
+    use XmlValidationTrait;
+
+    private const REQUEST_QUEUE    = 'identity.user.create.request';
+    private const SOURCE_SYSTEM    = 'frontend';
+    private const RPC_TIMEOUT      = 5.0;
+    private const XSD_REQUEST_PATH = __DIR__ . '/../../../../../xsd/identity_create_request.xsd';
+    private const XSD_RESPONSE_PATH = __DIR__ . '/../../../../../xsd/identity_response.xsd';
 
     private ?RabbitMQClient $client;
 
@@ -56,6 +60,7 @@ class IdentityServiceClient
         [$replyQueue] = $channel->queue_declare('', false, false, true, true);
 
         $requestXml = $this->buildRequestXml($email);
+        $this->validateXml($requestXml, self::XSD_REQUEST_PATH);
 
         $msg = new AMQPMessage($requestXml, [
             'reply_to'       => $replyQueue,
@@ -124,6 +129,8 @@ class IdentityServiceClient
      */
     public function parseMasterUuid(string $xmlString): string
     {
+        $this->validateXml($xmlString, self::XSD_RESPONSE_PATH);
+
         $xml = @simplexml_load_string($xmlString);
         if ($xml === false) {
             throw new \InvalidArgumentException('Invalid XML response from Identity Service');

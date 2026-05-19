@@ -1,0 +1,22 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * @file
+ * Wallet module — registers the wallet_page Twig theme hook.
+ */
+
+/**
+ * Implements hook_theme().
+ */
+function wallet_theme(): array {
+    return [
+        'wallet_page' => [
+            'variables' => [
+                'balance'      => '0.00',
+                'transactions' => [],
+            ],
+        ],
+    ];
+}

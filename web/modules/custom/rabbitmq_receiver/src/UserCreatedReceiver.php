@@ -20,7 +20,7 @@ class UserCreatedReceiver
     private const QUEUE    = 'frontend.crm.user.created';
     private const DLQ      = 'frontend.crm.user.created.dlq';
     private const DLX      = 'frontend.crm.dlx';
-    private const XSD_PATH = 'xsd/user_created_receiver.xsd';
+    private const XSD_PATH = __DIR__ . '/../../../../../xsd/user_created_receiver.xsd';
 
     public function __construct(private readonly RabbitMQClient $client) {}
 
@@ -36,8 +36,8 @@ class UserCreatedReceiver
     {
         $this->validateXml($xmlString, self::XSD_PATH);
         $this->logReceiverSuccess(
-            $this->extractXmlValue($xmlString, 'type'),
-            $this->extractXmlValue($xmlString, 'source')
+            $this->extractXmlValue($xmlString, 'event'),
+            $this->extractXmlValue($xmlString, 'source_system')
         );
         libxml_use_internal_errors(true);
         $xml = simplexml_load_string($xmlString);

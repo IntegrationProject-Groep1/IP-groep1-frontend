@@ -1,66 +1,15 @@
 {#
   form--registration-form.html.twig
-  Registration form styled with Tailwind + CSS variables.
+  Rendert het registratieformulier; de auth-wrap layout staat in page.html.twig.
 #}
-{{ attach_library('event_theme/global') }}
 
-<div class="card p-8 max-w-2xl mx-auto">
+{% if message %}
+  <div style="margin-bottom:16px;">{{ message }}</div>
+{% endif %}
 
-  <div class="mb-8">
-    <h1 class="text-2xl font-bold tracking-tight" style="color:var(--color-text);">
-      {{ 'Register for a session'|t }}
-    </h1>
-    <p class="mt-1 text-sm" style="color:var(--color-muted);">
-      {{ 'Fill in your details below to reserve your spot.'|t }}
-    </p>
-  </div>
-
-  {% if message %}
-    <div class="mb-6">{{ message }}</div>
-  {% endif %}
-
-  <form{{ attributes }}>
-    {{ form.form_build_id }}
-    {{ form.form_token }}
-    {{ form.form_id }}
-
-    {# ── Personal details ── #}
-    <div class="mb-7">
-      <p class="section-label">{{ 'Personal details'|t }}</p>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>{{ form.first_name }}</div>
-        <div>{{ form.last_name }}</div>
-      </div>
-      <div class="mt-4">{{ form.email }}</div>
-    </div>
-
-    {# ── Session selection ── #}
-    <div class="mb-7">
-      <p class="section-label">{{ 'Session'|t }}</p>
-      <div>{{ form.session_id }}</div>
-    </div>
-
-    {# ── Company (optional) ── #}
-    <div class="mb-7">
-      <p class="section-label">{{ 'Company (optional)'|t }}</p>
-      <div class="flex items-center gap-2 mb-4">
-        {{ form.is_company }}
-      </div>
-      <div class="rounded-lg border p-4" style="border-color:var(--color-border);background-color:var(--color-bg);">
-        {{ form.company_fields }}
-      </div>
-    </div>
-
-    {# ── Algemene voorwaarden ── #}
-    <div class="mb-7">
-      <div class="flex items-start gap-3">
-        <div class="mt-1">{{ form.terms_accepted }}</div>
-      </div>
-    </div>
-
-    {# ── Submit ── #}
-    <div>{{ form.submit }}</div>
-  </form>
-
-</div>
-
+<form{{ attributes.addClass('form-grid') }}>
+  {{ children }}
+  <p class="form-fine">
+    {{ 'Door te registreren ga je akkoord met de festivalcode en ons gegevensbeleid.'|t }}
+  </p>
+</form>

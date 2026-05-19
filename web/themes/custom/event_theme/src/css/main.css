@@ -326,6 +326,8 @@ h1.page-title,
 .btn-ghost-light:hover:not(:disabled) { background: var(--surface); border-color: var(--ink); }
 .btn-white { background: white; color: var(--ink); }
 .btn-white:hover:not(:disabled) { background: rgba(255,255,255,.9); }
+.btn-ghost { background: transparent; color: var(--ink); border-color: var(--line-2); }
+.btn-ghost:hover:not(:disabled) { background: var(--surface); border-color: var(--ink); }
 .btn-sm { padding: 7px 12px; font-size: 13px; border-radius: 8px; }
 .btn-lg { padding: 13px 22px; font-size: 15px; border-radius: 12px; }
 .btn-full { width: 100%; }
@@ -608,25 +610,98 @@ h1.page-title,
 .sf-content { flex: 1; padding: 36px 40px; max-width: 1200px; margin: 0 auto; width: 100%; }
 
 /* ══════════════════════════════════════════════════════════════
-   SESSION CARDS
+   EYEBROW
+   ══════════════════════════════════════════════════════════════ */
+
+.eyebrow {
+  display: inline-flex; align-items: center;
+  font-size: 12px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .12em;
+  color: var(--muted); margin-bottom: 12px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MOBILE MENU
+   ══════════════════════════════════════════════════════════════ */
+
+.sf-mobile-menu {
+  display: none;
+  flex-direction: column; gap: 2px;
+  background: var(--ink);
+  padding: 12px 16px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.sf-mobile-menu.is-open { display: flex; }
+.sf-mobile-menu .sf-nav-link { justify-content: flex-start; }
+
+/* ══════════════════════════════════════════════════════════════
+   SESSIONS PAGE
+   ══════════════════════════════════════════════════════════════ */
+
+.sessions-page { }
+
+.sessions-head {
+  display: grid; grid-template-columns: 1fr auto;
+  gap: 32px; align-items: end; margin-bottom: 24px;
+}
+.sessions-head h1 {
+  font-family: var(--font-display); font-size: 40px;
+  line-height: 1.05; letter-spacing: -.02em;
+  margin: 0 0 6px; font-weight: 600;
+}
+.sessions-head p { margin: 0; color: var(--muted); font-size: 14px; max-width: 540px; }
+.sessions-tools { display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
+
+.search {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px; background: white;
+  border: 1px solid var(--line-2); border-radius: 10px; min-width: 280px;
+}
+.search input { border: none; outline: none; font: inherit; font-size: 13px; flex: 1; background: transparent; }
+.search svg { color: var(--muted); flex-shrink: 0; }
+
+.chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  padding: 6px 12px; background: white;
+  border: 1px solid var(--line-2); border-radius: 100px;
+  font-size: 12px; font-weight: 500; color: var(--muted);
+  cursor: pointer; transition: all .12s; text-transform: capitalize;
+}
+.chip:hover { color: var(--ink); border-color: var(--ink); }
+.chip.is-on { background: var(--ink); color: white; border-color: var(--ink); }
+
+.session-list { display: flex; flex-direction: column; gap: 12px; }
+
+.sessions-submit-row { margin-top: 20px; }
+
+/* ══════════════════════════════════════════════════════════════
+   SESSION CARDS  (3-column: time | main | side)
    ══════════════════════════════════════════════════════════════ */
 
 .session-card {
-  display: grid; grid-template-columns: 100px 1fr;
-  gap: 24px; background: white;
+  display: grid;
+  grid-template-columns: 110px 1fr 200px;
+  gap: 28px; background: white;
   border: 1px solid var(--line); border-radius: 16px; padding: 22px 24px;
   transition: all .15s;
 }
 .session-card:hover { border-color: var(--muted); box-shadow: var(--shadow-sm); }
+.session-card-full { opacity: .75; }
+
 .session-time-col { display: flex; flex-direction: column; gap: 4px; padding-right: 20px; border-right: 1px solid var(--line); }
 .session-day  { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; }
 .session-hour { font-family: var(--font-display); font-size: 26px; line-height: 1; letter-spacing: -.02em; }
 .session-dur  { font-size: 12px; color: var(--muted); }
+
 .session-main { min-width: 0; }
 .session-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
 .session-main h3 { font-size: 17px; line-height: 1.3; margin: 0 0 6px; letter-spacing: -.005em; }
 .session-main p  { margin: 0 0 12px; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .session-foot { display: flex; gap: 18px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+.session-foot span { display: inline-flex; align-items: center; gap: 5px; }
+
+.session-side { display: flex; flex-direction: column; justify-content: space-between; gap: 10px; }
+.session-checkbox-wrap { display: flex; flex-direction: column; gap: 6px; }
 
 /* ══════════════════════════════════════════════════════════════
    CAPACITY BAR
@@ -662,6 +737,164 @@ h1.page-title,
    RESPONSIVE
    ══════════════════════════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════════════════════════
+   ADMIN — SESSION MANAGEMENT
+   ══════════════════════════════════════════════════════════════ */
+
+.admin-sessions { }
+
+.admin-head {
+  display: flex; justify-content: space-between;
+  align-items: flex-end; margin-bottom: 24px; gap: 16px;
+}
+.admin-head h1 {
+  font-family: var(--font-display); font-size: 40px;
+  line-height: 1.05; letter-spacing: -.02em;
+  margin: 0 0 6px; font-weight: 600;
+}
+.admin-head p { margin: 0; color: var(--muted); font-size: 14px; max-width: 580px; }
+
+.new-session-card {
+  margin-bottom: 16px;
+  border: 2px dashed var(--primary) !important;
+  background: var(--primary-soft) !important;
+}
+.new-session-head {
+  display: flex; justify-content: space-between;
+  align-items: center; margin-bottom: 16px;
+}
+
+.admin-form-card { }
+.admin-form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+.admin-form-actions { margin-top: 8px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+.admin-table-head { padding: 22px 24px 14px; }
+.admin-table { width: 100%; border-collapse: collapse; }
+.admin-table th {
+  text-align: left; padding: 8px 18px;
+  font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--muted); font-weight: 600;
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.admin-table td { padding: 14px 18px; border-bottom: 1px solid var(--line); font-size: 13px; vertical-align: middle; }
+.admin-table tr:last-child td { border-bottom: none; }
+.admin-title-cell { display: flex; gap: 12px; align-items: flex-start; min-width: 280px; }
+.admin-title { font-weight: 600; font-size: 14px; line-height: 1.3; margin-bottom: 2px; }
+.admin-sub { font-size: 11px; color: var(--muted); font-family: var(--font-mono); letter-spacing: .03em; }
+.cap-cell { min-width: 140px; }
+.nowrap { white-space: nowrap; }
+
+.admin-delete-card { max-width: 560px; }
+.admin-delete-warning {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 14px 16px; margin-bottom: 20px;
+  background: color-mix(in srgb, var(--hot) 8%, white);
+  border: 1px solid color-mix(in srgb, var(--hot) 20%, white);
+  border-radius: 10px; font-size: 13px;
+}
+.admin-delete-warning svg { color: var(--hot); flex-shrink: 0; margin-top: 2px; }
+.admin-delete-warning p { margin: 0; color: var(--ink); }
+
+.row-act {
+  background: transparent; border: 1px solid var(--line-2);
+  border-radius: 7px; padding: 5px 10px;
+  font: inherit; font-size: 12px; cursor: pointer;
+  color: var(--ink); margin-left: 4px; transition: all .12s;
+}
+.row-act:hover { background: var(--surface-2); border-color: var(--ink); }
+.row-act-danger { color: var(--hot); border-color: color-mix(in srgb, var(--hot) 30%, white); }
+.row-act-danger:hover { background: color-mix(in srgb, var(--hot) 8%, white); border-color: var(--hot); }
+
+/* ══════════════════════════════════════════════════════════════
+   COMPANY / TEAM INVITES PAGE
+   ══════════════════════════════════════════════════════════════ */
+
+.company { }
+
+.company-head {
+  display: grid; grid-template-columns: 1fr auto;
+  gap: 32px; align-items: end; margin-bottom: 24px;
+}
+.company-head h1 {
+  font-family: var(--font-display); font-size: 40px;
+  line-height: 1.05; letter-spacing: -.02em;
+  margin: 0 0 6px; font-weight: 600;
+}
+.company-head p { margin: 0; color: var(--muted); font-size: 14px; max-width: 540px; }
+.company-stats { display: flex; gap: 4px; }
+.company-stats .stat { padding: 0 20px; border-left: 1px solid var(--line); }
+.company-stats .stat:first-child { border-left: none; padding-left: 0; }
+
+.company > .card { margin-bottom: 16px; }
+.invite-form { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; }
+
+.invites-head { padding: 22px 24px 14px; }
+.invite-name { display: flex; align-items: center; gap: 10px; }
+.invites-actions { text-align: right; white-space: nowrap; }
+.invites-self { background: color-mix(in srgb, var(--primary) 4%, white); }
+
+/* Stat block */
+.stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+.stat-value { font-family: var(--font-display); font-size: 28px; line-height: 1; letter-spacing: -.02em; }
+.stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+/* ══════════════════════════════════════════════════════════════
+   MY SESSIONS / SCHEDULE
+   ══════════════════════════════════════════════════════════════ */
+
+.my-sessions-head {
+  display: flex; justify-content: space-between;
+  align-items: flex-end; margin-bottom: 32px; gap: 16px;
+}
+.my-sessions-head h1 {
+  font-family: var(--font-display); font-size: 40px;
+  line-height: 1.05; letter-spacing: -.02em;
+  margin: 0 0 6px; font-weight: 600;
+}
+.schedule-stack { display: flex; flex-direction: column; gap: 32px; }
+.schedule-day-title {
+  font-family: var(--font-display); font-size: 26px;
+  letter-spacing: -.02em; margin: 0 0 14px; font-weight: 600;
+  padding-bottom: 10px; border-bottom: 1px solid var(--line);
+}
+.schedule-day-items { display: flex; flex-direction: column; gap: 10px; }
+.schedule-item {
+  display: grid; grid-template-columns: 140px 1fr auto;
+  gap: 24px; align-items: center;
+  background: white; border: 1px solid var(--line);
+  border-radius: 14px; padding: 18px 22px;
+}
+.schedule-item-time { display: flex; flex-direction: column; gap: 2px; }
+.schedule-item-time strong { font-family: var(--font-display); font-size: 22px; letter-spacing: -.02em; line-height: 1; }
+.schedule-item-time span { font-size: 11px; color: var(--muted-2); }
+.schedule-item-tags { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+.schedule-item-main h3 { font-size: 16px; margin: 0 0 6px; line-height: 1.3; }
+.schedule-item-sub { display: flex; gap: 18px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+.schedule-item-sub span { display: inline-flex; align-items: center; gap: 5px; }
+
+/* ══════════════════════════════════════════════════════════════
+   EMPTY STATE
+   ══════════════════════════════════════════════════════════════ */
+
+.empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 36px 24px; text-align: center; }
+.empty-dot { width: 56px; height: 56px; border-radius: 50%; background: var(--surface-2); border: 1px dashed var(--line-2); margin-bottom: 8px; }
+.empty h3 { font-size: 16px; margin: 0; }
+.empty p { color: var(--muted); margin: 0 0 12px; font-size: 13px; max-width: 360px; }
+
+/* ══════════════════════════════════════════════════════════════
+   FORM GRID (used in new session / edit forms)
+   ══════════════════════════════════════════════════════════════ */
+
+.form-grid { display: flex; flex-direction: column; gap: 18px; }
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-actions-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+.section-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════════════════════════ */
+
 @media (max-width: 900px) {
   .landing-nav { padding: 18px 24px; }
   .landing-nav-links { display: none; }
@@ -680,9 +913,19 @@ h1.page-title,
   .auth-form-pane { padding: 24px 20px; }
   .sf-header { padding: 0 16px; }
   .sf-content { padding: 24px 16px; }
+  .sessions-head { grid-template-columns: 1fr; gap: 16px; }
+  .sessions-tools { align-items: flex-start; }
+  .search { min-width: unset; width: 100%; }
+  .session-card { grid-template-columns: 90px 1fr; }
+  .session-side { display: none; }
+  .admin-head { flex-direction: column; align-items: flex-start; }
+  .company-head { grid-template-columns: 1fr; }
+  .admin-form-row-2 { grid-template-columns: 1fr; }
+  .schedule-item { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 640px) {
   .section-head h2 { font-size: 32px; }
   .hero-title { font-size: 36px; }
+  .row-2 { grid-template-columns: 1fr; }
 }

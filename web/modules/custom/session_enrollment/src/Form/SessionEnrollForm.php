@@ -6,8 +6,6 @@ namespace Drupal\session_enrollment\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\TempStore\PrivateTempStoreFactory;
-use Drupal\Core\Url;
 use Drupal\session_enrollment\Service\SessionEnrollmentService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -18,14 +16,12 @@ class SessionEnrollForm extends FormBase
 {
     public function __construct(
         private readonly SessionEnrollmentService $enrollmentService,
-        private readonly PrivateTempStoreFactory $tempStoreFactory,
     ) {}
 
     public static function create(ContainerInterface $container): static
     {
         return new static(
             $container->get('session_enrollment.enrollment_service'),
-            $container->get('tempstore.private'),
         );
     }
 
@@ -36,6 +32,27 @@ class SessionEnrollForm extends FormBase
 
     public function buildForm(array $form, FormStateInterface $form_state): array
     {
+        // Prevent Dynamic Page Cache from serving a stale page after enrollment redirect.
+        $form['#cache']['max-age'] = 0;
+
+        // Pick up feedback from form submit (setRebuild flow).
+        if ($titles = $form_state->get('success_titles')) {
+            $label = count($titles) === 1
+                ? $this->t('Je bent nu ingeschreven voor sessie: @s', ['@s' => implode(', ', $titles)])
+                : $this->t('Je bent nu ingeschreven voor de volgende sessies: @s', ['@s' => implode(', ', $titles)]);
+            $form['enrollment_success'] = [
+                '#markup' => '<div class="alert alert-success" id="enrollment-success">' . $label . '</div>',
+                '#weight' => -100,
+            ];
+        }
+        if ($err = $form_state->get('error_message')) {
+            $form['enrollment_error'] = [
+                '#markup' => '<div class="alert alert-error" id="enrollment-error">'
+                    . $this->t('Inschrijving mislukt: @e', ['@e' => $err]) . '</div>',
+                '#weight' => -100,
+            ];
+        }
+
         // Fetch sessions on-demand: send request to Planning and poll for response.
         // This avoids dependency on cron for showing available sessions.
         $this->fetchSessionsFromPlanning();
@@ -71,7 +88,7 @@ class SessionEnrollForm extends FormBase
 
     public function validateForm(array &$form, FormStateInterface $form_state): void
     {
-        $selected = (array) ($form_state->getValue('session_ids') ?? []);
+        $selected = array_filter((array) ($form_state->getValue('session_ids') ?? []));
         if (empty($selected)) {
             $form_state->setErrorByName('session_ids', $this->t('Please select at least one session.'));
         }
@@ -80,11 +97,16 @@ class SessionEnrollForm extends FormBase
     public function submitForm(array &$form, FormStateInterface $form_state): void
     {
         $currentUser = $this->currentUser();
-        $sessionIds  = array_values((array) ($form_state->getValue('session_ids') ?? []));
+        $sessionIds  = array_keys(array_filter((array) ($form_state->getValue('session_ids') ?? [])));
         $sessionMap  = $this->buildSessionMap();
 
         $userId     = (int) $currentUser->id();
         $masterUuid = \Drupal::service('user.data')->get('registration_form', $userId, 'master_uuid') ?? '';
+
+        if (!preg_match('/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/', $masterUuid)) {
+            $this->messenger()->addError($this->t('Your account is not fully set up. Please complete your registration before enrolling in sessions.'));
+            return;
+        }
 
         $userData = [
             'email'         => $currentUser->getEmail(),
@@ -102,19 +124,13 @@ class SessionEnrollForm extends FormBase
             $this->enrollmentService->enroll($userData, $sessionIds, $sessionMap);
 
             $sessionOptions = $this->getSessionOptions();
-            $this->tempStoreFactory
-                ->get('session_enrollment')
-                ->set('confirmation', [
-                    'name'     => trim($userData['first_name'] . ' ' . $userData['last_name']),
-                    'sessions' => array_map(
-                        fn(string $id) => $sessionOptions[$id] ?? $id,
-                        $sessionIds
-                    ),
-                ]);
+            $enrolledTitles = array_map(fn(string $id) => $sessionOptions[$id] ?? $id, $sessionIds);
 
-            $form_state->setRedirectUrl(Url::fromRoute('session_enrollment.confirmation'));
+            $form_state->set('success_titles', $enrolledTitles);
+            $form_state->setRebuild(true);
         } catch (\Throwable $e) {
-            $this->messenger()->addError($this->t('Enrollment failed: @error', ['@error' => $e->getMessage()]));
+            $form_state->set('error_message', $e->getMessage());
+            $form_state->setRebuild(true);
         }
     }
 

@@ -35,6 +35,9 @@ class UserCreatedSender
         if (empty($data['email'])) {
             throw new \InvalidArgumentException('email is required');
         }
+        if (empty($data['date_of_birth'])) {
+            throw new \InvalidArgumentException('date_of_birth is required');
+        }
 
         $xml = $this->buildXml($data);
 
@@ -94,9 +97,6 @@ class UserCreatedSender
             }
             if (!empty($data['vat_number'])) {
                 $customer->appendChild($dom->createElement('vat_number', htmlspecialchars((string) $data['vat_number'], ENT_XML1, 'UTF-8')));
-            }
-            if (!empty($data['company_id'])) {
-                $customer->appendChild($dom->createElement('company_id', htmlspecialchars((string) $data['company_id'], ENT_XML1, 'UTF-8')));
             }
         }
 

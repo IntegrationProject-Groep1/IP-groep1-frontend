@@ -27,10 +27,9 @@ class CompanyInviteForm extends FormBase
 
         $form['section_single']['invite_email'] = [
             '#type'        => 'email',
-            '#title'       => $this->t('Email address'),
-            '#description' => $this->t('Enter the email address of the person you want to invite to your company account.'),
-            '#required'    => false,
-            '#attributes'  => ['placeholder' => 'colleague@example.com'],
+            '#title'       => $this->t('Colleague\'s email address'),
+            '#required'    => true,
+            '#attributes'  => ['placeholder' => 'colleague@studio-twelve.be'],
         ];
 
         $form['section_csv'] = [
@@ -53,6 +52,53 @@ class CompanyInviteForm extends FormBase
             '#type'  => 'submit',
             '#value' => $this->t('Send invites'),
         ];
+
+        // Attach invite list and company name for the Twig template.
+        $uid       = (int) $this->currentUser->id();
+        $ownerUuid = \Drupal::service('user.data')->get('registration_form', $uid, 'master_uuid') ?: 'uid-' . $uid;
+        $rawInvites = $this->inviteService->getInvitesForOwner($ownerUuid);
+        $now = time();
+
+        $invites = [];
+
+        // Include the current user as the "owner" row at the top.
+        $fullUser = \Drupal\user\Entity\User::load($uid);
+        $firstName = $fullUser && $fullUser->hasField('field_first_name') ? (string) $fullUser->get('field_first_name')->value : '';
+        $lastName  = $fullUser && $fullUser->hasField('field_last_name')  ? (string) $fullUser->get('field_last_name')->value  : '';
+        $ownerName = trim("$firstName $lastName") ?: $this->currentUser->getDisplayName();
+        $invites[] = [
+            'name'       => $ownerName,
+            'email'      => $this->currentUser->getEmail(),
+            'sent'       => '—',
+            'status'     => 'owner',
+            'remove_url' => null,
+            'resend_url' => null,
+        ];
+
+        foreach ($rawInvites as $invite) {
+            $expired = (int) $invite['expires'] < $now;
+            $used    = (int) $invite['used'] === 1;
+            $status  = $used ? 'accepted' : ($expired ? 'expired' : 'pending');
+            try {
+                $deleteUrl = \Drupal\Core\Url::fromRoute('company_invite.delete_invite', ['token' => $invite['token']])->toString();
+            } catch (\Exception) {
+                $deleteUrl = null;
+            }
+            $invites[] = [
+                'name'       => null,
+                'email'      => $invite['email'],
+                'sent'       => date('j M', (int) $invite['created']),
+                'status'     => $status,
+                'remove_url' => $deleteUrl,
+                'resend_url' => null,
+            ];
+        }
+
+        $companyName = $fullUser && $fullUser->hasField('field_company_name')
+            ? (string) $fullUser->get('field_company_name')->value : '';
+
+        $form['#invites']      = $invites;
+        $form['#company_name'] = $companyName;
 
         return $form;
     }

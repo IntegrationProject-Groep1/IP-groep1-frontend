@@ -1,0 +1,104 @@
+{#
+  wallet-page.html.twig
+  Variables:
+    - balance:      string  Current wallet balance (e.g. "42.50")
+    - transactions: array   List of transactions with keys: kind, label, date, amount
+#}
+
+<div class="wallet-grid">
+
+  {# ── Balance + top-up card ── #}
+  <div class="card" style="padding:32px;">
+    <span class="section-label" style="margin-bottom:6px;">{{ 'Festival Wallet'|t }}</span>
+
+    <div class="wallet-balance-big">
+      <span class="wallet-currency">€</span>
+      <span class="wallet-amount">{{ balance ?: '0.00' }}</span>
+    </div>
+    <p class="wallet-tip">{{ 'Tap your badge at any kiosk to spend. The balance updates within seconds.'|t }}</p>
+
+    {# Quick top-up amounts #}
+    <div class="wallet-quick" style="grid-template-columns:repeat(4,1fr);" id="wallet-quick">
+      {% for amt in ['10', '25', '50', '100'] %}
+        <button type="button"
+                class="wallet-quick-btn{% if amt == '25' %} is-on{% endif %}"
+                onclick="walletSelectAmount(this, '{{ amt }}')">
+          €{{ amt }}
+        </button>
+      {% endfor %}
+    </div>
+
+    {# Payment method #}
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:13px;font-weight:500;margin-bottom:8px;">{{ 'Payment method'|t }}</label>
+      <select class="select" style="width:100%;padding:10px 12px;font:inherit;font-size:14px;color:var(--ink);background:white;border:1px solid var(--line-2);border-radius:10px;outline:none;-webkit-appearance:none;appearance:none;">
+        <option>Bancontact</option>
+        <option>iDEAL</option>
+        <option>Visa / Mastercard</option>
+      </select>
+    </div>
+
+    {# Top-up button #}
+    <button type="button" class="btn btn-primary btn-full btn-lg" id="topup-btn"
+            onclick="alert('{{ 'Betaling verwerkt. Je saldo wordt bijgewerkt bij de volgende kassa-scan.'|t }}');">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      <span id="topup-label">{{ 'Top up €25'|t }}</span>
+    </button>
+  </div>
+
+  {# ── Recent activity card ── #}
+  <div class="card" style="padding:32px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <span class="section-label" style="margin-bottom:0;">{{ 'Recent Activity'|t }}</span>
+      {% if transactions %}
+        <span class="muted-small">{{ transactions|length }} {{ 'entries'|t }}</span>
+      {% endif %}
+    </div>
+
+    {% if transactions is empty %}
+      <div class="empty">
+        <div class="empty-dot"></div>
+        <h3>{{ 'No transactions yet.'|t }}</h3>
+        <p>{{ 'Top up your wallet and your spending history will appear here.'|t }}</p>
+      </div>
+    {% else %}
+      <ul class="wallet-tx">
+        {% for tx in transactions %}
+          <li>
+            <div class="wallet-tx-icon" data-kind="{{ tx.kind }}">
+              {% if tx.kind == 'credit' %}
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                </svg>
+              {% else %}
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                </svg>
+              {% endif %}
+            </div>
+            <div>
+              <div class="wallet-tx-label">{{ tx.label }}</div>
+              <div class="wallet-tx-date">{{ tx.date }}</div>
+            </div>
+            <div class="wallet-tx-amount {{ tx.kind == 'credit' ? 'credit' : 'debit' }}">
+              {{ tx.amount }}
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+
+</div>
+
+<script>
+function walletSelectAmount(btn, amt) {
+  document.querySelectorAll('.wallet-quick-btn').forEach(function(b) {
+    b.classList.remove('is-on');
+  });
+  btn.classList.add('is-on');
+  document.getElementById('topup-label').textContent = 'Top up €' + amt;
+}
+</script>

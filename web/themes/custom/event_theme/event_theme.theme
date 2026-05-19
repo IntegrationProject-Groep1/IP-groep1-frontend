@@ -110,6 +110,19 @@ function event_theme_preprocess_html(array &$variables): void {
     ['#type' => 'html_tag', '#tag' => 'link', '#attributes' => ['rel' => 'stylesheet', 'href' => 'https://fonts.googleapis.com/css2?family=' . $fontQuery . '&display=swap']],
     'gf_stylesheet',
   ];
+
+  // Add body class for auth routes so CSS can suppress Drupal page-title blocks.
+  $authRoutes = [
+    'user.login',
+    'user.register',
+    'user.pass',
+    'user.reset',
+    'registration_form.register',
+  ];
+  $currentRoute = \Drupal::routeMatch()->getRouteName() ?? '';
+  if (in_array($currentRoute, $authRoutes, true)) {
+    $variables['attributes']['class'][] = 'is-auth-page';
+  }
 }
 
 /**
@@ -174,13 +187,15 @@ function event_theme_preprocess_page(array &$variables): void {
   // Generate URLs safely — routes may not exist if a module is not installed.
   $urlGenerator = \Drupal::urlGenerator();
   $safeRoutes = [
-    'qr_url'          => 'qr_code.page',
-    'enroll_url'      => 'session_enrollment.enroll',
-    'invite_url'      => 'company_invite.invite_form',
+    'qr_url'             => 'qr_code.page',
+    'enroll_url'         => 'session_enrollment.enroll',
+    'my_sessions_url'    => 'session_enrollment.my_sessions',
+    'invite_url'         => 'company_invite.invite_form',
     'session_admin_url'  => 'session_management.admin',
     'session_create_url' => 'session_management.create',
     'session_end_url'    => 'session_management.end',
-    'register_url'    => 'registration_form.register',
+    'register_url'       => 'registration_form.register',
+    'wallet_url'         => 'wallet.page',
   ];
   foreach ($safeRoutes as $varName => $routeName) {
     try {
@@ -190,6 +205,55 @@ function event_theme_preprocess_page(array &$variables): void {
       $variables[$varName] = '';
     }
   }
+
+  // Read Drupal flash messages so Twig templates can render them as toasts.
+  // messenger()->all() returns and clears the queue, preventing double display.
+  $variables['toast_messages'] = \Drupal::messenger()->all();
+}
+
+/**
+ * Implements hook_form_user_login_form_alter().
+ *
+ * Inserts the "Forgot password" link between the password field and the submit
+ * button so it renders in the correct position within {{ children }}.
+ */
+function event_theme_form_user_login_form_alter(array &$form, \Drupal\Core\Form\FormStateInterface $form_state, string $form_id): void {
+    $form['forgot_password_link'] = [
+        '#type'   => 'markup',
+        '#markup' => '<div class="login-extras"><a href="' . \Drupal\Core\Url::fromRoute('user.pass')->toString() . '" class="muted-link">' . t('Wachtwoord vergeten?') . '</a></div>',
+        '#weight' => 2,
+    ];
+}
+
+/**
+ * Implements hook_theme_suggestions_form_alter().
+ *
+ * Ensures form--session-enrollment-form.html.twig is always suggested,
+ * even when Drupal's automatic suggestion may not fire correctly.
+ */
+function event_theme_theme_suggestions_form_alter(array &$suggestions, array $variables): void {
+    $formId = $variables['element']['#form_id'] ?? '';
+    if ($formId !== '') {
+        $suggestion = 'form__' . str_replace('-', '_', $formId);
+        if (!in_array($suggestion, $suggestions, true)) {
+            $suggestions[] = $suggestion;
+        }
+    }
+}
+
+/**
+ * Implements hook_preprocess_form() for session_enrollment_form.
+ *
+ * Injects sessions_full as a direct Twig variable so the template does not
+ * need to access form['#sessions_full'], which may be stripped or inaccessible.
+ */
+function event_theme_preprocess_form(array &$variables): void {
+    $element = $variables['element'] ?? [];
+    if (($element['#form_id'] ?? '') === 'session_enrollment_form') {
+        // Prefer data already attached by buildForm; fall back to Drupal state.
+        $variables['sessions_full'] = $element['#sessions_full']
+            ?? \Drupal::state()->get('planning.sessions', []);
+    }
 }
 
 /**
@@ -207,8 +271,26 @@ function event_theme_preprocess_page__front(array &$variables): void {
   $variables['hero_cta_label'] = theme_get_setting('event_theme_hero_cta_label') ?: 'Register now';
   $variables['hero_cta_url']   = theme_get_setting('event_theme_hero_cta_url')   ?: '/register';
 
-  // Pass live sessions from Planning state to the front page template.
-  $variables['front_sessions'] = \Drupal::state()->get('planning.sessions', []);
+  // Pass the current user's enrolled sessions (cached from last user_sessions_response).
+  $account = \Drupal::currentUser();
+  $frontSessions = [];
+  if ($account->isAuthenticated()) {
+    $uid         = (int) $account->id();
+    $masterUuid  = (string) (\Drupal::service('user.data')->get('registration_form', $uid, 'master_uuid') ?? '');
+    if ($masterUuid !== '') {
+      $cached = \Drupal::state()->get('user_sessions.' . $masterUuid, []);
+      $frontSessions = (array) ($cached['sessions'] ?? []);
+    }
+  }
+  $variables['front_sessions'] = $frontSessions;
+
+  $allSessions = \Drupal::state()->get('planning.sessions', []);
+  $variables['total_sessions_count'] = count((array) $allSessions);
+
+  $festivalStart = new \DateTime('2026-07-01');
+  $now = new \DateTime('today');
+  $diff = (int) $now->diff($festivalStart)->days;
+  $variables['days_until_festival'] = $festivalStart > $now ? $diff : 0;
 }
 
 /* ── Private helpers ─────────────────────────────────────── */
