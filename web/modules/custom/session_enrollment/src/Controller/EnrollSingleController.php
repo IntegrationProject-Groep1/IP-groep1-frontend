@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Drupal\session_enrollment\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\session_enrollment\Service\SessionEnrollmentService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -17,14 +16,12 @@ class EnrollSingleController extends ControllerBase
 {
     public function __construct(
         private readonly SessionEnrollmentService $enrollmentService,
-        private readonly PrivateTempStoreFactory $tempStoreFactory,
     ) {}
 
     public static function create(ContainerInterface $container): static
     {
         return new static(
             $container->get('session_enrollment.enrollment_service'),
-            $container->get('tempstore.private'),
         );
     }
 
@@ -35,16 +32,14 @@ class EnrollSingleController extends ControllerBase
         $identityUuid = (string) (\Drupal::service('user.data')->get('registration_form', $uid, 'master_uuid') ?? '');
 
         if (!preg_match('/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/', $identityUuid)) {
-            $this->tempStoreFactory->get('session_enrollment_feedback')
-                ->set('error', (string) $this->t('Je account is nog niet volledig ingesteld. Voltooi eerst je registratie.'));
+            $this->messenger()->addError($this->t('Je account is nog niet volledig ingesteld. Voltooi eerst je registratie.'));
             return new RedirectResponse('/sessions/enroll');
         }
 
         $session = $this->resolveSession($session_id);
 
         if ($session === null) {
-            $this->tempStoreFactory->get('session_enrollment_feedback')
-                ->set('error', (string) $this->t('Sessie niet gevonden.'));
+            $this->messenger()->addError($this->t('Sessie niet gevonden.'));
             return new RedirectResponse('/sessions/enroll');
         }
 
@@ -61,18 +56,16 @@ class EnrollSingleController extends ControllerBase
 
         try {
             $this->enrollmentService->enroll($userData, [$session_id], [$session_id => $session]);
-            $this->tempStoreFactory->get('session_enrollment_feedback')
-                ->set('success', (string) $this->t(
-                    'Je bent nu ingeschreven voor sessie: @title',
-                    ['@title' => $session['title'] ?? $session_id]
-                ));
+            $this->messenger()->addStatus($this->t(
+                'Je bent nu ingeschreven voor sessie: @title',
+                ['@title' => $session['title'] ?? $session_id]
+            ));
         } catch (\Throwable $e) {
             \Drupal::logger('session_enrollment')->error('Inschrijving mislukt voor @id: @error', [
                 '@id'    => $session_id,
                 '@error' => $e->getMessage(),
             ]);
-            $this->tempStoreFactory->get('session_enrollment_feedback')
-                ->set('error', (string) $this->t('Inschrijving mislukt: @error', ['@error' => $e->getMessage()]));
+            $this->messenger()->addError($this->t('Inschrijving mislukt: @error', ['@error' => $e->getMessage()]));
         }
 
         return new RedirectResponse('/sessions/enroll');

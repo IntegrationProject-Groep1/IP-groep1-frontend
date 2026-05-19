@@ -32,22 +32,8 @@ class SessionEnrollForm extends FormBase
 
     public function buildForm(array $form, FormStateInterface $form_state): array
     {
-        // Pick up feedback from EnrollSingleController (redirect flow).
-        $feedback = \Drupal::service('tempstore.private')->get('session_enrollment_feedback');
-        if ($success = $feedback->get('success')) {
-            $feedback->delete('success');
-            $form['enrollment_success'] = [
-                '#markup' => '<div class="alert alert-success" id="enrollment-success">' . $success . '</div>',
-                '#weight' => -100,
-            ];
-        }
-        if ($error = $feedback->get('error')) {
-            $feedback->delete('error');
-            $form['enrollment_error'] = [
-                '#markup' => '<div class="alert alert-error" id="enrollment-error">' . $error . '</div>',
-                '#weight' => -100,
-            ];
-        }
+        // Prevent Dynamic Page Cache from serving a stale page after enrollment redirect.
+        $form['#cache']['max-age'] = 0;
 
         // Pick up feedback from form submit (setRebuild flow).
         if ($titles = $form_state->get('success_titles')) {
