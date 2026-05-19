@@ -55,11 +55,6 @@
           </a>
         {% endif %}
 
-        <a href="{{ path('entity.user.edit_form', {'user': user.id}) }}" class="shell-nav-item">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/></svg>
-          <span>{{ 'Instellingen'|t }}</span>
-        </a>
-
         {% if wallet_url %}
           <a href="{{ wallet_url }}" class="shell-nav-item">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M16 14h.01"/></svg>
@@ -86,6 +81,14 @@
         </div>
       {% endif %}
     </nav>
+
+    {# Instellingen — boven gebruikersblok #}
+    <a href="{{ path('entity.user.edit_form', {'user': user.id}) }}"
+       class="shell-nav-item {{ current_route == 'entity.user.edit_form' ? 'is-active' : '' }}"
+       style="margin: 0 12px 8px;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/></svg>
+      <span>{{ 'Instellingen'|t }}</span>
+    </a>
 
     <div class="shell-user">
       <div class="shell-user-avatar">{{ current_first_name|slice(0,1)|upper }}</div>

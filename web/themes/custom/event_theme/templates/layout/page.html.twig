@@ -73,12 +73,6 @@
             </a>
           {% endif %}
 
-          <a href="{{ path('entity.user.edit_form', {'user': user.id}) }}"
-             class="shell-nav-item {{ current_route == 'entity.user.edit_form' ? 'is-active' : '' }}">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/></svg>
-            <span>{{ 'Instellingen'|t }}</span>
-          </a>
-
           {% if wallet_url %}
             <a href="{{ wallet_url }}"
                class="shell-nav-item {{ current_route == 'wallet.page' ? 'is-active' : '' }}">
@@ -111,6 +105,14 @@
         {% endif %}
 
       </nav>
+
+      {# Instellingen — boven gebruikersblok #}
+      <a href="{{ path('entity.user.edit_form', {'user': user.id}) }}"
+         class="shell-nav-item {{ current_route == 'entity.user.edit_form' ? 'is-active' : '' }}"
+         style="margin: 0 12px 8px;">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/></svg>
+        <span>{{ 'Instellingen'|t }}</span>
+      </a>
 
       {# Gebruiker + uitloggen #}
       <div class="shell-user">
@@ -269,7 +271,6 @@
           <h1>{{ 'Account'|t }}</h1>
         {% endif %}
 
-        {# Drupal renders page title block (hidden by CSS) + main content block with the form #}
         {{ page.content }}
 
       </div>
