@@ -34,7 +34,6 @@ class QrCodeController extends ControllerBase
 
         $e = fn(string $v): string => htmlspecialchars($v, ENT_HTML5, 'UTF-8');
         $shortId = $uid > 0 ? 'BDG-' . str_pad((string) $uid, 4, '0', STR_PAD_LEFT) : 'BDG-????';
-        $shortUuid = $masterUuid !== '' ? substr($masterUuid, 0, 8) . '…' : '—';
 
         if ($masterUuid === '') {
             \Drupal::logger('qr_code')->warning(
@@ -101,10 +100,6 @@ class QrCodeController extends ControllerBase
         <div class="badge-display-role">' . $e($roleLabel) . '</div>
         <div class="badge-display-qr" id="qr-code-wrapper" data-uuid="' . $e($masterUuid) . '" data-email="' . $e($email) . '">
           <div id="qr-code-canvas"></div>
-        </div>
-        <div class="badge-display-foot">
-          <span>UUID · ' . $e($shortUuid) . '</span>
-          <span>12–14 Mei · Desiderius Campus</span>
         </div>
       </div>
     </div>
