@@ -1,4 +1,7 @@
 services:
+  rabbitmq_sender.client:
+    class: Drupal\rabbitmq_sender\RabbitMQClient
+
   rabbitmq_sender.session_create_request_sender:
     class: Drupal\rabbitmq_sender\SessionCreateRequestSender
 

@@ -47,3 +47,30 @@ session_management.end:
     _title: 'End a session'
   requirements:
     _permission: 'administer site configuration'
+
+session_management.admin:
+  path: '/session/admin'
+  defaults:
+    _controller: '\Drupal\session_management\Controller\AdminSessionsController::page'
+    _title: 'Session Admin'
+  requirements:
+    _permission: 'administer site configuration'
+
+session_management.session_enrollees:
+  path: '/session/{session_id}/enrollees'
+  defaults:
+    _controller: '\Drupal\session_management\Controller\AdminSessionEnrolleesController::page'
+    _title: 'Session Enrollees'
+  requirements:
+    _permission: 'administer site configuration'
+    session_id: '[a-zA-Z0-9\-_]+'
+
+session_management.remove_enrollee:
+  path: '/session/{session_id}/enrollees/{user_uuid}/remove'
+  defaults:
+    _form: '\Drupal\session_management\Form\RemoveEnrolleeForm'
+    _title: 'Remove from session'
+  requirements:
+    _permission: 'administer site configuration'
+    session_id: '[a-zA-Z0-9\-_]+'
+    user_uuid: '[a-zA-Z0-9\-_]+'

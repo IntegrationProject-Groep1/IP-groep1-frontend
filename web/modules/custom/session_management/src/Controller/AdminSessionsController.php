@@ -35,9 +35,6 @@ class AdminSessionsController extends ControllerBase
         ];
     }
 
-    /**
-     * Refresh the sessions cache from Planning via RabbitMQ (same strategy as SessionEnrollForm).
-     */
     private function refreshSessions(): void
     {
         try {

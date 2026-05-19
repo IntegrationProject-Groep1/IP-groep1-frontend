@@ -12,13 +12,14 @@ use PhpAmqpLib\Message\AMQPMessage;
  */
 class RabbitMQClient
 {
-    private ?AMQPStreamConnection $connection = null;
-    private ?AMQPChannel $channel = null;
     private readonly string $host;
     private readonly int $port;
     private readonly string $user;
     private readonly string $password;
     private readonly string $vhost;
+
+    private ?AMQPStreamConnection $connection = null;
+    private ?AMQPChannel $channel = null;
 
     public function __construct(
         ?string $host = null,

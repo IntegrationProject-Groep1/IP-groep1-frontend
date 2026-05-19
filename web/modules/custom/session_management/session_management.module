@@ -19,5 +19,12 @@ function session_management_theme(): array
                 'create_url' => '',
             ],
         ],
+        'admin_session_enrollees' => [
+            'variables' => [
+                'session'    => null,
+                'session_id' => '',
+                'enrollees'  => [],
+            ],
+        ],
     ];
 }
