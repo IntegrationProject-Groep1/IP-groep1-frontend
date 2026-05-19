@@ -34,7 +34,6 @@ class QrCodeController extends ControllerBase
 
         $e = fn(string $v): string => htmlspecialchars($v, ENT_HTML5, 'UTF-8');
         $shortId = $uid > 0 ? 'BDG-' . str_pad((string) $uid, 4, '0', STR_PAD_LEFT) : 'BDG-????';
-        $shortUuid = $masterUuid !== '' ? substr($masterUuid, 0, 8) . '…' : '—';
 
         if ($masterUuid === '') {
             \Drupal::logger('qr_code')->warning(
@@ -85,9 +84,9 @@ class QrCodeController extends ControllerBase
 
   <div class="card badge-page-card">
     <div class="badge-page-hd">
-      <span class="eyebrow">' . $this->t('Jouw festivalbadge') . '</span>
-      <h1>' . $this->t('Scan om in te checken of te betalen.') . '</h1>
-      <p>' . $this->t('Deze QR code identificeert je bij alle twaalf podia. Dezelfde scan werkt bij de ingang, de bar en bij elke sessie check-in.') . '</p>
+      <span class="eyebrow">' . $this->t('Jouw QR badge') . '</span>
+      <h1>' . $this->t('Scan aan de kassa om te betalen met je QR code.') . '</h1>
+      <p>' . $this->t('Deze QR code is nodig om je te identificeren bij de kassa.') . '</p>
     </div>
 
     <div class="badge-display">
@@ -102,27 +101,16 @@ class QrCodeController extends ControllerBase
         <div class="badge-display-qr" id="qr-code-wrapper" data-uuid="' . $e($masterUuid) . '" data-email="' . $e($email) . '">
           <div id="qr-code-canvas"></div>
         </div>
-        <div class="badge-display-foot">
-          <span>UUID · ' . $e($shortUuid) . '</span>
-          <span>12–14 Mei · Desiderius Campus</span>
-        </div>
       </div>
     </div>
 
     <div class="badge-actions">
       ' . $balanceAction . '
-      <div class="badge-action">
+      <div class="badge-action" style="width:100%;">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
         <div>
           <strong>' . $this->t('Identiteit geverifieerd') . '</strong>
           <span>' . $this->t('Uitgegeven door de Identity Service') . '</span>
-        </div>
-      </div>
-      <div class="badge-action">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-        <div>
-          <strong>' . $this->t('Automatisch inchecken') . '</strong>
-          <span>' . $this->t('Inschrijvingen worden geverifieerd bij scan') . '</span>
         </div>
       </div>
     </div>
