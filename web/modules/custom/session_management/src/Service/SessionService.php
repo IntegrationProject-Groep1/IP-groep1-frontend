@@ -21,11 +21,6 @@ class SessionService
 
     /**
      * Creates a session directly in MariaDB and notifies planning (optional).
-<<<<<<< HEAD
-=======
-     *
-     * @throws \RuntimeException When the DB write fails.
->>>>>>> b6f5aa57cf82d9bcd5ae1fdb62e3ef26ab62797a
      */
     public function createSession(array $data): string
     {
@@ -58,10 +53,6 @@ class SessionService
             '@id'    => $sessionId,
         ]);
 
-<<<<<<< HEAD
-=======
-        // Notify planning for Outlook Graph API (non-blocking).
->>>>>>> b6f5aa57cf82d9bcd5ae1fdb62e3ef26ab62797a
         $this->notifyPlanningCreate(array_merge($data, [
             'session_id'     => $sessionId,
             'start_datetime' => $start,
@@ -125,27 +116,16 @@ class SessionService
      */
     public function loadSession(string $sessionId): ?array
     {
-<<<<<<< HEAD
         try {
             $row = Database::getConnection('default', 'planning')->query(
-                "SELECT * FROM planning_sessions WHERE session_id = :id",
+                "SELECT * FROM planning_sessions WHERE session_id = :id AND is_deleted = 0",
                 [':id' => $sessionId]
             )->fetchAssoc();
-            if (!$row || $row['is_deleted']) {
-                return null;
-            }
-            return $row;
+            return $row ?: null;
         } catch (\Throwable $e) {
             \Drupal::logger('session_management')->error('loadSession failed for @id: @e', ['@id' => $sessionId, '@e' => $e->getMessage()]);
             return null;
         }
-=======
-        $row = Database::getConnection('default', 'planning')->query(
-            "SELECT * FROM planning_sessions WHERE session_id = :id AND is_deleted = 0",
-            [':id' => $sessionId]
-        )->fetchAssoc();
-        return $row ?: null;
->>>>>>> b6f5aa57cf82d9bcd5ae1fdb62e3ef26ab62797a
     }
 
     /**

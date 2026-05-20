@@ -6,6 +6,15 @@ session_enrollment.enroll:
   requirements:
     _role: 'authenticated'
 
+session_enrollment.enroll_single:
+  path: '/sessions/enroll-single/{session_id}'
+  defaults:
+    _controller: '\Drupal\session_enrollment\Controller\EnrollSingleController::enroll'
+    _title: 'Inschrijven voor sessie'
+  requirements:
+    _role: 'authenticated'
+    session_id: '.+'
+
 session_enrollment.confirmation:
   path: '/sessions/enroll/confirmation'
   defaults:
@@ -22,11 +31,10 @@ session_enrollment.my_sessions:
   requirements:
     _role: 'authenticated'
 
-session_enrollment.unsubscribe:
-  path: '/sessions/unsubscribe/{session_id}'
+session_enrollment.unenroll:
+  path: '/sessions/unenroll/{session_id}'
   defaults:
     _controller: '\Drupal\session_enrollment\Controller\MySessionsController::unsubscribe'
-<<<<<<< HEAD
     _title: 'Unenroll'
   requirements:
     _role: 'authenticated'
@@ -36,10 +44,7 @@ session_enrollment.unsubscribe:
   path: '/sessions/unsubscribe/{session_id}'
   defaults:
     _controller: '\Drupal\session_enrollment\Controller\MySessionsController::unsubscribe'
-    _title: 'Uitschrijven voor sessie'
-=======
     _title: 'Unsubscribe'
->>>>>>> b6f5aa57cf82d9bcd5ae1fdb62e3ef26ab62797a
   requirements:
     _role: 'authenticated'
-  methods: [POST]
+    session_id: '.+'

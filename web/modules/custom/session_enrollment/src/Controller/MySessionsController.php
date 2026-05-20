@@ -10,11 +10,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
 /**
-<<<<<<< HEAD
  * Renders the "My Sessions" personal page and handles unsubscribe actions.
-=======
  * Renders the "My Sessions" page and handles unsubscribe actions.
->>>>>>> b6f5aa57cf82d9bcd5ae1fdb62e3ef26ab62797a
  */
 class MySessionsController extends ControllerBase
 {
@@ -39,10 +36,7 @@ class MySessionsController extends ControllerBase
 
         $storedUuid   = (string) (\Drupal::service('user.data')
             ->get('registration_form', $uid, 'master_uuid') ?? '');
-<<<<<<< HEAD
-=======
         // Fall back to Drupal user ID — matches the fallback used during enrollment.
->>>>>>> b6f5aa57cf82d9bcd5ae1fdb62e3ef26ab62797a
         $identityUuid = $storedUuid !== '' ? $storedUuid : (string) $uid;
 
         $sessions = $this->fetchSessions($identityUuid);
@@ -55,10 +49,7 @@ class MySessionsController extends ControllerBase
             '#grouped_sessions' => $this->groupByDay($sessions),
             '#ics_url'          => $icsUrl,
             '#notice'           => null,
-<<<<<<< HEAD
             '#cache'            => ['max-age' => 0],
-=======
->>>>>>> b6f5aa57cf82d9bcd5ae1fdb62e3ef26ab62797a
         ];
     }
 
@@ -68,14 +59,11 @@ class MySessionsController extends ControllerBase
     public function unsubscribe(string $session_id): RedirectResponse
     {
         $uid          = (int) $this->currentUser()->id();
-<<<<<<< HEAD
         $storedUuid   = (string) (\Drupal::service('user.data')
             ->get('registration_form', $uid, 'master_uuid') ?? '');
         $identityUuid = $storedUuid !== '' ? $storedUuid : (string) $uid;
-=======
         $identityUuid = (string) (\Drupal::service('user.data')
             ->get('registration_form', $uid, 'master_uuid') ?? '');
->>>>>>> b6f5aa57cf82d9bcd5ae1fdb62e3ef26ab62797a
 
         if ($identityUuid !== '') {
             $db = Database::getConnection('default', 'planning');
@@ -104,11 +92,8 @@ class MySessionsController extends ControllerBase
     }
 
     /**
-<<<<<<< HEAD
      * Get the ICS URL stored in planning_registrations.
-=======
      * Get the ICS URL stored in planning_registrations (set after calendar_invite_confirmed).
->>>>>>> b6f5aa57cf82d9bcd5ae1fdb62e3ef26ab62797a
      */
     private function fetchIcsUrl(string $identityUuid): string
     {
@@ -128,11 +113,8 @@ class MySessionsController extends ControllerBase
     }
 
     /**
-<<<<<<< HEAD
      * Query enrolled sessions directly from MariaDB.
-=======
      * Query enrolled sessions directly from MariaDB (planning_sessions + planning_registrations).
->>>>>>> b6f5aa57cf82d9bcd5ae1fdb62e3ef26ab62797a
      *
      * @return list<array<string,mixed>>
      */
