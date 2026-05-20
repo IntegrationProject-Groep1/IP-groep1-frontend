@@ -1,0 +1,140 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * @file
+ * Install hooks for the session_management module.
+ *
+ * Tables planning_sessions and planning_registrations live in the 'planning'
+ * database (separate MariaDB schema), NOT in the default Drupal database.
+ * hook_schema() is intentionally omitted because it always targets the default
+ * connection. Tables are created explicitly via the 'planning' connection.
+ */
+
+/**
+ * 8001: Create planning_sessions and planning_registrations in the planning DB.
+ *
+ * Run via: drush updb
+ */
+function session_management_update_8001(): void
+{
+    $db     = \Drupal\Core\Database\Database::getConnection('default', 'planning');
+    $schema = $db->schema();
+
+    if (!$schema->tableExists('planning_sessions')) {
+        $schema->createTable('planning_sessions', [
+            'description' => 'Sessions managed by the frontend team.',
+            'fields' => [
+                'session_id' => [
+                    'type'     => 'varchar',
+                    'length'   => 255,
+                    'not null' => true,
+                ],
+                'title' => [
+                    'type'     => 'text',
+                    'not null' => true,
+                ],
+                'start_datetime' => [
+                    'type'     => 'varchar',
+                    'length'   => 32,
+                    'not null' => true,
+                ],
+                'end_datetime' => [
+                    'type'     => 'varchar',
+                    'length'   => 32,
+                    'not null' => true,
+                ],
+                'location' => [
+                    'type'     => 'text',
+                    'not null' => false,
+                ],
+                'session_type' => [
+                    'type'     => 'varchar',
+                    'length'   => 50,
+                    'not null' => false,
+                    'default'  => 'keynote',
+                ],
+                'status' => [
+                    'type'     => 'varchar',
+                    'length'   => 50,
+                    'not null' => false,
+                    'default'  => 'published',
+                ],
+                'max_attendees' => [
+                    'type'     => 'int',
+                    'not null' => true,
+                    'default'  => 0,
+                ],
+                'current_attendees' => [
+                    'type'     => 'int',
+                    'not null' => true,
+                    'default'  => 0,
+                ],
+                'price' => [
+                    'type'      => 'numeric',
+                    'precision' => 10,
+                    'scale'     => 2,
+                    'not null'  => false,
+                ],
+                'is_deleted' => [
+                    'type'     => 'int',
+                    'size'     => 'tiny',
+                    'not null' => true,
+                    'default'  => 0,
+                ],
+            ],
+            'primary key' => ['session_id'],
+            'indexes' => [
+                'status'     => ['status'],
+                'is_deleted' => ['is_deleted'],
+                'start'      => ['start_datetime'],
+            ],
+        ]);
+    }
+
+    if (!$schema->tableExists('planning_registrations')) {
+        $schema->createTable('planning_registrations', [
+            'description' => 'User enrollment records per session.',
+            'fields' => [
+                'id' => [
+                    'type'     => 'serial',
+                    'not null' => true,
+                ],
+                'session_id' => [
+                    'type'     => 'varchar',
+                    'length'   => 255,
+                    'not null' => true,
+                ],
+                'master_uuid' => [
+                    'type'     => 'varchar',
+                    'length'   => 36,
+                    'not null' => true,
+                ],
+                'status' => [
+                    'type'     => 'varchar',
+                    'length'   => 50,
+                    'not null' => true,
+                    'default'  => 'confirmed',
+                ],
+                'registered_at' => [
+                    'type'     => 'varchar',
+                    'length'   => 32,
+                    'not null' => false,
+                ],
+                'ics_url' => [
+                    'type'     => 'text',
+                    'not null' => false,
+                ],
+            ],
+            'primary key' => ['id'],
+            'unique keys' => [
+                'unique_registration' => ['session_id', 'master_uuid'],
+            ],
+            'indexes' => [
+                'session'      => ['session_id'],
+                'master_uuid'  => ['master_uuid'],
+            ],
+        ]);
+    }
+}

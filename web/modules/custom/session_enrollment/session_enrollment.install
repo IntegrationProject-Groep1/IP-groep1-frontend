@@ -4,73 +4,28 @@ declare(strict_types=1);
 
 /**
  * @file
- * Install/schema hooks for session_enrollment module.
+ * Install hooks for session_enrollment module.
  *
- * planning_sessions     — session catalogue managed by the frontend.
- * planning_registrations — user ↔ session enrollment records.
+ * The planning_sessions and planning_registrations tables are owned by
+ * session_management_update_8001(). This file only verifies they exist.
  */
-
 
 /**
- * Create planning_sessions and planning_registrations in the planning database.
+ * 10002: Verify planning tables exist in the planning database.
  */
-function session_enrollment_update_10002(): void {
-    $db     = \Drupal\Core\Database\Database::getConnection('default', 'planning');
-    $schema = $db->schema();
+function session_enrollment_update_10002(): void
+{
+    $schema = \Drupal\Core\Database\Database::getConnection('default', 'planning')->schema();
 
     if (!$schema->tableExists('planning_sessions')) {
-        $schema->createTable('planning_sessions', session_enrollment_schema()['planning_sessions']);
+        throw new \RuntimeException(
+            'planning_sessions ontbreekt. Voer eerst uit: drush updb (session_management_update_8001)'
+        );
     }
-    if (!$schema->tableExists('planning_registrations')) {
-        $schema->createTable('planning_registrations', session_enrollment_schema()['planning_registrations']);
-    }
-}
 
-/**
- * Implements hook_schema().
- */
-function session_enrollment_schema(): array {
-    return [
-        'planning_sessions' => [
-            'description' => 'Event sessions managed by the frontend team.',
-            'fields' => [
-                'session_id'        => ['type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'description' => 'Primary identifier.'],
-                'title'             => ['type' => 'text',    'not null' => TRUE],
-                'start_datetime'    => ['type' => 'varchar', 'length' => 32,  'not null' => TRUE],
-                'end_datetime'      => ['type' => 'varchar', 'length' => 32,  'not null' => TRUE],
-                'location'          => ['type' => 'text',    'not null' => FALSE, 'default' => ''],
-                'session_type'      => ['type' => 'varchar', 'length' => 50,  'not null' => FALSE, 'default' => 'keynote'],
-                'status'            => ['type' => 'varchar', 'length' => 50,  'not null' => FALSE, 'default' => 'published'],
-                'max_attendees'     => ['type' => 'int',     'not null' => TRUE, 'default' => 0],
-                'current_attendees' => ['type' => 'int',     'not null' => TRUE, 'default' => 0],
-                'price'             => ['type' => 'numeric', 'precision' => 10, 'scale' => 2, 'not null' => FALSE],
-                'is_deleted'        => ['type' => 'int', 'size' => 'tiny', 'not null' => TRUE, 'default' => 0],
-            ],
-            'primary key' => ['session_id'],
-            'indexes' => [
-                'status'     => ['status'],
-                'is_deleted' => ['is_deleted'],
-                'start'      => ['start_datetime'],
-            ],
-        ],
-        'planning_registrations' => [
-            'description' => 'User ↔ session enrollment records.',
-            'fields' => [
-                'id'            => ['type' => 'serial',  'not null' => TRUE],
-                'session_id'    => ['type' => 'varchar', 'length' => 255, 'not null' => TRUE],
-                'master_uuid'   => ['type' => 'varchar', 'length' => 36,  'not null' => TRUE, 'description' => 'Identity Service UUID.'],
-                'status'        => ['type' => 'varchar', 'length' => 50,  'not null' => TRUE, 'default' => 'confirmed'],
-                'registered_at' => ['type' => 'varchar', 'length' => 32,  'not null' => FALSE],
-                'ics_url'       => ['type' => 'text',    'not null' => FALSE],
-            ],
-            'primary key' => ['id'],
-            'unique keys' => [
-                'unique_registration' => ['session_id', 'master_uuid'],
-            ],
-            'indexes' => [
-                'session' => ['session_id'],
-                'user'    => ['master_uuid'],
-            ],
-        ],
-    ];
+    if (!$schema->tableExists('planning_registrations')) {
+        throw new \RuntimeException(
+            'planning_registrations ontbreekt. Voer eerst uit: drush updb (session_management_update_8001)'
+        );
+    }
 }

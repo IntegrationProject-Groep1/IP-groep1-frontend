@@ -46,6 +46,7 @@ services:
     environment:
       DRUPAL_DB_HOST: ${DRUPAL_DB_HOST:-frontend_db}
       DRUPAL_DB_NAME: ${DRUPAL_DB_NAME:-drupal}
+      PLANNING_DB_NAME: ${PLANNING_DB_NAME:-planning}
       DRUPAL_DB_USER: ${DRUPAL_DB_USER:-drupal_user}
       DRUPAL_DB_PASSWORD: ${DRUPAL_DB_PASS}
       RABBITMQ_HOST: ${RABBITMQ_HOST:-}
