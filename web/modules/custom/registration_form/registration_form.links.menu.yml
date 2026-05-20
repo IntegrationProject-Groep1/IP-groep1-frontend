@@ -4,3 +4,10 @@ registration_form.register:
   route_name: registration_form.register
   menu_name: main
   weight: 10
+
+registration_form.company_approvals:
+  title: 'Bedrijfsregistraties'
+  route_name: registration_form.company_approvals
+  menu_name: admin
+  parent: system.admin_config_people
+  weight: 20

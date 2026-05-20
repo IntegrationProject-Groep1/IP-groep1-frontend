@@ -37,7 +37,10 @@ services:
 
   rabbitmq_sender.company_member_removed_sender:
     class: Drupal\rabbitmq_sender\CompanyMemberRemovedSender
-    
+
+  rabbitmq_sender.company_registration_sender:
+    class: Drupal\rabbitmq_sender\CompanyRegistrationSender
+
   rabbitmq_sender.monitoring_log_sender:
     class: Drupal\rabbitmq_sender\MonitoringLogSender
 
