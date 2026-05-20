@@ -34,19 +34,24 @@ class SessionService
             ? $data['end_datetime']->format('c')
             : (string) ($data['end_datetime'] ?? '');
 
-        $db = Database::getConnection('default', 'planning');
-        $db->insert('planning_sessions')->fields([
-            'session_id'     => $sessionId,
-            'title'          => (string) ($data['title'] ?? ''),
-            'start_datetime' => $start,
-            'end_datetime'   => $end,
-            'location'       => (string) ($data['location'] ?? ''),
-            'session_type'   => (string) ($data['session_type'] ?? 'keynote'),
-            'status'         => (string) ($data['status'] ?? 'published'),
-            'max_attendees'  => (int) ($data['max_attendees'] ?? 0),
-            'price'          => isset($data['price']) && $data['price'] !== '' ? (float) $data['price'] : null,
-            'is_deleted'     => 0,
-        ])->execute();
+        try {
+            $db = Database::getConnection('default', 'planning');
+            $db->insert('planning_sessions')->fields([
+                'session_id'     => $sessionId,
+                'title'          => (string) ($data['title'] ?? ''),
+                'start_datetime' => $start,
+                'end_datetime'   => $end,
+                'location'       => (string) ($data['location'] ?? ''),
+                'session_type'   => (string) ($data['session_type'] ?? 'keynote'),
+                'status'         => (string) ($data['status'] ?? 'published'),
+                'max_attendees'  => (int) ($data['max_attendees'] ?? 0),
+                'price'          => isset($data['price']) && $data['price'] !== '' ? (float) $data['price'] : null,
+                'is_deleted'     => 0,
+            ])->execute();
+        } catch (\Throwable $e) {
+            $logger->error('Failed to save session to DB: @e', ['@e' => $e->getMessage()]);
+            throw new \RuntimeException('Session could not be saved to the database: ' . $e->getMessage(), 0, $e);
+        }
 
         $logger->info('Session "@title" created in MariaDB (id: @id)', [
             '@title' => $data['title'] ?? '',
