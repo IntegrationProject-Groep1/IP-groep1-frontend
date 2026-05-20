@@ -316,27 +316,27 @@
       <div class="hero-lhs">
         <div class="hero-eyebrow">
           <span class="hero-dot"></span>
-          {{ 'Registratie is open'|t }}
+          {{ lp_status_label }}
         </div>
         <h1 class="hero-title">
-          <span class="hero-line">{{ 'Drie dagen.'|t }}</span>
-          <span class="hero-line">{{ 'Twaalf podia.'|t }}</span>
-          <span class="hero-line hero-line-accent">{{ 'Één geïntegreerde ervaring.'|t }}</span>
+          <span class="hero-line">{{ lp_hero_line1 }}</span>
+          <span class="hero-line">{{ lp_hero_line2 }}</span>
+          <span class="hero-line hero-line-accent">{{ lp_hero_line3 }}</span>
         </h1>
-        <p class="hero-sub">{{ 'Een jaarlijkse bijeenkomst voor engineers, designers en operators die integratiesystemen bouwen. Workshops, keynotes en late-night demo\'s op twaalf locaties op de Desiderius Campus.'|t }}</p>
+        <p class="hero-sub">{{ lp_hero_description }}</p>
         <div class="hero-meta">
-          <div><span class="hero-meta-k">{{ 'Wanneer'|t }}</span><span class="hero-meta-v">{{ '12 – 14 mei 2026'|t }}</span></div>
-          <div><span class="hero-meta-k">{{ 'Locatie'|t }}</span><span class="hero-meta-v">{{ 'Desiderius Campus · Brussel'|t }}</span></div>
-          <div><span class="hero-meta-k">{{ 'Tracks'|t }}</span><span class="hero-meta-v">{{ '12 podia · 84 sessies'|t }}</span></div>
+          <div><span class="hero-meta-k">{{ 'Wanneer'|t }}</span><span class="hero-meta-v">{{ lp_event_date }}</span></div>
+          <div><span class="hero-meta-k">{{ 'Locatie'|t }}</span><span class="hero-meta-v">{{ lp_event_location }}</span></div>
+          <div><span class="hero-meta-k">{{ 'Tracks'|t }}</span><span class="hero-meta-v">{{ lp_event_tracks }}</span></div>
         </div>
         <div class="hero-ctas">
           {% if register_url %}
             <a href="{{ register_url }}" class="btn btn-primary btn-lg">
-              {{ 'Registreer voor het event'|t }}
+              {{ lp_cta1_label }}
               <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
             </a>
           {% endif %}
-          <a href="{{ path('user.login') }}" class="btn btn-ghost btn-lg">{{ 'Ik heb al een badge'|t }}</a>
+          <a href="{{ path('user.login') }}" class="btn btn-ghost btn-lg">{{ lp_cta2_label }}</a>
         </div>
       </div>
 
@@ -398,18 +398,18 @@
 
   {# ── Stats strip ── #}
   <div class="strip">
-    <div class="strip-item"><span class="strip-num">2.400+</span><span class="strip-lbl">{{ 'Verwachte deelnemers'|t }}</span></div>
-    <div class="strip-item"><span class="strip-num">84</span><span class="strip-lbl">{{ 'Sessies over drie dagen'|t }}</span></div>
-    <div class="strip-item"><span class="strip-num">12</span><span class="strip-lbl">{{ 'Podia en labs op campus'|t }}</span></div>
-    <div class="strip-item"><span class="strip-num">37</span><span class="strip-lbl">{{ 'Partnerorganisaties'|t }}</span></div>
+    <div class="strip-item"><span class="strip-num">{{ lp_stat1_num }}</span><span class="strip-lbl">{{ lp_stat1_lbl }}</span></div>
+    <div class="strip-item"><span class="strip-num">{{ lp_stat2_num }}</span><span class="strip-lbl">{{ lp_stat2_lbl }}</span></div>
+    <div class="strip-item"><span class="strip-num">{{ lp_stat3_num }}</span><span class="strip-lbl">{{ lp_stat3_lbl }}</span></div>
+    <div class="strip-item"><span class="strip-num">{{ lp_stat4_num }}</span><span class="strip-lbl">{{ lp_stat4_lbl }}</span></div>
   </div>
 
   {# ── Program ── #}
   <section class="program" id="program">
     <div class="section-head">
-      <span class="section-eyebrow">{{ 'Dag één · Dinsdag'|t }}</span>
-      <h2>{{ 'Een eventprogramma, geen conferentieagenda.'|t }}</h2>
-      <p>{{ 'Een voorproefje van wat er op het programma staat. Na registratie kun je je inschrijven voor sessies met nog beschikbare plaatsen.'|t }}</p>
+      <span class="section-eyebrow">{{ lp_program_eyebrow }}</span>
+      <h2>{{ lp_program_title }}</h2>
+      <p>{{ lp_program_description }}</p>
     </div>
     <div class="program-grid">
       {% if front_sessions is not empty %}
@@ -473,11 +473,11 @@
       <span class="brand-name">{{ site_name }} 2026</span>
     </div>
     <div class="landing-foot-meta">
-      <span>{{ 'Desiderius Campus · Brussel'|t }}</span>
+      <span>{{ lp_footer_location }}</span>
       <span class="dot-sep">·</span>
-      <span>{{ '12 – 14 mei 2026'|t }}</span>
+      <span>{{ lp_footer_date }}</span>
       <span class="dot-sep">·</span>
-      <span>{{ 'Een integratieproject van Desideriushogeschool'|t }}</span>
+      <span>{{ lp_footer_org }}</span>
     </div>
   </footer>
 

@@ -275,6 +275,31 @@ function event_theme_preprocess_page__front(array &$variables): void {
   $variables['hero_cta_label'] = theme_get_setting('event_theme_hero_cta_label') ?: 'Register now';
   $variables['hero_cta_url']   = theme_get_setting('event_theme_hero_cta_url')   ?: '/register';
 
+  // Frontpage (public landing page) content settings.
+  $variables['lp_status_label']       = theme_get_setting('event_theme_lp_status_label')       ?: 'Registratie is open';
+  $variables['lp_hero_line1']         = theme_get_setting('event_theme_lp_hero_line1')         ?: 'Drie dagen.';
+  $variables['lp_hero_line2']         = theme_get_setting('event_theme_lp_hero_line2')         ?: 'Twaalf podia.';
+  $variables['lp_hero_line3']         = theme_get_setting('event_theme_lp_hero_line3')         ?: 'Één geïntegreerde ervaring.';
+  $variables['lp_hero_description']   = theme_get_setting('event_theme_lp_hero_description')   ?: 'Een jaarlijkse bijeenkomst voor engineers, designers en operators die integratiesystemen bouwen. Workshops, keynotes en late-night demo\'s op twaalf locaties op de Desiderius Campus.';
+  $variables['lp_event_date']         = theme_get_setting('event_theme_lp_event_date')         ?: '12 – 14 mei 2026';
+  $variables['lp_event_location']     = theme_get_setting('event_theme_lp_event_location')     ?: 'Desiderius Campus · Brussel';
+  $variables['lp_event_tracks']       = theme_get_setting('event_theme_lp_event_tracks')       ?: '12 podia · 84 sessies';
+  $variables['lp_cta1_label']         = theme_get_setting('event_theme_lp_cta1_label')         ?: 'Registreer voor het event';
+  $variables['lp_cta2_label']         = theme_get_setting('event_theme_lp_cta2_label')         ?: 'Ik heb al een badge';
+  $variables['lp_stat1_num']          = theme_get_setting('event_theme_lp_stat1_num')          ?: '2.400+';
+  $variables['lp_stat1_lbl']          = theme_get_setting('event_theme_lp_stat1_lbl')          ?: 'Verwachte deelnemers';
+  $variables['lp_stat2_num']          = theme_get_setting('event_theme_lp_stat2_num')          ?: '84';
+  $variables['lp_stat2_lbl']          = theme_get_setting('event_theme_lp_stat2_lbl')          ?: 'Sessies over drie dagen';
+  $variables['lp_stat3_num']          = theme_get_setting('event_theme_lp_stat3_num')          ?: '12';
+  $variables['lp_stat3_lbl']          = theme_get_setting('event_theme_lp_stat3_lbl')          ?: 'Podia en labs op campus';
+  $variables['lp_stat4_num']          = theme_get_setting('event_theme_lp_stat4_num')          ?: '37';
+  $variables['lp_stat4_lbl']          = theme_get_setting('event_theme_lp_stat4_lbl')          ?: 'Partnerorganisaties';
+  $variables['lp_program_eyebrow']    = theme_get_setting('event_theme_lp_program_eyebrow')    ?: 'Dag één · Dinsdag';
+  $variables['lp_program_title']      = theme_get_setting('event_theme_lp_program_title')      ?: 'Een eventprogramma, geen conferentieagenda.';
+  $variables['lp_program_description']= theme_get_setting('event_theme_lp_program_description')?: 'Een voorproefje van wat er op het programma staat. Na registratie kun je je inschrijven voor sessies met nog beschikbare plaatsen.';
+  $variables['lp_footer_location']    = theme_get_setting('event_theme_lp_footer_location')    ?: 'Desiderius Campus · Brussel';
+  $variables['lp_footer_date']        = theme_get_setting('event_theme_lp_footer_date')        ?: '12 – 14 mei 2026';
+  $variables['lp_footer_org']         = theme_get_setting('event_theme_lp_footer_org')         ?: 'Een integratieproject van Desideriushogeschool';
   $account = \Drupal::currentUser();
   $frontSessions = [];
   $totalSessionsCount = 0;
