@@ -1,8 +1,10 @@
 {#
   Template: admin-sessions.html.twig
   Variables:
-    - sessions:   Array of session objects from Planning state
-    - create_url: URL to the session create form
+    - sessions:      Array of session objects from Planning state
+    - create_url:    URL to the session create form
+    - festival_form: Render array for the FestivalSettingsForm
+    - has_event:     Boolean — true when festival dates are already saved
 #}
 
 <div class="admin-sessions">
@@ -14,12 +16,26 @@
       <h1>{{ 'Manage sessions'|t }}</h1>
       <p>{{ 'Create, edit, or delete sessions. Changes are sent to the Planning service via RabbitMQ.'|t }}</p>
     </div>
-    <button type="button" class="btn btn-primary" data-session-modal-url="{{ create_url }}" data-session-modal-title="{{ 'New session'|t }}">
-      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-      </svg>
-      {{ 'New session'|t }}
-    </button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button type="button"
+              id="festival-toggle-btn"
+              class="btn btn-secondary"
+              aria-expanded="false"
+              aria-controls="festival-panel">
+        {{ 'Event settings'|t }}
+      </button>
+      <button type="button" class="btn btn-primary" data-session-modal-url="{{ create_url }}" data-session-modal-title="{{ 'New session'|t }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        {{ 'New session'|t }}
+      </button>
+    </div>
+  </div>
+
+  {# ── Collapsible festival settings panel ── #}
+  <div id="festival-panel" hidden>
+    {{ festival_form }}
   </div>
 
   {# ── Session table ── #}
@@ -187,6 +203,21 @@
     </div>
   </div>
 </div>
+
+<script>
+(function () {
+  var toggleBtn = document.getElementById('festival-toggle-btn');
+  var panel     = document.getElementById('festival-panel');
+
+  if (toggleBtn && panel) {
+    toggleBtn.addEventListener('click', function () {
+      var isOpen = !panel.hidden;
+      panel.hidden = isOpen;
+      toggleBtn.setAttribute('aria-expanded', String(!isOpen));
+    });
+  }
+}());
+</script>
 
 <script>
 (function () {

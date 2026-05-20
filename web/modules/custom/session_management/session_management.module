@@ -15,8 +15,10 @@ function session_management_theme(): array
     return [
         'admin_sessions' => [
             'variables' => [
-                'sessions'   => [],
-                'create_url' => '',
+                'sessions'      => [],
+                'create_url'    => '',
+                'festival_form' => [],
+                'has_event'     => false,
             ],
         ],
     ];
