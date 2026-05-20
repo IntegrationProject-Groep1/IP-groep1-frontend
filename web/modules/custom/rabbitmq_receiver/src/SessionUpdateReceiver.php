@@ -189,7 +189,7 @@ class SessionUpdateReceiver
     private function upsertSessionInState(array $session): void
     {
         try {
-            \Drupal\Core\Database\Database::getConnection('default', 'planning')
+            \Drupal\Core\Database\Database::getConnection()
                 ->merge('planning_sessions')
                 ->key(['session_id' => $session['session_id']])
                 ->fields([

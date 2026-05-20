@@ -121,7 +121,7 @@ class SessionEnrollForm extends FormBase
     private function loadSessionsFromDb(string $identityUuid = ''): array
     {
         try {
-            $db = Database::getConnection('default', 'planning');
+            $db = Database::getConnection();
 
             // Get session_ids the user is already confirmed for.
             $enrolled = [];

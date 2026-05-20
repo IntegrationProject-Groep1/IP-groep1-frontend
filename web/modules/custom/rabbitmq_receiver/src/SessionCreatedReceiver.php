@@ -192,7 +192,7 @@ class SessionCreatedReceiver
     private function upsertSessionInState(array $session): void
     {
         try {
-            $db = \Drupal\Core\Database\Database::getConnection('default', 'planning');
+            $db = \Drupal\Core\Database\Database::getConnection();
 
             $exists = (bool) $db->query(
                 "SELECT 1 FROM planning_sessions WHERE session_id = :id",

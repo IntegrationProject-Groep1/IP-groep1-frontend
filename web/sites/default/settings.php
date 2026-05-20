@@ -17,19 +17,6 @@ $databases['default']['default'] = [
 ];
 
 
-// Separate connection to the planning database (same MariaDB, different DB).
-$databases['planning']['default'] = [
-  'driver'    => 'mysql',
-  'database'  => getenv('PLANNING_DB_NAME') ?: 'planning',
-  'username'  => getenv('DRUPAL_DB_USER') ?: 'drupal_user',
-  'password'  => getenv('DRUPAL_DB_PASSWORD') ?: 'drupal_pass',
-  'host'      => getenv('DRUPAL_DB_HOST') ?: 'frontend_db',
-  'port'      => getenv('DRUPAL_DB_PORT') ?: '3306',
-  'prefix'    => '',
-  'namespace' => 'Drupal\\mysql\\Driver\\Database\\mysql',
-  'autoload'  => 'core/modules/mysql/src/Driver/Database/mysql/',
-];
-
 $settings['hash_salt'] = 'local-dev-hash-salt-event-platform-2526';
 
 $settings['update_free_access'] = FALSE;
