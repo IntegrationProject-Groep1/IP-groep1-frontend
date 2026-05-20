@@ -6,11 +6,29 @@
 
 {% if logged_in %}
 
+<script>
+function sfOpenNav() {
+  var s = document.getElementById('shell-sidebar');
+  var o = document.getElementById('shell-overlay');
+  if (s) { s.classList.add('is-open'); }
+  if (o) { o.classList.add('is-open'); }
+  document.body.style.overflow = 'hidden';
+}
+function sfCloseNav() {
+  var s = document.getElementById('shell-sidebar');
+  var o = document.getElementById('shell-overlay');
+  if (s) { s.classList.remove('is-open'); }
+  if (o) { o.classList.remove('is-open'); }
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') sfCloseNav(); });
+</script>
+
 {# ══════════════════════════════════════════════ DASHBOARD (ingelogd) ══ #}
 <div class="shell">
 
   {# ── Sidebar ── #}
-  <aside class="shell-side">
+  <aside class="shell-side" id="shell-sidebar">
     <div class="shell-brand">
       <a href="{{ path('<front>') }}" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;">
         <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
@@ -106,6 +124,11 @@
   {# ── Main ── #}
   <main class="shell-main" role="main">
     <div class="shell-topbar">
+      <button type="button" class="shell-hamburger" onclick="sfOpenNav()" aria-label="{{ 'Menu openen'|t }}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
       <div class="shell-crumbs">{{ 'Dashboard'|t }}</div>
       <div class="shell-topbar-actions">
         <div class="event-pill">
@@ -329,6 +352,9 @@
   </main>
 </div>{# /shell #}
 
+{# Overlay voor mobile sidebar — buiten de shell grid zodat het nooit een grid item wordt #}
+<div class="shell-overlay" id="shell-overlay" onclick="sfCloseNav()" aria-hidden="true"></div>
+
 {% else %}
 
 {# ══════════════════════════════════════════════ LANDING PAGE (niet ingelogd) ══ #}
@@ -350,7 +376,7 @@
       <a href="#venue">{{ 'Locatie'|t }}</a>
       <a href="#faq">{{ 'FAQ'|t }}</a>
     </nav>
-    <div class="landing-nav-cta">
+    <div class="landing-nav-cta landing-nav-cta--desktop">
       <a href="{{ path('user.login') }}" class="btn btn-ghost btn-sm">{{ 'Log in'|t }}</a>
       {% if register_url %}
         <a href="{{ register_url }}" class="btn btn-primary btn-sm">
@@ -359,7 +385,30 @@
         </a>
       {% endif %}
     </div>
+    <button class="landing-hamburger" id="landing-hamburger" onclick="toggleLandingMenu()" aria-label="{{ 'Menu openen'|t }}">
+      <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
   </header>
+
+  <div class="landing-mobile-menu" id="landing-mobile-menu">
+    <a href="{{ path('<front>') }}" class="landing-mobile-link">{{ 'Frontpage'|t }}</a>
+    <a href="#program" class="landing-mobile-link">{{ 'Programma'|t }}</a>
+    <a href="#venue" class="landing-mobile-link">{{ 'Locatie'|t }}</a>
+    <a href="#faq" class="landing-mobile-link">{{ 'FAQ'|t }}</a>
+    <a href="{{ path('user.login') }}" class="landing-mobile-link">{{ 'Log in'|t }}</a>
+    {% if register_url %}
+      <a href="{{ register_url }}" class="landing-mobile-cta">{{ 'Badge ophalen'|t }}</a>
+    {% endif %}
+  </div>
+
+  <script>
+  function toggleLandingMenu() {
+    var m = document.getElementById('landing-mobile-menu');
+    if (m) m.classList.toggle('is-open');
+  }
+  </script>
 
   {# ── Hero ── #}
   <section class="hero">
