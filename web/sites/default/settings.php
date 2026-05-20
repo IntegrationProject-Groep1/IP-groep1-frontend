@@ -83,3 +83,9 @@ if (isset($_SERVER['HTTP_HOST']) && str_contains($_SERVER['HTTP_HOST'], 'desider
 } elseif ($env_base_url = getenv('DRUPAL_BASE_URL')) {
   $base_url = $env_base_url;
 }
+
+// Disable all page and render caching locally.
+// Remove these lines before deploying to staging or production.
+$settings['cache']['bins']['render'] = 'cache.backend.null';
+$settings['cache']['bins']['dynamic_page_cache'] = 'cache.backend.null';
+$settings['cache']['bins']['page'] = 'cache.backend.null';
