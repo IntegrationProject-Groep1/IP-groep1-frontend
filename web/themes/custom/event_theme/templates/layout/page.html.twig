@@ -57,6 +57,12 @@
         {{ 'Sessie beëindigen'|t }}
       </a>
     {% endif %}
+    {% if is_admin %}
+      <a href="/session/event-end"
+         class="sf-nav-link {{ current_route == 'session_management.event_end_global' ? 'is-active' : '' }}">
+        {{ 'Event beëindigen'|t }}
+      </a>
+    {% endif %}
   </nav>
 
   {# Right-side actions #}
@@ -168,6 +174,9 @@
   {% endif %}
   {% if is_admin and session_end_url %}
     <a href="{{ session_end_url }}" class="sf-nav-link">{{ 'Sessie beëindigen'|t }}</a>
+  {% endif %}
+  {% if is_admin %}
+    <a href="/session/event-end" class="sf-nav-link">{{ 'Event beëindigen'|t }}</a>
   {% endif %}
   {% if logged_in %}
     <hr style="border:none;border-top:1px solid rgba(255,255,255,.08);margin:6px 0;">

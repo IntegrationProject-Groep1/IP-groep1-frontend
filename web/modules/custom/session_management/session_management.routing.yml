@@ -47,3 +47,11 @@ session_management.end:
     _title: 'End a session'
   requirements:
     _permission: 'administer site configuration'
+
+session_management.event_end_global:
+  path: '/session/event-end'
+  defaults:
+    _form: '\Drupal\session_management\Form\EventEndGlobalForm'
+    _title: 'End Event'
+  requirements:
+    _permission: 'administer site configuration'

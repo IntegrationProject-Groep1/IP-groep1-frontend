@@ -14,3 +14,10 @@ registration_form.confirmation:
     _title: 'Registration confirmed'
   requirements:
     _access: 'TRUE'
+event.end:
+  path: '/event/end'
+  defaults:
+    _controller: '\Drupal\registration_form\Controller\EventController::endEvent'
+  requirements:
+    _permission: 'access content'
+  methods: [POST]
