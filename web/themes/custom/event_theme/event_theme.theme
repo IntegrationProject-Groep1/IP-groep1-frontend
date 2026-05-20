@@ -251,8 +251,7 @@ function event_theme_preprocess_form(array &$variables): void {
     $element = $variables['element'] ?? [];
     if (($element['#form_id'] ?? '') === 'session_enrollment_form') {
         // Prefer data already attached by buildForm; fall back to Drupal state.
-        $variables['sessions_full'] = $element['#sessions_full']
-            ?? \Drupal::state()->get('planning.sessions', []);
+        $variables['sessions_full'] = $element['#sessions_full'] ?? [];
     }
 }
 
