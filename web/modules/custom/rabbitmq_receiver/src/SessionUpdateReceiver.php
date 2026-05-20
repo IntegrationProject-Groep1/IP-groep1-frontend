@@ -188,19 +188,24 @@ class SessionUpdateReceiver
      */
     private function upsertSessionInState(array $session): void
     {
-        $sessions = \Drupal::state()->get('planning.sessions', []);
-        $found = false;
-        foreach ($sessions as &$existing) {
-            if ($existing['session_id'] === $session['session_id']) {
-                $existing = $session;
-                $found = true;
-                break;
-            }
+        try {
+            \Drupal\Core\Database\Database::getConnection('default', 'planning')
+                ->merge('planning_sessions')
+                ->key(['session_id' => $session['session_id']])
+                ->fields([
+                    'title'          => $session['title'] ?? '',
+                    'start_datetime' => $session['start_datetime'] ?? '',
+                    'end_datetime'   => $session['end_datetime'] ?? '',
+                    'location'       => $session['location'] ?? '',
+                    'session_type'   => $session['session_type'] ?? 'keynote',
+                    'status'         => $session['status'] ?? 'published',
+                    'max_attendees'  => (int) ($session['max_attendees'] ?? 0),
+                    'price'          => isset($session['price']) && $session['price'] !== '' ? (float) $session['price'] : null,
+                    'is_deleted'     => 0,
+                ])
+                ->execute();
+        } catch (\Throwable $e) {
+            \Drupal::logger('rabbitmq_receiver')->error('SessionUpdateReceiver: DB write failed: @e', ['@e' => $e->getMessage()]);
         }
-        unset($existing);
-        if (!$found) {
-            $sessions[] = $session;
-        }
-        \Drupal::state()->set('planning.sessions', $sessions);
     }
 }

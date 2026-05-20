@@ -57,6 +57,47 @@ class SessionDeletedReceiver
     }
 
     /**
+     * Poll once (non-blocking) and mark session as deleted in MariaDB.
+     */
+    public function pollOnce(): bool
+    {
+        $channel = $this->client->getChannel();
+
+        $args = new AMQPTable([
+            'x-dead-letter-exchange'    => self::DLX,
+            'x-dead-letter-routing-key' => self::DLQ,
+        ]);
+
+        $channel->exchange_declare(self::EXCHANGE, self::EXCHANGE_TYPE, false, true, false);
+        $channel->queue_declare(self::QUEUE, false, true, false, false, false, $args);
+        $channel->queue_bind(self::QUEUE, self::EXCHANGE, self::ROUTING_KEY);
+
+        $msg = $channel->basic_get(self::QUEUE);
+        if ($msg === null) {
+            return false;
+        }
+
+        try {
+            $data = $this->processMessageFromXml($msg->body);
+            try {
+                \Drupal\Core\Database\Database::getConnection('default', 'planning')
+                    ->update('planning_sessions')
+                    ->fields(['is_deleted' => 1])
+                    ->condition('session_id', $data['session_id'])
+                    ->execute();
+            } catch (\Throwable $e) {
+                \Drupal::logger('rabbitmq_receiver')->error('SessionDeletedReceiver: DB write failed: @e', ['@e' => $e->getMessage()]);
+            }
+            $msg->ack();
+        } catch (\Throwable $e) {
+            $this->logReceiverError($e, self::QUEUE, $msg->body);
+            $msg->nack(false, false);
+        }
+
+        return true;
+    }
+
+    /**
      * Subscribe to the session_deleted queue with DLQ support.
      */
     public function listen(): void

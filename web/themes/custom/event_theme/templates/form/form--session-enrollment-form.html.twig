@@ -380,8 +380,23 @@
     footEl.innerHTML = priceHtml + enrollHtml;
 
     modal.hidden = false;
+    modal.dataset.currentSid = data.sid || '';
     document.body.classList.add('modal-open');
     document.getElementById('sdmodal-close').focus();
+
+    /* Enroll button handler */
+    var enrollBtn = document.getElementById('sdmodal-enroll-btn');
+    if (enrollBtn) {
+      enrollBtn.onclick = function() {
+        var sid = modal.dataset.currentSid;
+        var cb = document.querySelector('input[name="session_ids[' + sid + ']"]');
+        if (cb) { cb.checked = true; }
+        closeModal();
+        /* Scroll to submit button */
+        var submitRow = document.querySelector('.sessions-submit-row');
+        if (submitRow) submitRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      };
+    }
   }
 
   function closeModal() {
