@@ -15,6 +15,23 @@ declare(strict_types=1);
  * Create planning_sessions and planning_registrations in the planning database.
  */
 function session_enrollment_update_10002(): void {
+    // Register the planning connection from environment variables when it is
+    // absent from settings.php (e.g. when a K8s ConfigMap pre-dates this
+    // connection or the pod runs an older image).
+    if (!\Drupal\Core\Database\Database::getConnectionInfo('planning')) {
+        \Drupal\Core\Database\Database::addConnectionInfo('planning', 'default', [
+            'driver'    => 'mysql',
+            'database'  => getenv('PLANNING_DB_NAME') ?: 'planning',
+            'username'  => getenv('DRUPAL_DB_USER')   ?: 'drupal_user',
+            'password'  => getenv('DRUPAL_DB_PASSWORD') ?: '',
+            'host'      => getenv('DRUPAL_DB_HOST')   ?: 'frontend_db',
+            'port'      => '3306',
+            'prefix'    => '',
+            'namespace' => 'Drupal\\mysql\\Driver\\Database\\mysql',
+            'autoload'  => 'core/modules/mysql/src/Driver/Database/mysql/',
+        ]);
+    }
+
     $db     = \Drupal\Core\Database\Database::getConnection('default', 'planning');
     $schema = $db->schema();
 
