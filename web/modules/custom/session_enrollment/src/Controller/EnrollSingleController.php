@@ -21,7 +21,7 @@ class EnrollSingleController extends ControllerBase
         $masterUuid   = (string) (\Drupal::service('user.data')->get('registration_form', $uid, 'master_uuid') ?? '');
         $identityUuid = $masterUuid !== '' ? $masterUuid : (string) $uid;
 
-        $db = Database::getConnection('default', 'planning');
+        $db = Database::getConnection();
 
         // Load session data.
         $session = $db->query(

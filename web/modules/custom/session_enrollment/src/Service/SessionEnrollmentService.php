@@ -69,7 +69,7 @@ class SessionEnrollmentService
 
             // Write registration to MariaDB and increment attendee counter.
             try {
-                $db = Database::getConnection('default', 'planning');
+                $db = Database::getConnection();
                 $db->merge('planning_registrations')
                     ->key(['session_id' => $sessionId, 'master_uuid' => $identityUuid])
                     ->fields(['status' => 'confirmed', 'registered_at' => date('c')])

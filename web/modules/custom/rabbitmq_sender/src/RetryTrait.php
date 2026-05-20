@@ -14,8 +14,8 @@ trait RetryTrait
      */
     private function sendWithRetry(
         callable $sendFunction,
-        int $maxRetries = 3,
-        int $waitSeconds = 5
+        int $maxRetries = 2,
+        int $waitSeconds = 1
     ): void {
         $attempt = 0;
 

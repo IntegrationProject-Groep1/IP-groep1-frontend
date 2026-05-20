@@ -251,8 +251,7 @@ function event_theme_preprocess_form(array &$variables): void {
     $element = $variables['element'] ?? [];
     if (($element['#form_id'] ?? '') === 'session_enrollment_form') {
         // Prefer data already attached by buildForm; fall back to Drupal state.
-        $variables['sessions_full'] = $element['#sessions_full']
-            ?? \Drupal::state()->get('planning.sessions', []);
+        $variables['sessions_full'] = $element['#sessions_full'] ?? [];
     }
 }
 
@@ -271,21 +270,52 @@ function event_theme_preprocess_page__front(array &$variables): void {
   $variables['hero_cta_label'] = theme_get_setting('event_theme_hero_cta_label') ?: 'Register now';
   $variables['hero_cta_url']   = theme_get_setting('event_theme_hero_cta_url')   ?: '/register';
 
-  // Pass the current user's enrolled sessions (cached from last user_sessions_response).
   $account = \Drupal::currentUser();
   $frontSessions = [];
-  if ($account->isAuthenticated()) {
-    $uid         = (int) $account->id();
-    $masterUuid  = (string) (\Drupal::service('user.data')->get('registration_form', $uid, 'master_uuid') ?? '');
-    if ($masterUuid !== '') {
-      $cached = \Drupal::state()->get('user_sessions.' . $masterUuid, []);
-      $frontSessions = (array) ($cached['sessions'] ?? []);
-    }
-  }
-  $variables['front_sessions'] = $frontSessions;
+  $totalSessionsCount = 0;
 
-  $allSessions = \Drupal::state()->get('planning.sessions', []);
-  $variables['total_sessions_count'] = count((array) $allSessions);
+  try {
+    $db = \Drupal\Core\Database\Database::getConnection('default', 'planning');
+
+    if ($account->isAuthenticated()) {
+      $uid        = (int) $account->id();
+      $masterUuid = (string) (\Drupal::service('user.data')->get('registration_form', $uid, 'master_uuid') ?? '');
+      $identity   = $masterUuid !== '' ? $masterUuid : (string) $uid;
+
+      $frontSessions = $db->query(
+        "SELECT s.session_id, s.title, s.start_datetime, s.end_datetime,
+                s.location, s.session_type, s.status, s.max_attendees,
+                s.current_attendees, s.price
+         FROM planning_sessions s
+         INNER JOIN planning_registrations r ON r.session_id = s.session_id
+         WHERE r.master_uuid = :uuid
+           AND r.status = 'confirmed'
+           AND s.is_deleted = 0
+         ORDER BY s.start_datetime",
+        [':uuid' => $identity]
+      )->fetchAll(\PDO::FETCH_ASSOC);
+    } else {
+      // Landing page: show first few published sessions as a preview.
+      $frontSessions = $db->query(
+        "SELECT session_id, title, start_datetime, end_datetime,
+                location, session_type, status, max_attendees, price
+         FROM planning_sessions
+         WHERE is_deleted = 0
+           AND status = 'published'
+         ORDER BY start_datetime
+         LIMIT 4"
+      )->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    $totalSessionsCount = (int) $db->query(
+      "SELECT COUNT(*) FROM planning_sessions WHERE is_deleted = 0 AND status = 'published'"
+    )->fetchField();
+  } catch (\Throwable $e) {
+    \Drupal::logger('event_theme')->error('Front page session query failed: @e', ['@e' => $e->getMessage()]);
+  }
+
+  $variables['front_sessions']      = $frontSessions;
+  $variables['total_sessions_count'] = $totalSessionsCount;
 
   $festivalStart = new \DateTime('2026-07-01');
   $now = new \DateTime('today');

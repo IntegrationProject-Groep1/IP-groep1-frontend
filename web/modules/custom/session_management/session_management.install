@@ -15,11 +15,23 @@ declare(strict_types=1);
 /**
  * 8001: Create planning_sessions and planning_registrations in the planning DB.
  *
- * Run via: drush updb
+ * @deprecated Superseded by session_management_update_8002 which uses the
+ *   default Drupal DB. Safe to skip if 8002 has already run.
  */
 function session_management_update_8001(): void
 {
-    $db     = \Drupal\Core\Database\Database::getConnection('default', 'planning');
+    // No-op: tables are now created in the default DB by update_8002.
+    // This stub prevents Drupal from reporting the update as missing.
+}
+
+/**
+ * 8002: Create planning_sessions and planning_registrations in the default DB.
+ *
+ * Run via: drush updb
+ */
+function session_management_update_8002(): void
+{
+    $db     = \Drupal\Core\Database\Database::getConnection();
     $schema = $db->schema();
 
     if (!$schema->tableExists('planning_sessions')) {

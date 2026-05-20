@@ -66,7 +66,7 @@ class MySessionsController extends ControllerBase
             ->get('registration_form', $uid, 'master_uuid') ?? '');
 
         if ($identityUuid !== '') {
-            $db = Database::getConnection('default', 'planning');
+            $db = Database::getConnection();
 
             $db->update('planning_registrations')
                 ->fields(['status' => 'cancelled'])
@@ -98,7 +98,7 @@ class MySessionsController extends ControllerBase
     private function fetchIcsUrl(string $identityUuid): string
     {
         try {
-            $db  = Database::getConnection('default', 'planning');
+            $db  = Database::getConnection();
             $row = $db->query(
                 "SELECT ics_url FROM planning_registrations
                  WHERE master_uuid = :uuid AND ics_url IS NOT NULL
@@ -121,7 +121,7 @@ class MySessionsController extends ControllerBase
     private function fetchSessions(string $identityUuid): array
     {
         try {
-            $db   = Database::getConnection('default', 'planning');
+            $db   = Database::getConnection();
             $rows = $db->query(
                 "SELECT s.session_id, s.title, s.start_datetime, s.end_datetime,
                         s.location, s.session_type, s.status,

@@ -34,7 +34,7 @@ class AdminSessionsController extends ControllerBase
     private function loadSessionsFromDb(): array
     {
         try {
-            return Database::getConnection('default', 'planning')->query(
+            return Database::getConnection()->query(
                 "SELECT * FROM planning_sessions WHERE is_deleted = 0 ORDER BY start_datetime"
             )->fetchAll(\PDO::FETCH_ASSOC);
         } catch (\Throwable $e) {

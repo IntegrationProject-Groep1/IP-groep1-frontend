@@ -80,7 +80,7 @@ class SessionDeletedReceiver
         try {
             $data = $this->processMessageFromXml($msg->body);
             try {
-                \Drupal\Core\Database\Database::getConnection('default', 'planning')
+                \Drupal\Core\Database\Database::getConnection()
                     ->update('planning_sessions')
                     ->fields(['is_deleted' => 1])
                     ->condition('session_id', $data['session_id'])
