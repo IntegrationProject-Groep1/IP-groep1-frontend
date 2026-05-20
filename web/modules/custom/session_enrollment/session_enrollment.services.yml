@@ -1,4 +1,9 @@
 services:
+  session_enrollment.planning_connection_subscriber:
+    class: Drupal\session_enrollment\EventSubscriber\PlanningConnectionSubscriber
+    tags:
+      - { name: event_subscriber }
+
   session_enrollment.enrollment_service:
     class: Drupal\session_enrollment\Service\SessionEnrollmentService
     arguments:
