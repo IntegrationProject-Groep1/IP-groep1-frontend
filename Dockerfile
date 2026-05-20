@@ -24,6 +24,9 @@ COPY xsd /opt/drupal/xsd
 # Copy settings.php — uses getenv() so credentials come from environment variables
 COPY web/sites/default/settings.php /var/www/html/sites/default/settings.php
 
+# Copy services.yml — disables Twig cache so template changes take effect immediately
+COPY web/sites/default/services.yml /var/www/html/sites/default/services.yml
+
 # Suppress the "Could not reliably determine the server's fully qualified domain name" warning
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 

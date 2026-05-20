@@ -27,7 +27,7 @@
 
     <nav class="shell-nav" aria-label="{{ 'Hoofdnavigatie'|t }}">
       <div class="shell-nav-group">
-        <div class="shell-nav-label">{{ 'Festival'|t }}</div>
+        <div class="shell-nav-label">{{ 'Event'|t }}</div>
 
         <a href="{{ path('<front>') }}" class="shell-nav-item is-active">
           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>
@@ -65,7 +65,7 @@
 
       {% if is_company_user or is_admin %}
         <div class="shell-nav-group">
-          <div class="shell-nav-label">{{ 'Company Admin'|t }}</div>
+          <div class="shell-nav-label">{{ 'Admin acties'|t }}</div>
           {% if is_admin and session_admin_url %}
             <a href="{{ session_admin_url }}" class="shell-nav-item">
               <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09c0 .68.41 1.29 1.03 1.56a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.27.62.88 1.03 1.56 1.03H21a2 2 0 1 1 0 4h-.09c-.68 0-1.29.41-1.51 1z"/></svg>
@@ -81,6 +81,13 @@
         </div>
       {% endif %}
     </nav>
+
+    <a href="{{ path('entity.user.edit_form', {'user': user.id}) }}"
+       class="shell-nav-item {{ current_route == 'entity.user.edit_form' ? 'is-active' : '' }}"
+       style="margin: 0 12px 8px;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/></svg>
+      <span>{{ 'Instellingen'|t }}</span>
+    </a>
 
     <div class="shell-user">
       <div class="shell-user-avatar">{{ current_first_name|slice(0,1)|upper }}</div>
@@ -123,7 +130,7 @@
         <header class="dash-hero">
           <div class="dash-hero-lhs">
             <span class="eyebrow">{{ 'Welkom terug'|t }}</span>
-            <h1>{{ 'Hi'|t }} {{ current_first_name }} — {{ 'je festival start over'|t }} <strong>{{ 'dagen'|t }}</strong>.</h1>
+            <h1>{{ 'Hi'|t }} {{ current_first_name }} — {{ 'je event start over'|t }} <strong>{{ days_until_festival }} {{ 'dagen'|t }}</strong>.</h1>
             <p>{% if front_sessions is not empty %}{{ 'Er staan'|t }} <strong>{{ front_sessions|length }}</strong> {{ 'sessies op het programma. Je digitale badge is klaar voor gebruik.'|t }}{% else %}{{ 'Je digitale badge is klaar voor gebruik aan de deur.'|t }}{% endif %}</p>
             <div class="dash-hero-ctas">
               {% if qr_url %}
@@ -146,7 +153,6 @@
               <div class="mini-badge-card">
                 <div class="mini-badge-top">
                   <span>SHIFT · 2026</span>
-                  <span>DAY 01</span>
                 </div>
                 <div class="mini-badge-name">{{ current_full_name }}</div>
                 <div class="mini-badge-role">{{ 'Deelnemer'|t }}</div>
@@ -167,7 +173,6 @@
                   <rect x="22" y="28" width="4" height="4" fill="var(--ink)"/>
                   <rect x="34" y="28" width="4" height="4" fill="var(--ink)"/>
                 </svg>
-                <div class="mini-badge-id">BDG-{{ current_uid }}-2026</div>
               </div>
             </div>
           </div>
@@ -238,10 +243,6 @@
                 <span class="wallet-mini-amount">{{ wallet_balance is not null ? wallet_balance|number_format(2, '.', '') : '0.00' }}</span>
               </div>
               <p>{{ 'Betaal voor eten, drinken en merch door je badge te scannen bij een kiosk.'|t }}</p>
-              <a href="{{ path('<front>') }}" class="btn btn-sm btn-ghost btn-full" style="justify-content:space-between;">
-                {{ 'Opwaarderen of geschiedenis bekijken'|t }}
-                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-              </a>
             </div>
           </div>
 
@@ -250,7 +251,7 @@
             <div class="stat">
               <div class="stat-label">{{ 'Sessies'|t }}</div>
               <div class="stat-value">{{ front_sessions|length }}</div>
-              <div class="stat-sub">{{ 'van 84 beschikbaar'|t }}</div>
+              <div class="stat-sub">{{ 'van @count beschikbaar'|t({'@count': total_sessions_count}) }}</div>
             </div>
             <div class="stat">
               <div class="stat-label">{{ 'Wallet'|t }}</div>
@@ -266,38 +267,9 @@
             {% endif %}
             <div class="stat">
               <div class="stat-label">{{ 'Aftellen'|t }}</div>
-              <div class="stat-value">4</div>
-              <div class="stat-sub">{{ 'dagen tot festival'|t }}</div>
+              <div class="stat-value">{{ days_until_festival }}</div>
+              <div class="stat-sub">{{ 'dagen tot event'|t }}</div>
             </div>
-          </div>
-
-          {# Festival pulse #}
-          <div class="card card-pad-lg">
-            <div class="section-label-row">
-              <span class="section-label">{{ 'Festival pulse'|t }}</span>
-            </div>
-            <ul class="pulse-list">
-              <li>
-                <span class="pulse-dot pulse-ok"></span>
-                <span><strong>{{ 'Sessie-service'|t }}</strong> {{ 'werkt. 84 sessies gepubliceerd.'|t }}</span>
-                <span class="pulse-time">{{ '2 min geleden'|t }}</span>
-              </li>
-              <li>
-                <span class="pulse-dot pulse-warn"></span>
-                <span><strong>{{ 'Workshop: XSD-first contracts'|t }}</strong> {{ 'is 97% vol. Nog maar een paar plekken.'|t }}</span>
-                <span class="pulse-time">{{ '14 min geleden'|t }}</span>
-              </li>
-              <li>
-                <span class="pulse-dot pulse-ok"></span>
-                <span><strong>{{ 'Identity service'|t }}</strong> {{ 'heeft je master UUID aangemaakt.'|t }}</span>
-                <span class="pulse-time">{{ '2 dagen geleden'|t }}</span>
-              </li>
-              <li>
-                <span class="pulse-dot pulse-ok"></span>
-                <span><strong>{{ 'Welkomstcredit'|t }}</strong> {{ 'van €25 toegevoegd aan je wallet.'|t }}</span>
-                <span class="pulse-time">{{ '6 dagen geleden'|t }}</span>
-              </li>
-            </ul>
           </div>
 
         </div>{# /dash-grid #}
@@ -359,7 +331,7 @@
         <div class="hero-ctas">
           {% if register_url %}
             <a href="{{ register_url }}" class="btn btn-primary btn-lg">
-              {{ 'Registreer voor het festival'|t }}
+              {{ 'Registreer voor het event'|t }}
               <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
             </a>
           {% endif %}
@@ -435,7 +407,7 @@
   <section class="program" id="program">
     <div class="section-head">
       <span class="section-eyebrow">{{ 'Dag één · Dinsdag'|t }}</span>
-      <h2>{{ 'Een festivalprogramma, geen conferentieagenda.'|t }}</h2>
+      <h2>{{ 'Een eventprogramma, geen conferentieagenda.'|t }}</h2>
       <p>{{ 'Een voorproefje van wat er op het programma staat. Na registratie kun je je inschrijven voor sessies met nog beschikbare plaatsen.'|t }}</p>
     </div>
     <div class="program-grid">
@@ -476,7 +448,7 @@
         <article class="program-card">
           <div class="program-card-top"><span class="tag">talk</span><span class="program-card-time">14:00</span></div>
           <h3>{{ 'Digitale badges & identiteit'|t }}</h3>
-          <p>{{ 'QR-codes, wallets en check-in systemen: hoe het festival zijn eigen backend in productie heeft gebracht.'|t }}</p>
+          <p>{{ 'QR-codes, wallets en check-in systemen: hoe het event zijn eigen backend in productie heeft gebracht.'|t }}</p>
           <div class="program-card-foot"><span>{{ 'Studio B'|t }}</span></div>
         </article>
         <article class="program-card">
@@ -511,3 +483,60 @@
 </div>{# /landing #}
 
 {% endif %}
+
+{# ── Hidden Drupal messages → toast renderer ── #}
+<div id="drupal-messages" style="display:none;" aria-hidden="true">
+  {% for type, messages in toast_messages %}
+    {% for message in messages %}
+      <div class="messages messages--{{ type }}">
+        <ul class="messages__list"><li class="messages__item">{{ message }}</li></ul>
+      </div>
+    {% endfor %}
+  {% endfor %}
+</div>
+<script>
+(function () {
+  var svgCheck = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+  var svgWarn  = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+  var svgError = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+
+  function showToast(text, type) {
+    var el = document.createElement('div');
+    el.className = 'toast' + (type === 'error' ? ' toast-error' : type === 'warning' ? ' toast-error' : ' toast-success');
+    var icon = type === 'error' || type === 'warning' ? (type === 'warning' ? svgWarn : svgError) : svgCheck;
+    el.innerHTML = icon + '<span>' + text + '</span>';
+    document.body.appendChild(el);
+    var offset = 24;
+    document.querySelectorAll('.toast').forEach(function (t) {
+      if (t !== el) offset += t.offsetHeight + 8;
+    });
+    el.style.top = offset + 'px';
+    setTimeout(function () {
+      el.style.transition = 'opacity .3s, transform .3s';
+      el.style.opacity = '0';
+      el.style.transform = 'translateX(12px)';
+      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 320);
+    }, 4000);
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var container = document.getElementById('drupal-messages');
+    if (!container) return;
+    container.querySelectorAll('.messages').forEach(function (block) {
+      var type = block.classList.contains('messages--error') ? 'error'
+               : block.classList.contains('messages--warning') ? 'warning'
+               : 'success';
+      var items = block.querySelectorAll('.messages__item');
+      if (items.length) {
+        items.forEach(function (item) {
+          var text = item.textContent.trim();
+          if (text) showToast(text, type);
+        });
+      } else {
+        var text = block.textContent.trim();
+        if (text) showToast(text, type);
+      }
+    });
+  });
+})();
+</script>

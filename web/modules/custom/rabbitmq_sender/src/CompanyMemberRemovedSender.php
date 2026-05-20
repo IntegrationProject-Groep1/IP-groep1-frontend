@@ -42,8 +42,8 @@ class CompanyMemberRemovedSender
             throw new \InvalidArgumentException('email is required');
         }
 
-        if (empty($data['company_id'])) {
-            throw new \InvalidArgumentException('company_id is required');
+        if (empty($data['vat_number'])) {
+            throw new \InvalidArgumentException('vat_number is required');
         }
 
         if (empty($data['reason']) || !in_array($data['reason'], self::VALID_REASONS, true)) {
@@ -52,7 +52,7 @@ class CompanyMemberRemovedSender
 
         \Drupal::logger('rabbitmq_sender')->info('Sending company_member_removed event', [
             'identity_uuid' => $data['identity_uuid'],
-            'company_id'    => $data['company_id'],
+            'vat_number'    => $data['vat_number'],
             'reason'        => $data['reason'],
         ]);
 
@@ -95,7 +95,7 @@ class CompanyMemberRemovedSender
         $customer = $dom->createElement('customer');
         $customer->appendChild($dom->createElement('identity_uuid', htmlspecialchars((string) $data['identity_uuid'], ENT_XML1, 'UTF-8')));
         $customer->appendChild($dom->createElement('email', htmlspecialchars((string) $data['email'], ENT_XML1, 'UTF-8')));
-        $customer->appendChild($dom->createElement('company_id', htmlspecialchars((string) $data['company_id'], ENT_XML1, 'UTF-8')));
+        $customer->appendChild($dom->createElement('vat_number', htmlspecialchars((string) $data['vat_number'], ENT_XML1, 'UTF-8')));
         $customer->appendChild($dom->createElement('reason', htmlspecialchars((string) $data['reason'], ENT_XML1, 'UTF-8')));
 
         $body = $dom->createElement('body');

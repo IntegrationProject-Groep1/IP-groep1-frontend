@@ -15,7 +15,7 @@
           <xs:element name="source"><xs:simpleType><xs:restriction base="xs:string">
             <xs:enumeration value="frontend"/></xs:restriction></xs:simpleType></xs:element>
           <xs:element name="type"><xs:simpleType><xs:restriction base="xs:string">
-            <xs:enumeration value="company_member_removed"/></xs:restriction></xs:simpleType></xs:element>
+            <xs:enumeration value="user_unregistered"/></xs:restriction></xs:simpleType></xs:element>
           <xs:element name="version"><xs:simpleType><xs:restriction base="xs:string">
             <xs:enumeration value="2.0"/></xs:restriction></xs:simpleType></xs:element>
           <xs:element name="correlation_id" type="UUIDType" minOccurs="0"/>
@@ -23,23 +23,9 @@
       </xs:element>
       <xs:element name="body">
         <xs:complexType><xs:sequence>
-          <xs:element name="customer">
-            <xs:complexType><xs:sequence>
-              <xs:element name="identity_uuid" type="UUIDType"/>
-              <xs:element name="email"         type="xs:string"/>
-              <xs:element name="vat_number">
-                <xs:simpleType><xs:restriction base="xs:string">
-                  <xs:pattern value="[A-Z]{2}[0-9]{10}"/>
-                </xs:restriction></xs:simpleType>
-              </xs:element>
-              <xs:element name="reason">
-                <xs:simpleType><xs:restriction base="xs:string">
-                  <xs:enumeration value="invite_revoked"/>
-                  <xs:enumeration value="admin_removed"/>
-                </xs:restriction></xs:simpleType>
-              </xs:element>
-            </xs:sequence></xs:complexType>
-          </xs:element>
+          <xs:element name="identity_uuid" type="UUIDType"/>
+          <xs:element name="session_id"    type="xs:string"/>
+          <xs:element name="session_title" type="xs:string" minOccurs="0"/>
         </xs:sequence></xs:complexType>
       </xs:element>
     </xs:sequence></xs:complexType>

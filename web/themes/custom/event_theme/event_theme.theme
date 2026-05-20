@@ -205,6 +205,10 @@ function event_theme_preprocess_page(array &$variables): void {
       $variables[$varName] = '';
     }
   }
+
+  // Read Drupal flash messages so Twig templates can render them as toasts.
+  // messenger()->all() returns and clears the queue, preventing double display.
+  $variables['toast_messages'] = \Drupal::messenger()->all();
 }
 
 /**
@@ -279,6 +283,14 @@ function event_theme_preprocess_page__front(array &$variables): void {
     }
   }
   $variables['front_sessions'] = $frontSessions;
+
+  $allSessions = \Drupal::state()->get('planning.sessions', []);
+  $variables['total_sessions_count'] = count((array) $allSessions);
+
+  $festivalStart = new \DateTime('2026-07-01');
+  $now = new \DateTime('today');
+  $diff = (int) $now->diff($festivalStart)->days;
+  $variables['days_until_festival'] = $festivalStart > $now ? $diff : 0;
 }
 
 /* ── Private helpers ─────────────────────────────────────── */

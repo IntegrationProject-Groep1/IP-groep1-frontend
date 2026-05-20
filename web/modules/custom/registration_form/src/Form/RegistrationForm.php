@@ -139,6 +139,39 @@ class RegistrationForm extends FormBase
             ],
         ];
 
+        $form['company_fields']['street'] = [
+            '#type'        => 'textfield',
+            '#title'       => $this->t('Street and number'),
+            '#placeholder' => $this->t('e.g. Keizersgracht 123'),
+            '#states' => [
+                'required' => [
+                    ':input[name="is_company"]' => ['checked' => true],
+                ],
+            ],
+        ];
+
+        $form['company_fields']['postal_code'] = [
+            '#type'        => 'textfield',
+            '#title'       => $this->t('Postal code'),
+            '#placeholder' => $this->t('e.g. 1234 AB'),
+            '#states' => [
+                'required' => [
+                    ':input[name="is_company"]' => ['checked' => true],
+                ],
+            ],
+        ];
+
+        $form['company_fields']['municipality'] = [
+            '#type'        => 'textfield',
+            '#title'       => $this->t('Municipality / City'),
+            '#placeholder' => $this->t('e.g. Amsterdam'),
+            '#states' => [
+                'required' => [
+                    ':input[name="is_company"]' => ['checked' => true],
+                ],
+            ],
+        ];
+
         $form['terms_accepted'] = [
             '#type'     => 'checkbox',
             '#title'    => $this->t(
@@ -177,6 +210,18 @@ class RegistrationForm extends FormBase
             $form_state->setErrorByName('company_fields][vat_number', $this->t('BTW-nummer is verplicht voor bedrijven.'));
         }
 
+        if ($isCompany && empty(trim((string) $form_state->getValue('street')))) {
+            $form_state->setErrorByName('company_fields][street', $this->t('Straat is verplicht voor bedrijven.'));
+        }
+
+        if ($isCompany && empty(trim((string) $form_state->getValue('postal_code')))) {
+            $form_state->setErrorByName('company_fields][postal_code', $this->t('Postcode is verplicht voor bedrijven.'));
+        }
+
+        if ($isCompany && empty(trim((string) $form_state->getValue('municipality')))) {
+            $form_state->setErrorByName('company_fields][municipality', $this->t('Gemeente is verplicht voor bedrijven.'));
+        }
+
         if (!$form_state->getValue('terms_accepted')) {
             $form_state->setErrorByName('terms_accepted', $this->t('Je moet akkoord gaan met de algemene voorwaarden en het privacybeleid om je te kunnen registreren.'));
         }
@@ -193,6 +238,9 @@ class RegistrationForm extends FormBase
             'is_company'    => (bool) $form_state->getValue('is_company'),
             'company_name'  => $form_state->getValue('company_name') ?? '',
             'vat_number'    => $form_state->getValue('vat_number') ?? '',
+            'street'        => $form_state->getValue('street') ?? '',
+            'postal_code'   => $form_state->getValue('postal_code') ?? '',
+            'municipality'  => $form_state->getValue('municipality') ?? '',
         ];
 
         try {

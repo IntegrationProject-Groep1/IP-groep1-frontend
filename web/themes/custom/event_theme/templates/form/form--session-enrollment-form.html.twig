@@ -52,6 +52,14 @@
     {{ form.form_token }}
     {{ form.form_id }}
 
+    {% if form.enrollment_success %}
+      {{ form.enrollment_success }}
+    {% endif %}
+
+    {% if form.enrollment_error %}
+      {{ form.enrollment_error }}
+    {% endif %}
+
     {% if form.notice %}
       <div class="alert alert-error" style="margin-bottom:20px;">{{ form.notice }}</div>
     {% endif %}
@@ -203,13 +211,13 @@
                   {{ 'Full'|t }}
                 </span>
               {% elseif is_enrolled %}
-                <div class="session-checkbox-wrap">
-                  {{ form.session_ids[sid] }}
-                </div>
+                <span class="tag tag-ok" style="justify-content:center;">{{ 'enrolled'|t }}</span>
               {% else %}
-                <div class="session-checkbox-wrap">
-                  {{ form.session_ids[sid] }}
-                </div>
+                <a href="/sessions/enroll-single/{{ sid }}"
+                   class="btn btn-ink btn-sm btn-full"
+                   style="text-align:center;display:block;">
+                  {{ 'Enroll'|t }}
+                </a>
               {% endif %}
             </div>
 
@@ -427,6 +435,14 @@
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && !modal.hidden) closeModal();
   });
+}());
+
+/* ── Scroll to feedback on load ── */
+(function () {
+  var msgs = document.querySelector('#enrollment-success, #enrollment-error, .messages, .alert-error');
+  if (msgs) {
+    msgs.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }());
 </script>
 

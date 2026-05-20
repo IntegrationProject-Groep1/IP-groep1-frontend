@@ -105,12 +105,91 @@ function registration_form_user_update(\Drupal\user\UserInterface $account): voi
             'company_name'  => (string) ($account->hasField('field_company_name') ? $account->get('field_company_name')->value : ''),
             'vat_number'    => (string) ($account->hasField('field_vat_number') ? $account->get('field_vat_number')->value : ''),
             'company_id'    => (string) ($account->hasField('field_company_id') ? $account->get('field_company_id')->value : ''),
+            'street'        => (string) ($account->hasField('field_street')       ? $account->get('field_street')->value       : ''),
+            'postal_code'   => (string) ($account->hasField('field_postal_code')  ? $account->get('field_postal_code')->value  : ''),
+            'municipality'  => (string) ($account->hasField('field_municipality') ? $account->get('field_municipality')->value : ''),
         ]);
     } catch (\Throwable $e) {
         \Drupal::logger('registration_form')->error(
             'user_updated mislukt voor user @id: @message',
             ['@id' => $account->id(), '@message' => $e->getMessage()]
         );
+    }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for user_form.
+ *
+ * Customises the "Mijn gegevens" profile edit form:
+ *  - Removes the user-picture upload widget.
+ *  - Removes the timezone selector.
+ *  - Surfaces first name, last name and date of birth as editable fields.
+ *  - For company accounts: shows street, postal code and municipality fields.
+ */
+function registration_form_form_user_form_alter(array &$form, \Drupal\Core\Form\FormStateInterface $form_state, string $form_id): void
+{
+    // ── 1. Remove photo upload ───────────────────────────────────────────────
+    if (isset($form['user_picture'])) {
+        $form['user_picture']['#access'] = false;
+    }
+
+    // ── 2. Remove timezone ──────────────────────────────────────────────────
+    if (isset($form['timezone'])) {
+        $form['timezone']['#access'] = false;
+    }
+
+    // ── 3. Surface name + date-of-birth at the top ──────────────────────────
+    // These fields are created by the install hook and stored on the user entity.
+    // Make sure they appear at the top of the form, above the e-mail field.
+    $nameFields = ['field_first_name', 'field_last_name', 'field_date_of_birth'];
+    foreach ($nameFields as $idx => $fieldName) {
+        if (isset($form[$fieldName])) {
+            $form[$fieldName]['#access'] = true;
+            $form[$fieldName]['#weight'] = -50 + $idx;
+        }
+    }
+
+    // Move account e-mail + password below the name fields.
+    foreach (['account', 'contact'] as $section) {
+        if (isset($form[$section])) {
+            $form[$section]['#weight'] = 0;
+        }
+    }
+
+    // ── 4. Address fields (company accounts only) ────────────────────────────
+    $currentUser = \Drupal::currentUser();
+    $isCompany = false;
+    if ($currentUser->isAuthenticated()) {
+        $storedFlag = \Drupal::service('user.data')->get('registration_form', (int) $currentUser->id(), 'is_company');
+        $isCompany  = (bool) $storedFlag;
+    }
+
+    // Also check the user being edited (admin may edit another user).
+    /** @var \Drupal\user\UserInterface|null $editedUser */
+    $editedUser = $form_state->getFormObject() instanceof \Drupal\user\AccountForm
+        ? $form_state->getFormObject()->getEntity()
+        : null;
+    if ($editedUser !== null && !$isCompany) {
+        $isCompany = (bool) \Drupal::service('user.data')->get('registration_form', (int) $editedUser->id(), 'is_company');
+    }
+
+    $addressFields = ['field_street', 'field_postal_code', 'field_municipality'];
+    foreach ($addressFields as $idx => $fieldName) {
+        if (isset($form[$fieldName])) {
+            $form[$fieldName]['#access'] = $isCompany;
+            $form[$fieldName]['#weight'] = 10 + $idx;
+            if ($isCompany) {
+                // Make the widget label cleaner.
+                $labels = [
+                    'field_street'       => t('Street'),
+                    'field_postal_code'  => t('Postal code'),
+                    'field_municipality' => t('Municipality'),
+                ];
+                if (isset($form[$fieldName]['widget'][0]['value']['#title'])) {
+                    $form[$fieldName]['widget'][0]['value']['#title'] = $labels[$fieldName];
+                }
+            }
+        }
     }
 }
 

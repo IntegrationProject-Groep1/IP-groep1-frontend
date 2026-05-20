@@ -44,7 +44,6 @@
       <div class="empty-dot"></div>
       <h3>{{ 'No sessions on your schedule yet.'|t }}</h3>
       <p>{{ 'Pick a few from the programme — you can always drop them later.'|t }}</p>
-      <a href="/sessions/enroll" class="btn btn-primary">{{ 'Browse the programme'|t }}</a>
     </div>
 
   {% else %}
@@ -120,7 +119,7 @@
                       </svg>
                     </button>
                   {% endif %}
-                  <a href="/sessions/enroll" class="btn btn-ghost btn-sm schedule-drop-btn">
+                  <a href="/sessions/unenroll/{{ s.session_id }}" class="btn btn-ghost btn-sm schedule-drop-btn">
                     {{ 'Drop'|t }}
                   </a>
                 </div>
