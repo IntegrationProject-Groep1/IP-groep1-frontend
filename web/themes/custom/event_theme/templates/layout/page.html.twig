@@ -16,11 +16,29 @@
 
 {% if logged_in and not is_auth_page %}
 
+<script>
+function sfOpenNav() {
+  var s = document.getElementById('shell-sidebar');
+  var o = document.getElementById('shell-overlay');
+  if (s) { s.classList.add('is-open'); }
+  if (o) { o.classList.add('is-open'); }
+  document.body.style.overflow = 'hidden';
+}
+function sfCloseNav() {
+  var s = document.getElementById('shell-sidebar');
+  var o = document.getElementById('shell-overlay');
+  if (s) { s.classList.remove('is-open'); }
+  if (o) { o.classList.remove('is-open'); }
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') sfCloseNav(); });
+</script>
+
   {# ════════════════════════════════════ AUTHENTICATED SHELL ════ #}
   <div class="shell">
 
     {# ── Sidebar ── #}
-    <aside class="shell-side">
+    <aside class="shell-side" id="shell-sidebar">
 
       {# Brand #}
       <div class="shell-brand">
@@ -106,20 +124,17 @@
 
       </nav>
 
-      <a href="{{ path('entity.user.edit_form', {'user': user.id}) }}"
-         class="shell-nav-item {{ current_route == 'entity.user.edit_form' ? 'is-active' : '' }}"
-         style="margin: 0 12px 8px;">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/></svg>
-        <span>{{ 'Instellingen'|t }}</span>
-      </a>
-
       {# Gebruiker + uitloggen #}
       <div class="shell-user">
-        <div class="shell-user-avatar">{{ current_first_name|slice(0,1)|upper }}</div>
-        <div class="shell-user-meta">
-          <div class="shell-user-name">{{ current_full_name }}</div>
-          <div class="shell-user-sub">{{ current_display_name }}</div>
-        </div>
+        <a href="{{ path('entity.user.edit_form', {'user': user.id}) }}"
+           class="shell-user-link {{ current_route == 'entity.user.edit_form' ? 'is-active' : '' }}"
+           title="{{ 'Instellingen'|t }}">
+          <div class="shell-user-avatar">{{ current_first_name|slice(0,1)|upper }}</div>
+          <div class="shell-user-meta">
+            <div class="shell-user-name">{{ current_full_name }}</div>
+            <div class="shell-user-sub">{{ current_display_name }}</div>
+          </div>
+        </a>
         <a href="{{ path('user.logout') }}" class="shell-logout-btn" title="{{ 'Afmelden'|t }}">
           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
@@ -129,10 +144,18 @@
 
     </aside>
 
+  {# Overlay voor mobile sidebar #}
+  <div class="shell-overlay" id="shell-overlay" onclick="sfCloseNav()" aria-hidden="true"></div>
+
     {# ── Hoofd content ── #}
     <main class="shell-main" role="main">
 
       <div class="shell-topbar">
+        <button type="button" class="shell-hamburger" onclick="sfOpenNav()" aria-label="{{ 'Menu openen'|t }}">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
         <div class="shell-crumbs">
           {% set route_labels = {
             'qr_code.page':                  'My Badge',
@@ -218,6 +241,7 @@
 
     </main>
   </div>
+
 
 {% elseif is_auth_page %}
 

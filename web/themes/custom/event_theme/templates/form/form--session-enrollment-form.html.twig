@@ -107,7 +107,7 @@
           {% set session_date = start_parts2[0] ?? '' %}
           {% set session_time = start_parts2[1] is defined ? start_parts2[1]|split(':')|slice(0,2)|join(':') : '' %}
           {% set session_json = {
-            'sid':         sid,
+            'session_id':  sid,
             'title':       session.title,
             'type':        session.session_type,
             'date':        session_date,
@@ -192,7 +192,7 @@
               </div>
             </div>
 
-            {# Side: capacity + enroll checkbox #}
+            {# Side: capacity + inschrijven knop #}
             <div class="session-side">
               {% if session.max_attendees > 0 %}
                 <div class="capacity">
@@ -207,16 +207,16 @@
               {% endif %}
 
               {% if is_full %}
-                <span class="btn btn-ghost btn-sm btn-full" style="text-align:center;cursor:not-allowed;opacity:.55;">
-                  {{ 'Full'|t }}
+                <span class="btn btn-primary btn-sm btn-full" style="text-align:center;cursor:not-allowed;opacity:.55;">
+                  {{ 'Vol'|t }}
                 </span>
               {% elseif is_enrolled %}
-                <span class="tag tag-ok" style="justify-content:center;">{{ 'enrolled'|t }}</span>
+                <span class="tag tag-ok" style="justify-content:center;">{{ 'Ingeschreven'|t }}</span>
               {% else %}
                 <a href="/sessions/enroll-single/{{ sid }}"
-                   class="btn btn-ink btn-sm btn-full"
-                   style="text-align:center;display:block;">
-                  {{ 'Enroll'|t }}
+                   class="btn btn-primary btn-sm btn-full"
+                   style="text-align:center;display:block;text-decoration:none;">
+                  {{ 'Inschrijven'|t }}
                 </a>
               {% endif %}
             </div>
@@ -364,18 +364,18 @@
       capEl.innerHTML = '';
     }
 
-    /* Footer: price + enroll button */
+    /* Footer: price + enroll action */
     var footEl = document.getElementById('sdmodal-footer');
     var priceHtml = (data.price && data.price !== '0' && data.price !== '')
       ? '<div class="sdmodal-price">€ ' + esc(String(data.price)) + '</div>'
       : '';
     var enrollHtml = '';
     if (data.full) {
-      enrollHtml = '<span class="btn btn-ghost btn-sm" style="opacity:.5;cursor:not-allowed;">{{ "Vol"|t }}</span>';
+      enrollHtml = '<span class="btn btn-primary btn-sm" style="cursor:not-allowed;opacity:.55;text-decoration:none;">{{ "Vol"|t }}</span>';
     } else if (data.enrolled) {
-      enrollHtml = '<span class="btn btn-ghost btn-sm tag-ok">{{ "Ingeschreven"|t }}</span>';
-    } else {
-      enrollHtml = '<button type="button" class="btn btn-primary btn-sm" id="sdmodal-enroll-btn">{{ "Inschrijven"|t }}</button>';
+      enrollHtml = '<span class="tag tag-ok" style="padding:8px 16px;font-size:14px;">{{ "Ingeschreven"|t }}</span>';
+    } else if (data.session_id) {
+      enrollHtml = '<a href="/sessions/enroll-single/' + esc(String(data.session_id)) + '" class="btn btn-primary btn-sm" style="text-decoration:none;">{{ "Inschrijven"|t }}</a>';
     }
     footEl.innerHTML = priceHtml + enrollHtml;
 

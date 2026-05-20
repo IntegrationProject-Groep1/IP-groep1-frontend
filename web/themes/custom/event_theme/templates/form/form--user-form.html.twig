@@ -1,0 +1,51 @@
+{#
+  form--user-form.html.twig
+  Instellingenpagina voor de ingelogde gebruiker (entity.user.edit_form).
+  De sidebar-shell wordt verzorgd door page.html.twig.
+#}
+
+<div class="admin-sessions">
+
+  <div class="admin-head">
+    <div>
+      <span class="eyebrow">{{ 'Account'|t }}</span>
+      <h1>{{ 'Instellingen'|t }}</h1>
+      <p>{{ 'Beheer je accountgegevens en wachtwoord.'|t }}</p>
+    </div>
+  </div>
+
+  <form{{ attributes }}>
+    {{ form.form_build_id }}
+    {{ form.form_token }}
+    {{ form.form_id }}
+
+    <div class="card card-pad-lg admin-form-card" style="margin-bottom: 20px;">
+      <div class="section-label-row">
+        <span class="section-label">{{ 'Accountgegevens'|t }}</span>
+      </div>
+      <div class="form-grid">
+        {{ form.account }}
+      </div>
+    </div>
+
+    {% if form.timezone %}
+      <div class="card card-pad-lg admin-form-card" style="margin-bottom: 20px;">
+        <div class="section-label-row">
+          <span class="section-label">{{ 'Voorkeuren'|t }}</span>
+        </div>
+        <div class="form-grid">
+          {{ form.timezone }}
+          {{ form.language }}
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="admin-form-card">
+      <div class="admin-form-actions">
+        {{ form.actions }}
+      </div>
+    </div>
+
+  </form>
+
+</div>

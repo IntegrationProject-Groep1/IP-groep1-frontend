@@ -6,6 +6,11 @@ services:
   registration_form.crm_payload_builder:
     class: Drupal\registration_form\Service\RegistrationCrmPayloadBuilder
 
+  registration_form.route_subscriber:
+    class: Drupal\registration_form\Routing\RouteSubscriber
+    tags:
+      - { name: event_subscriber }
+
   registration_form.registration_service:
     class: Drupal\registration_form\Service\RegistrationService
     arguments:
