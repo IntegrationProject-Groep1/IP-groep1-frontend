@@ -382,15 +382,29 @@ function SessionsScreen({ state, actions }) {
           action={<Button size="sm" onClick={() => { setQ(""); setFilter("all"); }}>Reset filters</Button>}
         />
       ) : (
-        <div className="session-list">
-          {filtered.map((s) => (
-            <SessionCard
-              key={s.id}
-              session={s}
-              enrolled={state.enrollments.includes(s.id)}
-              onEnroll={() => actions.enroll(s.id)}
-              onDrop={() => actions.drop(s.id)}
-            />
+        <div className="schedule-stack">
+          {Object.entries(
+            filtered.reduce((acc, s) => {
+              const day = s.start.split("·")[0]?.trim() || "Unscheduled";
+              acc[day] = acc[day] || [];
+              acc[day].push(s);
+              return acc;
+            }, {})
+          ).map(([day, items]) => (
+            <section key={day} className="schedule-day">
+              <h2 className="schedule-day-title">{day}</h2>
+              <div className="session-list">
+                {items.map((s) => (
+                  <SessionCard
+                    key={s.id}
+                    session={s}
+                    enrolled={state.enrollments.includes(s.id)}
+                    onEnroll={() => actions.enroll(s.id)}
+                    onDrop={() => actions.drop(s.id)}
+                  />
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       )}
@@ -403,7 +417,6 @@ function SessionCard({ session, enrolled, onEnroll, onDrop }) {
   return (
     <article className={`session-card ${enrolled ? "is-enrolled" : ""}`}>
       <div className="session-time-col">
-        <span className="session-day">{session.start.split("·")[0]?.trim()}</span>
         <span className="session-hour">{session.start.split("·")[1]?.trim()}</span>
         <span className="session-dur">{session.duration}</span>
       </div>
