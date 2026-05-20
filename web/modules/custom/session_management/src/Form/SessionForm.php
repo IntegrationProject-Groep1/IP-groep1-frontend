@@ -96,10 +96,12 @@ class SessionForm extends FormBase
 
         if (!empty($start)) {
             $this->validateSessionDatetime('start_datetime', $start, $form_state);
+            $this->validateSessionTime('start_datetime', $start, $form_state);
         }
 
         if (!empty($end)) {
             $this->validateSessionDatetime('end_datetime', $end, $form_state);
+            $this->validateSessionTime('end_datetime', $end, $form_state);
         }
 
         if (!empty($start) && !empty($end)) {
@@ -119,19 +121,54 @@ class SessionForm extends FormBase
             return;
         }
 
-        if ($dt->format('Y-m-d') !== '2026-06-19') {
-            $form_state->setErrorByName($field, $this->t('Sessies kunnen enkel aangemaakt worden op 19 juni 2026.'));
+        $config    = \Drupal::config('shift_festival.settings');
+        $startDate = $config->get('festival_start_date');
+        $endDate   = $config->get('festival_end_date');
+
+        if (empty($startDate) || empty($endDate)) {
+            $form_state->setErrorByName($field, $this->t('No festival dates configured. Please set the festival dates on the Manage Sessions page.'));
             return;
         }
 
-        $time = $dt->format('H:i');
-        if ($time < '17:00') {
-            $form_state->setErrorByName($field, $this->t('De sessie kan niet voor 17:00 beginnen.'));
+        $sessionDate = $dt->format('Y-m-d');
+        if ($sessionDate < $startDate || $sessionDate > $endDate) {
+            $form_state->setErrorByName($field, $this->t('Sessions can only be created between @start and @end.', [
+                '@start' => $startDate,
+                '@end'   => $endDate,
+            ]));
+        }
+    }
+
+    private function validateSessionTime(string $field, mixed $value, FormStateInterface $form_state): void
+    {
+        $dt = $this->toDateTimeImmutable($value);
+        if ($dt === null) {
             return;
         }
 
-        if ($time > '21:30') {
-            $form_state->setErrorByName($field, $this->t('De sessie kan niet na 21:30 eindigen.'));
+        $config    = \Drupal::config('shift_festival.settings');
+        $startTime = $config->get('festival_start_time');
+        $endTime   = $config->get('festival_end_time');
+
+        if (empty($startTime) || empty($endTime)) {
+            $form_state->setErrorByName($field, $this->t('No festival times configured. Please set the festival times on the Manage Sessions page.'));
+            return;
+        }
+
+        $sessionTime = $dt->format('H:i');
+
+        if ($field === 'start_datetime' && $sessionTime < $startTime) {
+            $form_state->setErrorByName($field, $this->t('Sessions can only be created between @start and @end.', [
+                '@start' => $startTime,
+                '@end'   => $endTime,
+            ]));
+        }
+
+        if ($field === 'end_datetime' && $sessionTime > $endTime) {
+            $form_state->setErrorByName($field, $this->t('Sessions can only be created between @start and @end.', [
+                '@start' => $startTime,
+                '@end'   => $endTime,
+            ]));
         }
     }
 
