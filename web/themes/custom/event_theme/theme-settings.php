@@ -278,8 +278,13 @@ function event_theme_form_system_theme_settings_alter(array &$form, FormStateInt
   ];
   $form['footer_settings']['event_theme_footer_text'] = [
     '#type'          => 'textfield',
-    '#title'         => t('Footer copyright text'),
+    '#title'         => t('Copyright tekst'),
     '#default_value' => theme_get_setting('event_theme_footer_text') ?: '© Desideriushogeschool Event Platform. All rights reserved.',
+  ];
+  $form['footer_settings']['event_theme_footer_col2_title'] = [
+    '#type'          => 'textfield',
+    '#title'         => t('Kolom 2 — titel'),
+    '#default_value' => theme_get_setting('event_theme_footer_col2_title') ?: 'Contact',
   ];
   $form['footer_settings']['event_theme_footer_address'] = [
     '#type'          => 'textfield',
@@ -288,13 +293,18 @@ function event_theme_form_system_theme_settings_alter(array &$form, FormStateInt
   ];
   $form['footer_settings']['event_theme_footer_email'] = [
     '#type'          => 'email',
-    '#title'         => t('Contacte-mailadres'),
+    '#title'         => t('E-mailadres'),
     '#default_value' => theme_get_setting('event_theme_footer_email') ?: '',
   ];
   $form['footer_settings']['event_theme_footer_phone'] = [
     '#type'          => 'textfield',
     '#title'         => t('Telefoonnummer'),
     '#default_value' => theme_get_setting('event_theme_footer_phone') ?: '',
+  ];
+  $form['footer_settings']['event_theme_footer_col3_title'] = [
+    '#type'          => 'textfield',
+    '#title'         => t('Kolom 3 — titel (boven social links)'),
+    '#default_value' => theme_get_setting('event_theme_footer_col3_title') ?: 'Volg ons',
   ];
 
   /* ── Social media ── */

@@ -212,10 +212,12 @@ function event_theme_preprocess_page(array &$variables): void {
   }
 
   // Global footer fields shown on every authenticated page.
-  $variables['footer_text']    = Markup::create(strip_tags($footerRaw, '<a><strong><em><br>'));
-  $variables['footer_address'] = theme_get_setting('event_theme_footer_address') ?: 'Desiderius Campus, Brussel';
-  $variables['footer_email']   = theme_get_setting('event_theme_footer_email')   ?: '';
-  $variables['footer_phone']   = theme_get_setting('event_theme_footer_phone')   ?: '';
+  $variables['footer_text']       = Markup::create(strip_tags($footerRaw, '<a><strong><em><br>'));
+  $variables['footer_col2_title'] = theme_get_setting('event_theme_footer_col2_title') ?: 'Contact';
+  $variables['footer_address']    = theme_get_setting('event_theme_footer_address')    ?: 'Desiderius Campus, Brussel';
+  $variables['footer_email']      = theme_get_setting('event_theme_footer_email')      ?: '';
+  $variables['footer_phone']      = theme_get_setting('event_theme_footer_phone')      ?: '';
+  $variables['footer_col3_title'] = theme_get_setting('event_theme_footer_col3_title') ?: 'Volg ons';
 
   // Read Drupal flash messages so Twig templates can render them as toasts.
   // messenger()->all() returns and clears the queue, preventing double display.
