@@ -119,9 +119,12 @@
                       </svg>
                     </button>
                   {% endif %}
-                  <a href="/sessions/unenroll/{{ s.session_id }}" class="btn btn-ghost btn-sm schedule-drop-btn">
-                    {{ 'Drop'|t }}
-                  </a>
+                  <form method="post" action="/sessions/unenroll/{{ s.session_id }}" style="margin:0;">
+                    <button type="submit" class="btn btn-ghost btn-sm schedule-drop-btn"
+                            onclick="return confirm('{{ 'Are you sure you want to drop this session?'|t }}')">
+                      {{ 'Drop'|t }}
+                    </button>
+                  </form>
                 </div>
 
                 {% if has_details %}
@@ -148,12 +151,6 @@
                   </dl>
                 {% endif %}
 
-                <form method="post" action="{{ s.unsubscribe_url }}" style="margin-top:8px;">
-                  <button type="submit" class="btn btn-sm btn-outline-danger"
-                          onclick="return confirm('{{ 'Are you sure you want to unsubscribe from this session?'|t }}')">
-                    {{ 'Unsubscribe'|t }}
-                  </button>
-                </form>
               </div>
             {% endfor %}
           </div>

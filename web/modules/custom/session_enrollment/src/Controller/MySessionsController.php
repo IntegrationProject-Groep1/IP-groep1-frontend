@@ -62,30 +62,26 @@ class MySessionsController extends ControllerBase
         $storedUuid   = (string) (\Drupal::service('user.data')
             ->get('registration_form', $uid, 'master_uuid') ?? '');
         $identityUuid = $storedUuid !== '' ? $storedUuid : (string) $uid;
-        $identityUuid = (string) (\Drupal::service('user.data')
-            ->get('registration_form', $uid, 'master_uuid') ?? '');
 
-        if ($identityUuid !== '') {
-            $db = Database::getConnection();
+        $db = Database::getConnection();
 
-            $db->update('planning_registrations')
-                ->fields(['status' => 'cancelled'])
-                ->condition('session_id', $session_id)
-                ->condition('master_uuid', $identityUuid)
-                ->execute();
+        $db->update('planning_registrations')
+            ->fields(['status' => 'cancelled'])
+            ->condition('session_id', $session_id)
+            ->condition('master_uuid', $identityUuid)
+            ->execute();
 
-            $db->update('planning_sessions')
-                ->expression('current_attendees', 'GREATEST(current_attendees - 1, 0)')
-                ->condition('session_id', $session_id)
-                ->execute();
+        $db->update('planning_sessions')
+            ->expression('current_attendees', 'GREATEST(current_attendees - 1, 0)')
+            ->condition('session_id', $session_id)
+            ->execute();
 
-            try {
-                (new \Drupal\rabbitmq_sender\CancelRegistrationSender())->send($session_id, $identityUuid);
-                $this->messenger()->addStatus($this->t('You have been unsubscribed from the session.'));
-            } catch (\Throwable $e) {
-                \Drupal::logger('session_enrollment')->error('Unsubscribe RabbitMQ error: @e', ['@e' => $e->getMessage()]);
-                $this->messenger()->addWarning($this->t('Unsubscribed, but calendar removal may be delayed.'));
-            }
+        try {
+            (new \Drupal\rabbitmq_sender\CancelRegistrationSender())->send($session_id, $identityUuid);
+            $this->messenger()->addStatus($this->t('You have been unsubscribed from the session.'));
+        } catch (\Throwable $e) {
+            \Drupal::logger('session_enrollment')->error('Unsubscribe RabbitMQ error: @e', ['@e' => $e->getMessage()]);
+            $this->messenger()->addWarning($this->t('Unsubscribed, but calendar removal may be delayed.'));
         }
 
         return new RedirectResponse(Url::fromRoute('session_enrollment.my_sessions')->toString());
