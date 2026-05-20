@@ -470,7 +470,34 @@ html[data-sidebar="light"] .shell-user .icon-btn { border-color: var(--line-2); 
 .event-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 100px; font-size: 12px; font-weight: 500; color: var(--muted); }
 .event-pill-dot { width: 6px; height: 6px; background: var(--ok); border-radius: 50%; box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 20%, transparent); }
 
-.shell-content { padding: 32px; width: 100%; }
+.shell-content { padding: 32px; flex: 1; width: 100%; }
+
+/* ── Shell footer ── */
+.shell-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 32px;
+  padding: 28px 32px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 13px;
+  color: var(--muted);
+}
+.shell-footer-col { display: flex; flex-direction: column; gap: 6px; }
+.shell-footer-brand {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-weight: 600; font-size: 14px; color: var(--ink);
+}
+.shell-footer-tagline { margin: 0; font-size: 12px; }
+.shell-footer-label { margin: 0 0 4px; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink); }
+.shell-footer p { margin: 0; display: flex; align-items: center; gap: 6px; }
+.shell-footer a { color: var(--muted); text-decoration: none; }
+.shell-footer a:hover { color: var(--accent); }
+.shell-footer-right { align-items: flex-end; }
+.shell-footer-social { display: flex; gap: 12px; margin-bottom: 8px; }
+.shell-footer-social a { color: var(--muted); display: flex; }
+.shell-footer-social a:hover { color: var(--accent); }
+.shell-footer-copy { margin: 0; font-size: 12px; text-align: right; }
 
 /* ────────────────────────────────────────────────────────────────
    DASHBOARD
@@ -1623,6 +1650,9 @@ h1.page-title, .page-title {
   .shell-side { display: none; }
   .shell-content { padding: 20px 16px; }
   .shell-topbar { padding: 14px 16px; }
+  .shell-footer { grid-template-columns: 1fr; gap: 20px; padding: 24px 16px; }
+  .shell-footer-right { align-items: flex-start; }
+  .shell-footer-copy { text-align: left; }
   .dash-hero { grid-template-columns: 1fr; padding: 28px 24px; }
   .dash-hero-rhs { display: none; }
   .dash-grid { grid-template-columns: 1fr; }

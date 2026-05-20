@@ -281,6 +281,21 @@ function event_theme_form_system_theme_settings_alter(array &$form, FormStateInt
     '#title'         => t('Footer copyright text'),
     '#default_value' => theme_get_setting('event_theme_footer_text') ?: '© Desideriushogeschool Event Platform. All rights reserved.',
   ];
+  $form['footer_settings']['event_theme_footer_address'] = [
+    '#type'          => 'textfield',
+    '#title'         => t('Adres'),
+    '#default_value' => theme_get_setting('event_theme_footer_address') ?: 'Desiderius Campus, Brussel',
+  ];
+  $form['footer_settings']['event_theme_footer_email'] = [
+    '#type'          => 'email',
+    '#title'         => t('Contacte-mailadres'),
+    '#default_value' => theme_get_setting('event_theme_footer_email') ?: '',
+  ];
+  $form['footer_settings']['event_theme_footer_phone'] = [
+    '#type'          => 'textfield',
+    '#title'         => t('Telefoonnummer'),
+    '#default_value' => theme_get_setting('event_theme_footer_phone') ?: '',
+  ];
 
   /* ── Social media ── */
   $form['social'] = [

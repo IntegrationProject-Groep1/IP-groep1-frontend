@@ -275,6 +275,71 @@
         </div>{# /dash-grid #}
       </div>{# /dash #}
     </div>{# /shell-content #}
+
+    <footer class="shell-footer">
+      <div class="shell-footer-col">
+        <div class="shell-footer-brand">
+          <svg width="20" height="20" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+            <rect x="2" y="2" width="24" height="24" rx="7" fill="var(--ink)"/>
+            <path d="M9 18.5L14 9.5L19 18.5" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="14" cy="14" r="1.6" fill="var(--accent)"/>
+          </svg>
+          <span>{{ site_name }}</span>
+        </div>
+        {% if tagline %}<p class="shell-footer-tagline">{{ tagline }}</p>{% endif %}
+      </div>
+
+      <div class="shell-footer-col">
+        <p class="shell-footer-label">{{ 'Contact'|t }}</p>
+        {% if footer_address %}
+          <p>
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            {{ footer_address }}
+          </p>
+        {% endif %}
+        {% if footer_email %}
+          <p>
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <a href="mailto:{{ footer_email }}">{{ footer_email }}</a>
+          </p>
+        {% endif %}
+        {% if footer_phone %}
+          <p>
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.16 6.16l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <a href="tel:{{ footer_phone }}">{{ footer_phone }}</a>
+          </p>
+        {% endif %}
+      </div>
+
+      <div class="shell-footer-col shell-footer-right">
+        {% if social_facebook or social_instagram or social_linkedin or social_twitter %}
+          <div class="shell-footer-social">
+            {% if social_facebook %}
+              <a href="{{ social_facebook }}" target="_blank" rel="noopener" aria-label="{{ 'Facebook'|t }}">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+              </a>
+            {% endif %}
+            {% if social_instagram %}
+              <a href="{{ social_instagram }}" target="_blank" rel="noopener" aria-label="{{ 'Instagram'|t }}">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+              </a>
+            {% endif %}
+            {% if social_linkedin %}
+              <a href="{{ social_linkedin }}" target="_blank" rel="noopener" aria-label="{{ 'LinkedIn'|t }}">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
+              </a>
+            {% endif %}
+            {% if social_twitter %}
+              <a href="{{ social_twitter }}" target="_blank" rel="noopener" aria-label="{{ 'X / Twitter'|t }}">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              </a>
+            {% endif %}
+          </div>
+        {% endif %}
+        <p class="shell-footer-copy">{{ footer_text }}</p>
+      </div>
+    </footer>
+
   </main>
 </div>{# /shell #}
 
