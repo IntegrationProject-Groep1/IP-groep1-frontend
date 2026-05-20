@@ -99,6 +99,7 @@
           {% set session_date = start_parts2[0] ?? '' %}
           {% set session_time = start_parts2[1] is defined ? start_parts2[1]|split(':')|slice(0,2)|join(':') : '' %}
           {% set session_json = {
+            'sid':         sid,
             'title':       session.title,
             'type':        session.session_type,
             'date':        session_date,
@@ -355,15 +356,39 @@
       capEl.innerHTML = '';
     }
 
-    /* Footer: price */
+    /* Footer: price + enroll button */
     var footEl = document.getElementById('sdmodal-footer');
-    footEl.innerHTML = (data.price && data.price !== '0' && data.price !== '')
+    var priceHtml = (data.price && data.price !== '0' && data.price !== '')
       ? '<div class="sdmodal-price">€ ' + esc(String(data.price)) + '</div>'
       : '';
+    var enrollHtml = '';
+    if (data.full) {
+      enrollHtml = '<span class="btn btn-ghost btn-sm" style="opacity:.5;cursor:not-allowed;">{{ "Vol"|t }}</span>';
+    } else if (data.enrolled) {
+      enrollHtml = '<span class="btn btn-ghost btn-sm tag-ok">{{ "Ingeschreven"|t }}</span>';
+    } else {
+      enrollHtml = '<button type="button" class="btn btn-primary btn-sm" id="sdmodal-enroll-btn">{{ "Inschrijven"|t }}</button>';
+    }
+    footEl.innerHTML = priceHtml + enrollHtml;
 
     modal.hidden = false;
+    modal.dataset.currentSid = data.sid || '';
     document.body.classList.add('modal-open');
     document.getElementById('sdmodal-close').focus();
+
+    /* Enroll button handler */
+    var enrollBtn = document.getElementById('sdmodal-enroll-btn');
+    if (enrollBtn) {
+      enrollBtn.onclick = function() {
+        var sid = modal.dataset.currentSid;
+        var cb = document.querySelector('input[name="session_ids[' + sid + ']"]');
+        if (cb) { cb.checked = true; }
+        closeModal();
+        /* Scroll to submit button */
+        var submitRow = document.querySelector('.sessions-submit-row');
+        if (submitRow) submitRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      };
+    }
   }
 
   function closeModal() {

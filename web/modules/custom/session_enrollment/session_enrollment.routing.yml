@@ -21,3 +21,12 @@ session_enrollment.my_sessions:
     _title: 'My Sessions'
   requirements:
     _role: 'authenticated'
+
+session_enrollment.unsubscribe:
+  path: '/sessions/unsubscribe/{session_id}'
+  defaults:
+    _controller: '\Drupal\session_enrollment\Controller\MySessionsController::unsubscribe'
+    _title: 'Unsubscribe'
+  requirements:
+    _role: 'authenticated'
+  methods: [POST]

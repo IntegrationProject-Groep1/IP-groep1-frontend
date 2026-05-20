@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Drupal\session_enrollment\Service;
 
+use Drupal\Core\Database\Database;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\rabbitmq_sender\CalendarInviteSender;
+use Drupal\rabbitmq_receiver\CalendarInviteConfirmedReceiver;
+use Drupal\rabbitmq_sender\RabbitMQClient;
 
 /**
  * Handles session enrollment: sends calendar.invite to Planning.
@@ -62,9 +65,37 @@ class SessionEnrollmentService
                 continue;
             }
 
+            $identityUuid = $userData['master_uuid'] ?? $userData['user_id'];
+
+            // Write registration to MariaDB and increment attendee counter.
             try {
-                $this->calendarInviteSender->send([
-                    'identity_uuid'  => $userData['master_uuid'] ?? $userData['user_id'],
+                $db = Database::getConnection('default', 'planning');
+                $db->merge('planning_registrations')
+                    ->key(['session_id' => $sessionId, 'master_uuid' => $identityUuid])
+                    ->fields(['status' => 'confirmed', 'registered_at' => date('c')])
+                    ->execute();
+                $db->update('planning_sessions')
+                    ->expression('current_attendees', 'current_attendees + 1')
+                    ->condition('session_id', $sessionId)
+                    ->execute();
+            } catch (\Throwable $e) {
+                $logger->error('MariaDB registration write failed for session @id: @message', [
+                    '@id' => $sessionId, '@message' => $e->getMessage(),
+                ]);
+            }
+
+            // Notify Planning for Graph API (Outlook) + ICS feed.
+            try {
+                $client = new RabbitMQClient(
+                    (string) (getenv('RABBITMQ_HOST') ?: 'rabbitmq_broker'),
+                    (int)    (getenv('RABBITMQ_PORT') ?: 5672),
+                    (string) (getenv('RABBITMQ_USER') ?: 'guest'),
+                    (string) (getenv('RABBITMQ_PASS') ?: 'guest'),
+                    (string) (getenv('RABBITMQ_VHOST') ?: '/')
+                );
+                $sender = new \Drupal\rabbitmq_sender\CalendarInviteSender($client);
+                $sender->send([
+                    'identity_uuid'  => $identityUuid,
                     'attendee_email' => $userData['email'],
                     'session_id'     => $sessionId,
                     'title'          => $session['title'],
@@ -72,13 +103,30 @@ class SessionEnrollmentService
                     'end_datetime'   => $session['end_datetime'],
                     'location'       => $session['location'] ?? '',
                 ]);
-                $logger->info('calendar.invite verstuurd naar Planning voor sessie @id.', [
-                    '@id' => $sessionId,
-                ]);
+
+                // Poll briefly for calendar_invite_confirmed to get the ICS URL.
+                $receiver = new CalendarInviteConfirmedReceiver($client);
+                for ($i = 0; $i < 5; $i++) {
+                    usleep(500000); // 0.5s
+                    try {
+                        $confirmed = $receiver->pollOnce();
+                        if ($confirmed && !empty($confirmed['ics_url'])) {
+                            $db->update('planning_registrations')
+                                ->fields(['ics_url' => $confirmed['ics_url']])
+                                ->condition('session_id', $sessionId)
+                                ->condition('master_uuid', $identityUuid)
+                                ->execute();
+                            break;
+                        }
+                    } catch (\Throwable) {
+                        break;
+                    }
+                }
+
+                $logger->info('calendar.invite verstuurd naar Planning voor sessie @id.', ['@id' => $sessionId]);
             } catch (\Throwable $e) {
                 $logger->error('calendar.invite mislukt voor sessie @id: @message', [
-                    '@id'      => $sessionId,
-                    '@message' => $e->getMessage(),
+                    '@id' => $sessionId, '@message' => $e->getMessage(),
                 ]);
             }
         }

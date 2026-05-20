@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\session_enrollment\Form;
 
+use Drupal\Core\Database\Database;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
@@ -12,7 +13,8 @@ use Drupal\session_enrollment\Service\SessionEnrollmentService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Form allowing an authenticated user to enroll in one or more Planning sessions.
+ * Form allowing an authenticated user to enroll in one or more sessions.
+ * Sessions are read directly from MariaDB (planning_sessions table).
  */
 class SessionEnrollForm extends FormBase
 {
@@ -36,20 +38,19 @@ class SessionEnrollForm extends FormBase
 
     public function buildForm(array $form, FormStateInterface $form_state): array
     {
-        // Fetch sessions on-demand: send request to Planning and poll for response.
-        // This avoids dependency on cron for showing available sessions.
-        $this->fetchSessionsFromPlanning();
+        $uid          = (int) $this->currentUser()->id();
+        $masterUuid   = (string) (\Drupal::service('user.data')->get('registration_form', $uid, 'master_uuid') ?? '');
+        $identityUuid = $masterUuid !== '' ? $masterUuid : (string) $uid;
 
-        $options = $this->getSessionOptions();
+        $sessions = $this->loadSessionsFromDb($identityUuid);
+        $options  = $this->buildOptions($sessions);
 
         if (empty($options)) {
             $form['notice'] = [
-                '#markup' => '<p>' . $this->t('Could not load sessions: no connection to the Planning service. Please try again later.') . '</p>',
+                '#markup' => '<p>' . $this->t('No sessions available at the moment.') . '</p>',
             ];
             return $form;
         }
-
-        $sessions = \Drupal::state()->get('planning.sessions', []);
 
         $form['session_ids'] = [
             '#type'     => 'checkboxes',
@@ -63,7 +64,6 @@ class SessionEnrollForm extends FormBase
             '#value' => $this->t('Enroll'),
         ];
 
-        // Attach full session data for use in the Twig template.
         $form['#sessions_full'] = $sessions;
 
         return $form;
@@ -71,7 +71,7 @@ class SessionEnrollForm extends FormBase
 
     public function validateForm(array &$form, FormStateInterface $form_state): void
     {
-        $selected = (array) ($form_state->getValue('session_ids') ?? []);
+        $selected = array_filter((array) ($form_state->getValue('session_ids') ?? []));
         if (empty($selected)) {
             $form_state->setErrorByName('session_ids', $this->t('Please select at least one session.'));
         }
@@ -80,34 +80,29 @@ class SessionEnrollForm extends FormBase
     public function submitForm(array &$form, FormStateInterface $form_state): void
     {
         $currentUser = $this->currentUser();
-        $sessionIds  = array_values((array) ($form_state->getValue('session_ids') ?? []));
+        $sessionIds  = array_keys(array_filter((array) ($form_state->getValue('session_ids') ?? [])));
         $sessionMap  = $this->buildSessionMap();
 
         $userId     = (int) $currentUser->id();
         $masterUuid = \Drupal::service('user.data')->get('registration_form', $userId, 'master_uuid') ?? '';
 
         $userData = [
-            'email'         => $currentUser->getEmail(),
-            'user_id'       => (string) $userId,
-            'master_uuid'   => $masterUuid !== '' ? $masterUuid : null,
-            'first_name'    => $this->resolveUserField($userId, 'field_first_name') ?: $currentUser->getAccountName(),
-            'last_name'     => $this->resolveUserField($userId, 'field_last_name') ?: '',
-            'date_of_birth' => $this->resolveUserField($userId, 'field_date_of_birth') ?: '',
-            'is_company'    => (bool) $this->resolveUserField($userId, 'field_is_company'),
-            'company_name'  => $this->resolveUserField($userId, 'field_company_name'),
-            'vat_number'    => $this->resolveUserField($userId, 'field_vat_number'),
+            'email'       => $currentUser->getEmail(),
+            'user_id'     => (string) $userId,
+            'master_uuid' => $masterUuid !== '' ? $masterUuid : null,
+            'first_name'  => $this->resolveUserField($userId, 'field_first_name') ?: $currentUser->getAccountName(),
+            'last_name'   => $this->resolveUserField($userId, 'field_last_name') ?: '',
         ];
 
         try {
             $this->enrollmentService->enroll($userData, $sessionIds, $sessionMap);
 
-            $sessionOptions = $this->getSessionOptions();
             $this->tempStoreFactory
                 ->get('session_enrollment')
                 ->set('confirmation', [
                     'name'     => trim($userData['first_name'] . ' ' . $userData['last_name']),
                     'sessions' => array_map(
-                        fn(string $id) => $sessionOptions[$id] ?? $id,
+                        fn(string $id) => $this->buildOptions($this->loadSessionsFromDb())[$id] ?? $id,
                         $sessionIds
                     ),
                 ]);
@@ -119,93 +114,80 @@ class SessionEnrollForm extends FormBase
     }
 
     /**
-     * Fetches sessions from Planning on-demand.
+     * Load available sessions the user is NOT yet enrolled in.
      *
-     * Strategy:
-     *  1. First drain any pending response already in the queue (from a previous page load).
-     *     Planning can take ~60 s to respond, so the response of the previous request is
-     *     likely waiting by the time the user refreshes.
-     *  2. Send a fresh request so the next page load also has up-to-date data.
-     *  3. Poll briefly in case Planning happens to respond quickly this time.
-     *
-     * Falls back to whatever is cached in Drupal state when no response arrives in time.
+     * @return list<array<string,mixed>>
      */
-    private function fetchSessionsFromPlanning(): void
+    private function loadSessionsFromDb(string $identityUuid = ''): array
     {
         try {
-            $client   = new \Drupal\rabbitmq_sender\RabbitMQClient();
-            $receiver = new \Drupal\rabbitmq_receiver\SessionViewResponseReceiver($client);
+            $db = Database::getConnection('default', 'planning');
 
-            // Step 1: pick up any response that is already waiting in the queue.
-            for ($i = 0; $i < 3; $i++) {
-                if ($receiver->pollOnce()) {
-                    // Got fresh data; send a new request for the next page load and return.
-                    (new \Drupal\rabbitmq_sender\SessionViewRequestSender($client))->send();
-                    return;
-                }
+            // Get session_ids the user is already confirmed for.
+            $enrolled = [];
+            if ($identityUuid !== '') {
+                $rows = $db->query(
+                    "SELECT session_id FROM planning_registrations
+                     WHERE master_uuid = :uuid AND status = 'confirmed'",
+                    [':uuid' => $identityUuid]
+                )->fetchCol();
+                $enrolled = $rows ?: [];
             }
 
-            // Step 2: nothing pending – send a fresh request.
-            (new \Drupal\rabbitmq_sender\SessionViewRequestSender($client))->send();
+            $sessions = $db->query(
+                "SELECT session_id, title, start_datetime, end_datetime,
+                        location, session_type, status, max_attendees,
+                        current_attendees, price
+                 FROM planning_sessions
+                 WHERE is_deleted = 0
+                   AND status = 'published'
+                 ORDER BY start_datetime"
+            )->fetchAll(\PDO::FETCH_ASSOC);
 
-            // Step 3: poll a few more times in case Planning responds quickly.
-            for ($i = 0; $i < 5; $i++) {
-                if ($receiver->pollOnce()) {
-                    return;
-                }
-            }
+            // Filter out already-enrolled sessions.
+            return array_values(array_filter(
+                $sessions,
+                fn($s) => !in_array($s['session_id'], $enrolled, true)
+            ));
         } catch (\Throwable $e) {
-            \Drupal::logger('session_enrollment')->warning(
-                'Could not fetch sessions from Planning: @error',
-                ['@error' => $e->getMessage()]
-            );
+            \Drupal::logger('session_enrollment')->error('Failed to load sessions from DB: @e', ['@e' => $e->getMessage()]);
+            return [];
         }
-        // Falls back to whatever is in state from a previous successful fetch.
     }
 
     /**
-     * Builds session option list from Drupal State (populated by SessionViewResponseReceiver).
-     * Returns an empty array when no live data is available.
+     * Build session_id => label options for the checkboxes.
+     *
+     * @param list<array<string,mixed>> $sessions
+     * @return array<string,string>
      */
-    private function getSessionOptions(): array
+    private function buildOptions(array $sessions): array
     {
-        $sessions = \Drupal::state()->get('planning.sessions', []);
-        $options  = [];
-
+        $options = [];
         foreach ($sessions as $session) {
             if (empty($session['session_id']) || empty($session['title'])) {
                 continue;
             }
             $label = $session['title'];
             if (!empty($session['start_datetime'])) {
-                $label .= ' — ' . $this->formatDateTime($session['start_datetime']);
+                try {
+                    $label .= ' — ' . (new \DateTimeImmutable($session['start_datetime']))->format('H:i, D d M');
+                } catch (\Throwable) {}
             }
-            $options[$session['session_id']] = $label;
+            $options[(string) $session['session_id']] = $label;
         }
-
         return $options;
     }
 
     /**
-     * Format a datetime string to a human-readable time (H:i).
-     */
-    private function formatDateTime(string $raw): string
-    {
-        try {
-            return (new \DateTimeImmutable($raw))->format('H:i, D d M');
-        } catch (\Throwable) {
-            return $raw;
-        }
-    }
-
-    /**
-     * Builds a map of session_id => session data from Drupal State.
+     * Build session_id => session data map for enrollment service.
+     *
+     * @return array<string, array<string,mixed>>
      */
     private function buildSessionMap(): array
     {
-        $sessions = \Drupal::state()->get('planning.sessions', []);
         $map = [];
-        foreach ($sessions as $session) {
+        foreach ($this->loadSessionsFromDb() as $session) {
             if (!empty($session['session_id'])) {
                 $map[(string) $session['session_id']] = $session;
             }
@@ -213,9 +195,6 @@ class SessionEnrollForm extends FormBase
         return $map;
     }
 
-    /**
-     * Resolves a user field value by field name for the given user ID.
-     */
     private function resolveUserField(int|string $uid, string $fieldName): string
     {
         try {
@@ -223,10 +202,7 @@ class SessionEnrollForm extends FormBase
             if ($user && $user->hasField($fieldName)) {
                 return (string) ($user->get($fieldName)->value ?? '');
             }
-        } catch (\Throwable) {
-            // Gracefully degrade if entity system is unavailable.
-        }
+        } catch (\Throwable) {}
         return '';
     }
 }
- 

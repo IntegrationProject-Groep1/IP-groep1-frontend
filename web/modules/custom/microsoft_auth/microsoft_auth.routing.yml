@@ -1,0 +1,23 @@
+microsoft_auth.redirect:
+  path: '/auth/microsoft'
+  defaults:
+    _controller: '\Drupal\microsoft_auth\Controller\MicrosoftAuthController::redirectToMicrosoft'
+    _title: 'Login with Microsoft'
+  requirements:
+    _access: 'TRUE'
+
+microsoft_auth.callback:
+  path: '/auth/microsoft/callback'
+  defaults:
+    _controller: '\Drupal\microsoft_auth\Controller\MicrosoftAuthController::callback'
+    _title: 'Microsoft OAuth Callback'
+  requirements:
+    _access: 'TRUE'
+
+microsoft_auth.complete:
+  path: '/auth/microsoft/complete'
+  defaults:
+    _form: '\Drupal\microsoft_auth\Form\MicrosoftCompleteForm'
+    _title: 'Complete your registration'
+  requirements:
+    _access: 'TRUE'

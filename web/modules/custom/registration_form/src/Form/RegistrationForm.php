@@ -206,13 +206,15 @@ class RegistrationForm extends FormBase
                 $inviteService->markTokenUsed($inviteToken);
             }
 
-            $this->tempStoreFactory
-                ->get('registration_form')
-                ->set('confirmation', [
-                    'name' => trim($data['first_name'] . ' ' . $data['last_name']),
-                ]);
+            // Log the user in automatically after registration.
+            $users = \Drupal::entityTypeManager()->getStorage('user')
+                ->loadByProperties(['mail' => $data['email']]);
+            $account = reset($users);
+            if ($account && $account->isActive()) {
+                user_login_finalize($account);
+            }
 
-            $form_state->setRedirectUrl(Url::fromRoute('registration_form.confirmation'));
+            $form_state->setRedirectUrl(Url::fromRoute('<front>'));
         } catch (\InvalidArgumentException $e) {
             $this->messenger()->addError($this->t('Registration failed: @error', ['@error' => $e->getMessage()]));
         }

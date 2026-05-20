@@ -1232,6 +1232,27 @@ h1.page-title, .page-title {
 }
 .landing-mobile-cta:hover { opacity: .9; text-decoration: none; color: white; }
 
+/* ── Microsoft OAuth button ── */
+.btn-microsoft {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; padding: 10px 16px;
+  background: white; color: #1a1a1a;
+  border: 1px solid #d0d0d0; border-radius: 8px;
+  font-size: 14px; font-weight: 500;
+  text-decoration: none; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  margin-bottom: 16px;
+}
+.btn-microsoft:hover { background: #f5f5f5; border-color: #aaa; text-decoration: none; color: #1a1a1a; }
+
+.oauth-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 16px 0; color: var(--muted, #888); font-size: 13px;
+}
+.oauth-divider::before, .oauth-divider::after {
+  content: ''; flex: 1; border-top: 1px solid var(--line, #e5e5e5);
+}
+
 /* ── Badge page responsive ────────────────────────────────── */
 @media (max-width: 860px) {
   .badge-page { grid-template-columns: 1fr; }

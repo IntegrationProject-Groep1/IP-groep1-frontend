@@ -27,8 +27,7 @@ function registration_form_theme(): array
 /**
  * Implements hook_form_FORM_ID_alter() for user_login_form.
  *
- * Redirects to the dashboard (front page) after a successful login
- * instead of Drupal's default /user/{uid} profile page.
+ * Redirects to the front page after login instead of /user/{uid}.
  */
 function registration_form_form_user_login_form_alter(array &$form, \Drupal\Core\Form\FormStateInterface $form_state, string $form_id): void
 {
@@ -36,7 +35,7 @@ function registration_form_form_user_login_form_alter(array &$form, \Drupal\Core
 }
 
 /**
- * Submit handler: redirect to dashboard after login.
+ * Submit handler: redirect to front page after login.
  */
 function registration_form_user_login_redirect(array $form, \Drupal\Core\Form\FormStateInterface &$form_state): void
 {

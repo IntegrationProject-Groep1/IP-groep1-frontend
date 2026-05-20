@@ -77,6 +77,40 @@ class CalendarInviteConfirmedReceiver
     }
 
     /**
+     * Poll once (non-blocking). Returns the confirmed message data (with ics_url) or null.
+     *
+     * @return array{session_id: string, status: string, ics_url: string}|null
+     */
+    public function pollOnce(): ?array
+    {
+        $channel = $this->client->getChannel();
+
+        $args = new AMQPTable([
+            'x-dead-letter-exchange'    => self::DLX,
+            'x-dead-letter-routing-key' => self::DLQ,
+        ]);
+
+        $channel->exchange_declare(self::EXCHANGE, self::EXCHANGE_TYPE, false, true, false);
+        $channel->queue_declare(self::QUEUE, false, true, false, false, false, $args);
+        $channel->queue_bind(self::QUEUE, self::EXCHANGE, self::ROUTING_KEY);
+
+        $msg = $channel->basic_get(self::QUEUE);
+        if ($msg === null) {
+            return null;
+        }
+
+        try {
+            $data = $this->processMessageFromXml($msg->body);
+            $msg->ack();
+            return $data;
+        } catch (\Throwable $e) {
+            $this->logReceiverError($e, self::QUEUE, $msg->body);
+            $msg->nack(false, false);
+            return null;
+        }
+    }
+
+    /**
      * Subscribe to the calendar_invite_confirmed queue with DLQ support.
      */
     public function listen(): void
