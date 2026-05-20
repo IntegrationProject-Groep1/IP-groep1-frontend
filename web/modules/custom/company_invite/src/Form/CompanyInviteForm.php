@@ -6,28 +6,13 @@ namespace Drupal\company_invite\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Session\AccountProxyInterface;
-use Drupal\company_invite\Service\InviteService;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\file\Entity\File;
 
 /**
  * Dashboard form for company admins to invite team members by email.
  */
 class CompanyInviteForm extends FormBase
 {
-    public function __construct(
-        private readonly InviteService $inviteService,
-        private readonly AccountProxyInterface $currentUser,
-    ) {}
-
-    public static function create(ContainerInterface $container): static
-    {
-        return new static(
-            $container->get('company_invite.invite_service'),
-            $container->get('current_user'),
-        );
-    }
-
     public function getFormId(): string
     {
         return 'company_invite_form';
@@ -35,22 +20,39 @@ class CompanyInviteForm extends FormBase
 
     public function buildForm(array $form, FormStateInterface $form_state): array
     {
+        // Email invitation field
         $form['invite_email'] = [
-            '#type'        => 'email',
-            '#title'       => $this->t('Colleague\'s email address'),
-            '#required'    => true,
-            '#attributes'  => ['placeholder' => 'colleague@studio-twelve.be'],
+            '#type' => 'email',
+            '#title' => $this->t('Email address'),
+            '#description' => $this->t('Enter the email address of the person you want to invite.'),
+            '#maxlength' => 254,
         ];
 
+        // CSV file upload field
+        $form['csv_file'] = [
+            '#type' => 'managed_file',
+            '#title' => $this->t('Or import from CSV file'),
+            '#description' => $this->t('Upload a CSV file with columns: email, firstName, lastName'),
+            '#upload_location' => 'public://csv_imports/',
+            '#upload_validators' => [
+                'file_validate_extensions' => ['csv'],
+                'file_validate_size' => [5242880], // 5 MB
+            ],
+        ];
+
+        // Submit button
         $form['submit'] = [
-            '#type'  => 'submit',
+            '#type' => 'submit',
             '#value' => $this->t('Send invite'),
         ];
 
         // Attach invite list and company name for the Twig template.
-        $uid       = (int) $this->currentUser->id();
+        $currentUser = \Drupal::currentUser();
+        $uid = (int) $currentUser->id();
         $ownerUuid = \Drupal::service('user.data')->get('registration_form', $uid, 'master_uuid') ?: 'uid-' . $uid;
-        $rawInvites = $this->inviteService->getInvitesForOwner($ownerUuid);
+        
+        $inviteService = \Drupal::service('company_invite.invite_service');
+        $rawInvites = $inviteService->getInvitesForOwner($ownerUuid);
         $now = time();
 
         $invites = [];
@@ -59,11 +61,11 @@ class CompanyInviteForm extends FormBase
         $fullUser = \Drupal\user\Entity\User::load($uid);
         $firstName = $fullUser && $fullUser->hasField('field_first_name') ? (string) $fullUser->get('field_first_name')->value : '';
         $lastName  = $fullUser && $fullUser->hasField('field_last_name')  ? (string) $fullUser->get('field_last_name')->value  : '';
-        $ownerName = trim("$firstName $lastName") ?: $this->currentUser->getDisplayName();
+        $ownerName = trim("$firstName $lastName") ?: $currentUser->getDisplayName();
         $invites[] = [
             'name'       => $ownerName,
-            'email'      => $this->currentUser->getEmail(),
-            'sent'       => '—',
+            'email'      => $currentUser->getEmail(),
+            'sent'       => '–',
             'status'     => 'owner',
             'remove_url' => null,
             'resend_url' => null,
@@ -91,34 +93,140 @@ class CompanyInviteForm extends FormBase
         $companyName = $fullUser && $fullUser->hasField('field_company_name')
             ? (string) $fullUser->get('field_company_name')->value : '';
 
-        $form['#invites']      = $invites;
-        $form['#company_name'] = $companyName;
-
+        $form['invites_data'] = [
+            '#type' => 'value',
+            '#value' => $invites,
+        ];
+        
+        $form['company_name_data'] = [
+            '#type' => 'value',
+            '#value' => $companyName,
+        ];
+        
         return $form;
     }
 
     public function validateForm(array &$form, FormStateInterface $form_state): void
     {
         $email = strtolower(trim((string) $form_state->getValue('invite_email')));
+        $csv_file = $form_state->getValue('csv_file');
 
-        if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+        if (empty($email) && empty($csv_file)) {
+            $form_state->setError($form, $this->t('Please provide either an email address or upload a CSV file.'));
+            return;
+        }
+
+        if (!empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             $form_state->setErrorByName('invite_email', $this->t('Please enter a valid email address.'));
         }
     }
 
     public function submitForm(array &$form, FormStateInterface $form_state): void
     {
-        $email = strtolower(trim((string) $form_state->getValue('invite_email')));
-        $uid   = (int) $this->currentUser->id();
+        $inviteService = \Drupal::service('company_invite.invite_service');
+        $currentUser = \Drupal::currentUser();
+        $uid = (int) $currentUser->id();
+        $emails_to_invite = [];
 
-        try {
-            $this->inviteService->sendInvite($email, $uid);
-            $this->messenger()->addStatus($this->t(
-                'An invitation has been sent to @email.',
-                ['@email' => $email],
-            ));
-        } catch (\InvalidArgumentException $e) {
-            $this->messenger()->addError($this->t('Could not send invite: @error', ['@error' => $e->getMessage()]));
+        $email = strtolower(trim((string) $form_state->getValue('invite_email')));
+        if (!empty($email)) {
+            $emails_to_invite[] = [
+                'email'      => $email,
+                'first_name' => '',
+                'last_name'  => '',
+            ];
         }
+
+        $csv_file = $form_state->getValue('csv_file');
+        if (!empty($csv_file)) {
+            $file_id = $csv_file[0] ?? null;
+            if ($file_id) {
+                $file = File::load($file_id);
+                if ($file) {
+                    $file_uri = $file->getFileUri();
+                    $csv_emails = $this->parseCsvFile($file_uri);
+                    $emails_to_invite = array_merge($emails_to_invite, $csv_emails);
+                }
+            }
+        }
+
+        $success_count = 0;
+        $failed_emails = [];
+
+        foreach ($emails_to_invite as $email_data) {
+            try {
+                $inviteService->sendInvite(
+                    $email_data['email'],
+                    $uid,
+                    $email_data['first_name'],
+                    $email_data['last_name'],
+                );
+                $success_count++;
+            } catch (\Exception $e) {
+                $failed_emails[$email_data['email']] = $e->getMessage();
+            }
+        }
+
+        if ($success_count > 0) {
+            $this->messenger()->addStatus($this->t(
+                '@count invitation(s) sent successfully.',
+                ['@count' => $success_count],
+            ));
+        }
+
+        if (!empty($failed_emails)) {
+            foreach ($failed_emails as $email => $reason) {
+                $this->messenger()->addWarning($this->t(
+                    'Failed to send invite to @email: @reason',
+                    ['@email' => $email, '@reason' => $reason],
+                ));
+            }
+        }
+    }
+
+    private function parseCsvFile(string $file_uri): array
+    {
+        $emails = [];
+        $file_path = \Drupal::service('file_system')->realpath($file_uri);
+
+        if (!$file_path || !file_exists($file_path)) {
+            return [];
+        }
+
+        $handle = fopen($file_path, 'r');
+        if ($handle === false) {
+            return [];
+        }
+
+        $row_num = 0;
+        while (($row = fgetcsv($handle)) !== false) {
+            $row_num++;
+
+            // Skip header row (first row) if it contains text instead of email
+            if ($row_num === 1 && !filter_var(trim((string) $row[0]), FILTER_VALIDATE_EMAIL)) {
+                continue;
+            }
+
+            if (empty($row[0])) {
+                continue;
+            }
+
+            $email = strtolower(trim((string) $row[0]));
+            if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+                continue;
+            }
+
+            $first_name = trim((string) ($row[1] ?? ''));
+            $last_name  = trim((string) ($row[2] ?? ''));
+
+            $emails[] = [
+                'email'      => $email,
+                'first_name' => $first_name,
+                'last_name'  => $last_name,
+            ];
+        }
+
+        fclose($handle);
+        return $emails;
     }
 }

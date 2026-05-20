@@ -28,10 +28,10 @@ class UserCreatedSender
 
     public function send(array $data): void
     {
-        if (empty($data['identity_uuid'])) {
-            throw new \InvalidArgumentException('identity_uuid is required');
+        if (empty($data['user_id'])) {
+            throw new \InvalidArgumentException('user_id is required');
         }
-        $this->assertValidUuid((string) $data['identity_uuid'], 'identity_uuid');
+        $this->assertValidUuid((string) $data['user_id'], 'user_id');
         if (empty($data['email'])) {
             throw new \InvalidArgumentException('email is required');
         }
@@ -78,8 +78,8 @@ class UserCreatedSender
         $customer = $dom->createElement('customer');
 
         // Field order per contract §5.4
-        $identityUuid = (string) ($data['identity_uuid'] ?? '');
-        $customer->appendChild($dom->createElement('identity_uuid', htmlspecialchars($identityUuid, ENT_XML1, 'UTF-8')));
+        $userId = (string) ($data['user_id'] ?? '');
+        $customer->appendChild($dom->createElement('user_id', htmlspecialchars($userId, ENT_XML1, 'UTF-8')));
         $customer->appendChild($dom->createElement('email', htmlspecialchars((string) $data['email'], ENT_XML1, 'UTF-8')));
         $customer->appendChild($dom->createElement('date_of_birth', htmlspecialchars((string) ($data['date_of_birth'] ?? ''), ENT_XML1, 'UTF-8')));
 
@@ -88,8 +88,8 @@ class UserCreatedSender
         $contact->appendChild($dom->createElement('last_name', htmlspecialchars($data['last_name'] ?? '', ENT_XML1, 'UTF-8')));
         $customer->appendChild($contact);
 
-        $type = !empty($data['is_company']) ? 'company' : 'private';
-        $customer->appendChild($dom->createElement('type', $type));
+        $isCompany = !empty($data['is_company']) ? 'true' : 'false';
+        $customer->appendChild($dom->createElement('is_company', $isCompany));
 
         if (!empty($data['is_company'])) {
             if (!empty($data['company_name'])) {
@@ -97,6 +97,9 @@ class UserCreatedSender
             }
             if (!empty($data['vat_number'])) {
                 $customer->appendChild($dom->createElement('vat_number', htmlspecialchars((string) $data['vat_number'], ENT_XML1, 'UTF-8')));
+            }
+            if (!empty($data['company_id'])) {
+                $customer->appendChild($dom->createElement('company_id', htmlspecialchars((string) $data['company_id'], ENT_XML1, 'UTF-8')));
             }
         }
 

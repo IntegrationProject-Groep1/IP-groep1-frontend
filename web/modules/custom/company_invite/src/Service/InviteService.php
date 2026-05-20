@@ -19,7 +19,7 @@ use Drupal\rabbitmq_sender\UserCreatedSender;
  *   2. This service resolves the inviter's master_uuid (used as company reference).
  *   3. Calls IdentityServiceClient to create/retrieve the invitee's master_uuid so
  *      CRM will recognise the user when they complete registration later.
- *   4. Publishes a user_created event to CRM with vat_number = inviter VAT number.
+ *   4. Publishes a user_created event to CRM with company_id = inviter master_uuid.
  *   5. Persists an invite token in the DB and sends the invite email.
  */
 class InviteService
@@ -38,10 +38,15 @@ class InviteService
     /**
      * Sends a company invite for $inviteeEmail on behalf of the Drupal user $inviterUid.
      *
+     * @param string $inviteeEmail The email address of the invitee.
+     * @param int $inviterUid The Drupal UID of the inviter (company admin).
+     * @param string $firstName Optional first name of the invitee from CSV.
+     * @param string $lastName Optional last name of the invitee from CSV.
+     *
      * @throws \InvalidArgumentException When the inviter has no stored master_uuid (not a company admin).
      * @throws \InvalidArgumentException When the invitee email is invalid.
      */
-    public function sendInvite(string $inviteeEmail, int $inviterUid): void
+    public function sendInvite(string $inviteeEmail, int $inviterUid, string $firstName = '', string $lastName = ''): void
     {
         $logger = $this->loggerFactory->get('company_invite');
 
@@ -52,8 +57,7 @@ class InviteService
 
         // Use master_uuid as company reference; fall back to Drupal UID so local
         // testing works without a live Identity Service.
-        $inviterUuid       = $this->getInviterMasterUuid($inviterUid) ?: 'uid-' . $inviterUid;
-        $inviterVatNumber  = $this->getInviterVatNumber($inviterUid);
+        $inviterUuid = $this->getInviterMasterUuid($inviterUid) ?: 'uid-' . $inviterUid;
 
         // Prevent duplicate active invites for the same email + company.
         if ($this->hasPendingInvite($inviteeEmail, $inviterUuid)) {
@@ -67,7 +71,7 @@ class InviteService
 
         // Step 2: notify CRM that this user is pre-registered and belongs to the company.
         if ($inviteeMasterUuid !== '') {
-            $this->notifyCrm($inviteeMasterUuid, $inviteeEmail, $inviterVatNumber, $logger);
+            $this->notifyCrm($inviteeMasterUuid, $inviteeEmail, $inviterUuid, $logger, $firstName, $lastName);
         }
 
         // Step 3: create invite token and persist it.
@@ -193,20 +197,6 @@ class InviteService
         return is_string($uuid) ? $uuid : '';
     }
 
-    private function getInviterVatNumber(int $uid): string
-    {
-        if (!\Drupal::hasContainer()) {
-            return '';
-        }
-
-        $user = \Drupal\user\Entity\User::load($uid);
-        if ($user && $user->hasField('field_vat_number')) {
-            return (string) ($user->get('field_vat_number')->value ?? '');
-        }
-
-        return '';
-    }
-
     private function hasPendingInvite(string $email, string $ownerUuid): bool
     {
         $count = (int) $this->database->select(self::TABLE, 'i')
@@ -241,22 +231,29 @@ class InviteService
     private function notifyCrm(
         string $inviteeMasterUuid,
         string $inviteeEmail,
-        string $vatNumber,
-        \Drupal\Core\Logger\LoggerChannelInterface $logger,
+        string $inviterUuid,
+        ?\Drupal\Core\Logger\LoggerChannelInterface $logger = null,
+        string $firstName = '',
+        string $lastName = '',
     ): void {
+        // Handle backward compatibility
+        if ($logger === null) {
+            $logger = $this->loggerFactory->get('company_invite');
+        }
+
         if ($this->userCreatedSender === null) {
             return;
         }
 
         try {
             $this->userCreatedSender->send([
-                'identity_uuid' => $inviteeMasterUuid,
+                'user_id'       => $inviteeMasterUuid,
                 'email'         => $inviteeEmail,
-                'first_name'    => '',
-                'last_name'     => '',
-                'date_of_birth' => '',
+                'first_name'    => $firstName,
+                'last_name'     => $lastName,
+                'date_of_birth' => '1980-01-01', // Placeholder for company invites
                 'is_company'    => true,
-                'vat_number'    => $vatNumber,
+                'company_id'    => $inviterUuid,
             ]);
             $logger->info('CRM pre-registration sent for invited @email.', ['@email' => $inviteeEmail]);
         } catch (\Throwable $e) {
