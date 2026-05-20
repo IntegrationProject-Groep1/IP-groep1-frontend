@@ -94,13 +94,60 @@ class SessionForm extends FormBase
         $start = $form_state->getValue('start_datetime');
         $end   = $form_state->getValue('end_datetime');
 
-        if (!empty($start) && !empty($end)) {
-            $startTs = is_object($start) ? $start->getTimestamp() : strtotime((string) $start);
-            $endTs   = is_object($end)   ? $end->getTimestamp()   : strtotime((string) $end);
+        if (!empty($start)) {
+            $this->validateSessionDatetime('start_datetime', $start, $form_state);
+        }
 
-            if ($endTs !== false && $startTs !== false && $endTs <= $startTs) {
-                $form_state->setErrorByName('end_datetime', $this->t('End date must be after start date.'));
+        if (!empty($end)) {
+            $this->validateSessionDatetime('end_datetime', $end, $form_state);
+        }
+
+        if (!empty($start) && !empty($end)) {
+            $startDt = $this->toDateTimeImmutable($start);
+            $endDt   = $this->toDateTimeImmutable($end);
+
+            if ($startDt !== null && $endDt !== null && $endDt->getTimestamp() <= $startDt->getTimestamp()) {
+                $form_state->setErrorByName('end_datetime', $this->t('De eindtijd moet na de begintijd liggen.'));
             }
+        }
+    }
+
+    private function validateSessionDatetime(string $field, mixed $value, FormStateInterface $form_state): void
+    {
+        $dt = $this->toDateTimeImmutable($value);
+        if ($dt === null) {
+            return;
+        }
+
+        if ($dt->format('Y-m-d') !== '2026-06-19') {
+            $form_state->setErrorByName($field, $this->t('Sessies kunnen enkel aangemaakt worden op 19 juni 2026.'));
+            return;
+        }
+
+        $time = $dt->format('H:i');
+        if ($time < '17:00') {
+            $form_state->setErrorByName($field, $this->t('De sessie kan niet voor 17:00 beginnen.'));
+            return;
+        }
+
+        if ($time > '21:30') {
+            $form_state->setErrorByName($field, $this->t('De sessie kan niet na 21:30 eindigen.'));
+        }
+    }
+
+    private function toDateTimeImmutable(mixed $value): ?\DateTimeImmutable
+    {
+        try {
+            if ($value instanceof \DateTimeImmutable) {
+                return $value;
+            }
+            if ($value instanceof \DateTime) {
+                return \DateTimeImmutable::createFromMutable($value);
+            }
+            return new \DateTimeImmutable((string) $value);
+        }
+        catch (\Throwable) {
+            return null;
         }
     }
 
