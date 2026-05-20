@@ -712,11 +712,15 @@ html[data-sidebar="light"] .shell-user .icon-btn { border-color: var(--line-2); 
 .invite-avatar-muted { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
 .invite-name em { color: var(--muted); font-style: italic; font-size: 12px; }
 .invite-name .muted { color: var(--muted-2); }
-.invites-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; white-space: nowrap; }
-.row-act { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; background: transparent; border: 1px solid var(--line-2); border-radius: 7px; cursor: pointer; color: var(--ink); transition: all .12s; text-decoration: none; flex-shrink: 0; }
-.row-act:hover { background: var(--surface-2); border-color: var(--ink); }
-.row-act-danger { color: var(--hot); border-color: color-mix(in srgb, var(--hot) 30%, white); }
-.row-act-danger:hover { background: color-mix(in srgb, var(--hot) 8%, white); border-color: var(--hot); }
+.invites-table th:last-child,
+.invites-table td.invites-actions { width: 1%; white-space: nowrap; }
+.invites-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; white-space: nowrap; }
+.invites-actions .row-act-btn { display: inline-flex; align-items: center; padding: 5px 10px; background: transparent; border: 1px solid var(--line-2); border-radius: 7px; font: inherit; font-size: 12px; line-height: 1.2; color: var(--ink); text-decoration: none; transition: all .12s; flex-shrink: 0; }
+.invites-actions .row-act-btn:hover { background: var(--surface-2); border-color: var(--ink); }
+.invites-actions .row-act-icon { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; flex-shrink: 0; background: transparent; border: 1px solid var(--line-2); border-radius: 7px; color: var(--ink); text-decoration: none; transition: all .12s; }
+.invites-actions .row-act-icon:hover { background: var(--surface-2); border-color: var(--ink); }
+.invites-actions .row-act-icon.row-act-danger { color: var(--hot); border-color: color-mix(in srgb, var(--hot) 30%, white); }
+.invites-actions .row-act-icon.row-act-danger:hover { background: color-mix(in srgb, var(--hot) 8%, white); border-color: var(--hot); }
 .invites-self { background: color-mix(in srgb, var(--primary) 4%, white); }
 
 /* ────────────────────────────────────────────────────────────────
@@ -1323,10 +1327,11 @@ h1.page-title, .page-title {
 .admin-sub { font-size: 11px; color: var(--muted); font-family: var(--font-mono); letter-spacing: .03em; }
 .cap-cell { min-width: 140px; }
 .nowrap { white-space: nowrap; }
-.row-act { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; background: transparent; border: 1px solid var(--line-2); border-radius: 7px; cursor: pointer; color: var(--ink); transition: all .12s; text-decoration: none; flex-shrink: 0; }
-.row-act:hover { background: var(--surface-2); border-color: var(--ink); }
-.row-act-danger { color: var(--hot); border-color: color-mix(in srgb, var(--hot) 30%, white); }
-.row-act-danger:hover { background: color-mix(in srgb, var(--hot) 8%, white); border-color: var(--hot); }
+.admin-row-actions .row-act { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; margin-left: 4px; background: transparent; border: 1px solid var(--line-2); border-radius: 7px; cursor: pointer; color: var(--ink); transition: all .12s; text-decoration: none; flex-shrink: 0; }
+.admin-row-actions .row-act:first-child { margin-left: 0; }
+.admin-row-actions .row-act:hover { background: var(--surface-2); border-color: var(--ink); }
+.admin-row-actions .row-act-danger { color: var(--hot); border-color: color-mix(in srgb, var(--hot) 30%, white); }
+.admin-row-actions .row-act-danger:hover { background: color-mix(in srgb, var(--hot) 8%, white); border-color: var(--hot); }
 .admin-delete-card { max-width: 560px; }
 .admin-delete-warning { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; margin-bottom: 20px; background: color-mix(in srgb, var(--hot) 8%, white); border: 1px solid color-mix(in srgb, var(--hot) 20%, white); border-radius: 10px; font-size: 13px; }
 .admin-delete-warning svg { color: var(--hot); flex-shrink: 0; margin-top: 2px; }
@@ -1344,7 +1349,15 @@ h1.page-title, .page-title {
 .invite-form { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; }
 .invites-head { padding: 22px 24px 14px; }
 .invite-name { display: flex; align-items: center; gap: 10px; }
-.invites-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; white-space: nowrap; }
+.invites-table th:last-child,
+.invites-table td.invites-actions { width: 1%; white-space: nowrap; }
+.invites-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; white-space: nowrap; }
+.invites-actions .row-act-btn { display: inline-flex; align-items: center; padding: 5px 10px; background: transparent; border: 1px solid var(--line-2); border-radius: 7px; font: inherit; font-size: 12px; line-height: 1.2; color: var(--ink); text-decoration: none; transition: all .12s; flex-shrink: 0; }
+.invites-actions .row-act-btn:hover { background: var(--surface-2); border-color: var(--ink); }
+.invites-actions .row-act-icon { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; flex-shrink: 0; background: transparent; border: 1px solid var(--line-2); border-radius: 7px; color: var(--ink); text-decoration: none; transition: all .12s; }
+.invites-actions .row-act-icon:hover { background: var(--surface-2); border-color: var(--ink); }
+.invites-actions .row-act-icon.row-act-danger { color: var(--hot); border-color: color-mix(in srgb, var(--hot) 30%, white); }
+.invites-actions .row-act-icon.row-act-danger:hover { background: color-mix(in srgb, var(--hot) 8%, white); border-color: var(--hot); }
 .invites-self { background: color-mix(in srgb, var(--primary) 4%, white); }
 .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
 .stat-value { font-family: var(--font-display); font-size: 28px; line-height: 1; letter-spacing: -.02em; }
@@ -1721,8 +1734,6 @@ body.is-auth-page .button--primary:hover {
 
 /* ── Admin table: actions column ── */
 .admin-row-actions { text-align: right; white-space: nowrap; vertical-align: middle; }
-.admin-row-actions .row-act { margin-left: 4px; }
-.admin-row-actions .row-act:first-child { margin-left: 0; }
 
 /* ── Session edit modal ── */
 .session-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; }

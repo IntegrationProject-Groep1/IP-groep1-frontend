@@ -20,43 +20,39 @@ class CompanyInviteForm extends FormBase
 
     public function buildForm(array $form, FormStateInterface $form_state): array
     {
-        $form['section_single'] = [
-            '#type'  => 'fieldset',
-            '#title' => $this->t('Single Invite'),
+        // Email invitation field
+        $form['invite_email'] = [
+            '#type' => 'email',
+            '#title' => $this->t('Email address'),
+            '#description' => $this->t('Enter the email address of the person you want to invite.'),
+            '#maxlength' => 254,
         ];
 
-        $form['section_single']['invite_email'] = [
-            '#type'        => 'email',
-            '#title'       => $this->t('Colleague\'s email address'),
-            '#required'    => true,
-            '#attributes'  => ['placeholder' => 'colleague@studio-twelve.be'],
-        ];
-
-        $form['section_csv'] = [
-            '#type'  => 'fieldset',
-            '#title' => $this->t('Bulk Import via CSV'),
-        ];
-
-        $form['section_csv']['csv_file'] = [
-            '#type'  => 'managed_file',
-            '#title' => $this->t('Upload CSV file'),
-            '#description' => $this->t('CSV format: email, first_name, last_name'),
-            '#upload_location' => 'private://company_invite/',
+        // CSV file upload field
+        $form['csv_file'] = [
+            '#type' => 'managed_file',
+            '#title' => $this->t('Or import from CSV file'),
+            '#description' => $this->t('Upload a CSV file with columns: email, firstName, lastName'),
+            '#upload_location' => 'public://csv_imports/',
             '#upload_validators' => [
-                'file_validate_extensions' => ['csv txt'],
+                'file_validate_extensions' => ['csv'],
+                'file_validate_size' => [5242880], // 5 MB
             ],
-            '#required' => false,
         ];
 
+        // Submit button
         $form['submit'] = [
-            '#type'  => 'submit',
-            '#value' => $this->t('Send invites'),
+            '#type' => 'submit',
+            '#value' => $this->t('Send invite'),
         ];
 
         // Attach invite list and company name for the Twig template.
-        $uid       = (int) $this->currentUser->id();
+        $currentUser = \Drupal::currentUser();
+        $uid = (int) $currentUser->id();
         $ownerUuid = \Drupal::service('user.data')->get('registration_form', $uid, 'master_uuid') ?: 'uid-' . $uid;
-        $rawInvites = $this->inviteService->getInvitesForOwner($ownerUuid);
+        
+        $inviteService = \Drupal::service('company_invite.invite_service');
+        $rawInvites = $inviteService->getInvitesForOwner($ownerUuid);
         $now = time();
 
         $invites = [];
@@ -65,11 +61,11 @@ class CompanyInviteForm extends FormBase
         $fullUser = \Drupal\user\Entity\User::load($uid);
         $firstName = $fullUser && $fullUser->hasField('field_first_name') ? (string) $fullUser->get('field_first_name')->value : '';
         $lastName  = $fullUser && $fullUser->hasField('field_last_name')  ? (string) $fullUser->get('field_last_name')->value  : '';
-        $ownerName = trim("$firstName $lastName") ?: $this->currentUser->getDisplayName();
+        $ownerName = trim("$firstName $lastName") ?: $currentUser->getDisplayName();
         $invites[] = [
             'name'       => $ownerName,
-            'email'      => $this->currentUser->getEmail(),
-            'sent'       => '—',
+            'email'      => $currentUser->getEmail(),
+            'sent'       => '–',
             'status'     => 'owner',
             'remove_url' => null,
             'resend_url' => null,
@@ -97,9 +93,16 @@ class CompanyInviteForm extends FormBase
         $companyName = $fullUser && $fullUser->hasField('field_company_name')
             ? (string) $fullUser->get('field_company_name')->value : '';
 
-        $form['#invites']      = $invites;
-        $form['#company_name'] = $companyName;
-
+        $form['invites_data'] = [
+            '#type' => 'value',
+            '#value' => $invites,
+        ];
+        
+        $form['company_name_data'] = [
+            '#type' => 'value',
+            '#value' => $companyName,
+        ];
+        
         return $form;
     }
 
@@ -121,7 +124,7 @@ class CompanyInviteForm extends FormBase
     public function submitForm(array &$form, FormStateInterface $form_state): void
     {
         $inviteService = \Drupal::service('company_invite.invite_service');
-        $currentUser = $this->currentUser();
+        $currentUser = \Drupal::currentUser();
         $uid = (int) $currentUser->id();
         $emails_to_invite = [];
 

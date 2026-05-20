@@ -4,11 +4,11 @@
   Toont: paginaheader met stats, uitnodigingsformulier, en uitnodigingstabel.
 #}
 
-{% set invites      = form['#invites']      ?? [] %}
-{% set invite_count = invites|length %}
+{% set invites      = invites|default([]) %}
+{% set invite_count = invites|filter(i => i.status != 'owner')|length %}
 {% set accepted     = invites|filter(i => i.status == 'accepted')|length %}
 {% set pending      = invites|filter(i => i.status == 'pending')|length %}
-{% set company_name = form['#company_name'] ?? null %}
+{% set company_name = company_name|default(null) %}
 
 <div class="company">
 
@@ -49,15 +49,29 @@
     <div class="section-label-row">
       <span class="section-label">{{ 'Nieuwe uitnodiging sturen'|t }}</span>
     </div>
+    <style>
+      .invite-form .form-item--csv-file {
+        margin-top: 16px;
+      }
+      .invite-form .form-item--csv-file .form-item__label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+      }
+      .invite-form .form-item--csv-file .file-upload-wrapper {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .invite-form .form-item--csv-file input[type="file"] {
+        flex: 1;
+      }
+      .invite-form .form-item--csv-file button {
+        white-space: nowrap;
+      }
+    </style>
     <form{{ attributes }} class="invite-form">
-      {{ form.form_build_id }}
-      {{ form.form_token }}
-      {{ form.form_id }}
-
-      <div>{{ form.invite_email }}</div>
-      <div>{{ form.submit }}</div>
-
-      {{ form|without('invite_email','submit','form_build_id','form_token','form_id') }}
+      {{ children }}
     </form>
   </div>
 
@@ -81,7 +95,7 @@
         </thead>
         <tbody>
           {% for invite in invites %}
-            <tr>
+            <tr{% if invite.status == 'owner' %} class="invites-self"{% endif %}>
               <td>
                 <div class="invite-name">
                   <div class="invite-avatar {% if invite.status != 'accepted' %}invite-avatar-muted{% endif %}">
@@ -103,20 +117,25 @@
               <td>{{ invite.email }}</td>
               <td>{{ invite.sent }}</td>
               <td>
-                {% if invite.status == 'accepted' %}
+                {% if invite.status == 'owner' %}
+                  <span class="tag tag-ok">{{ 'Eigenaar'|t }}</span>
+                {% elseif invite.status == 'accepted' %}
                   <span class="tag tag-ok">{{ 'Geaccepteerd'|t }}</span>
+                {% elseif invite.status == 'expired' %}
+                  <span class="tag">{{ 'Verlopen'|t }}</span>
                 {% else %}
                   <span class="tag tag-warm">{{ 'In afwachting'|t }}</span>
                 {% endif %}
               </td>
               <td class="invites-actions">
-                {% if invite.status == 'pending' and invite.resend_url is defined %}
-                  <a href="{{ invite.resend_url }}" class="row-act">{{ 'Opnieuw sturen'|t }}</a>
+                {% if invite.status == 'pending' and invite.resend_url %}
+                  <a href="{{ invite.resend_url }}" class="row-act-btn">{{ 'Opnieuw sturen'|t }}</a>
                 {% endif %}
-                {% if invite.remove_url is defined %}
-                  <a href="{{ invite.remove_url }}" class="row-act row-act-danger"
+                {% if invite.remove_url %}
+                  <a href="{{ invite.remove_url }}" class="row-act-icon row-act-danger"
                      onclick="return confirm('{{ 'Uitnodiging verwijderen?'|t }}');"
-                     title="{{ 'Verwijderen'|t }}">
+                     title="{{ 'Verwijderen'|t }}"
+                     aria-label="{{ 'Verwijderen'|t }}">
                     <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                     </svg>

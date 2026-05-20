@@ -19,7 +19,7 @@ use Drupal\rabbitmq_sender\UserCreatedSender;
  *   2. This service resolves the inviter's master_uuid (used as company reference).
  *   3. Calls IdentityServiceClient to create/retrieve the invitee's master_uuid so
  *      CRM will recognise the user when they complete registration later.
- *   4. Publishes a user_created event to CRM with vat_number = inviter VAT number.
+ *   4. Publishes a user_created event to CRM with company_id = inviter master_uuid.
  *   5. Persists an invite token in the DB and sends the invite email.
  */
 class InviteService
@@ -57,8 +57,7 @@ class InviteService
 
         // Use master_uuid as company reference; fall back to Drupal UID so local
         // testing works without a live Identity Service.
-        $inviterUuid       = $this->getInviterMasterUuid($inviterUid) ?: 'uid-' . $inviterUid;
-        $inviterVatNumber  = $this->getInviterVatNumber($inviterUid);
+        $inviterUuid = $this->getInviterMasterUuid($inviterUid) ?: 'uid-' . $inviterUid;
 
         // Prevent duplicate active invites for the same email + company.
         if ($this->hasPendingInvite($inviteeEmail, $inviterUuid)) {
@@ -72,7 +71,7 @@ class InviteService
 
         // Step 2: notify CRM that this user is pre-registered and belongs to the company.
         if ($inviteeMasterUuid !== '') {
-            $this->notifyCrm($inviteeMasterUuid, $inviteeEmail, $inviterVatNumber, $firstName, $lastName, $logger);
+            $this->notifyCrm($inviteeMasterUuid, $inviteeEmail, $inviterUuid, $logger, $firstName, $lastName);
         }
 
         // Step 3: create invite token and persist it.
@@ -198,20 +197,6 @@ class InviteService
         return is_string($uuid) ? $uuid : '';
     }
 
-    private function getInviterVatNumber(int $uid): string
-    {
-        if (!\Drupal::hasContainer()) {
-            return '';
-        }
-
-        $user = \Drupal\user\Entity\User::load($uid);
-        if ($user && $user->hasField('field_vat_number')) {
-            return (string) ($user->get('field_vat_number')->value ?? '');
-        }
-
-        return '';
-    }
-
     private function hasPendingInvite(string $email, string $ownerUuid): bool
     {
         $count = (int) $this->database->select(self::TABLE, 'i')
@@ -246,10 +231,10 @@ class InviteService
     private function notifyCrm(
         string $inviteeMasterUuid,
         string $inviteeEmail,
-        string $vatNumber,
+        string $inviterUuid,
+        ?\Drupal\Core\Logger\LoggerChannelInterface $logger = null,
         string $firstName = '',
         string $lastName = '',
-        \Drupal\Core\Logger\LoggerChannelInterface $logger,
     ): void {
         // Handle backward compatibility
         if ($logger === null) {
@@ -262,13 +247,13 @@ class InviteService
 
         try {
             $this->userCreatedSender->send([
-                'identity_uuid' => $inviteeMasterUuid,
+                'user_id'       => $inviteeMasterUuid,
                 'email'         => $inviteeEmail,
                 'first_name'    => $firstName,
                 'last_name'     => $lastName,
-                'date_of_birth' => '',
+                'date_of_birth' => '1980-01-01', // Placeholder for company invites
                 'is_company'    => true,
-                'vat_number'    => $vatNumber,
+                'company_id'    => $inviterUuid,
             ]);
             $logger->info('CRM pre-registration sent for invited @email.', ['@email' => $inviteeEmail]);
         } catch (\Throwable $e) {

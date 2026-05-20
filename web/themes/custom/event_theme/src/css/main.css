@@ -796,15 +796,18 @@ h1.page-title,
 .admin-delete-warning svg { color: var(--hot); flex-shrink: 0; margin-top: 2px; }
 .admin-delete-warning p { margin: 0; color: var(--ink); }
 
-.row-act {
+.admin-row-actions { text-align: right; white-space: nowrap; vertical-align: middle; }
+.admin-row-actions .row-act {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; padding: 0; margin-left: 4px;
   background: transparent; border: 1px solid var(--line-2);
-  border-radius: 7px; padding: 5px 10px;
-  font: inherit; font-size: 12px; cursor: pointer;
-  color: var(--ink); margin-left: 4px; transition: all .12s;
+  border-radius: 7px; cursor: pointer; color: var(--ink);
+  transition: all .12s; text-decoration: none; flex-shrink: 0;
 }
-.row-act:hover { background: var(--surface-2); border-color: var(--ink); }
-.row-act-danger { color: var(--hot); border-color: color-mix(in srgb, var(--hot) 30%, white); }
-.row-act-danger:hover { background: color-mix(in srgb, var(--hot) 8%, white); border-color: var(--hot); }
+.admin-row-actions .row-act:first-child { margin-left: 0; }
+.admin-row-actions .row-act:hover { background: var(--surface-2); border-color: var(--ink); }
+.admin-row-actions .row-act-danger { color: var(--hot); border-color: color-mix(in srgb, var(--hot) 30%, white); }
+.admin-row-actions .row-act-danger:hover { background: color-mix(in srgb, var(--hot) 8%, white); border-color: var(--hot); }
 
 /* ══════════════════════════════════════════════════════════════
    COMPANY / TEAM INVITES PAGE
@@ -831,7 +834,31 @@ h1.page-title,
 
 .invites-head { padding: 22px 24px 14px; }
 .invite-name { display: flex; align-items: center; gap: 10px; }
-.invites-actions { text-align: right; white-space: nowrap; }
+.invites-table th:last-child,
+.invites-table td.invites-actions { width: 1%; white-space: nowrap; }
+.invites-actions {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 8px; white-space: nowrap;
+}
+.invites-actions .row-act-btn {
+  display: inline-flex; align-items: center;
+  padding: 5px 10px; background: transparent;
+  border: 1px solid var(--line-2); border-radius: 7px;
+  font: inherit; font-size: 12px; line-height: 1.2;
+  color: var(--ink); text-decoration: none;
+  transition: all .12s; flex-shrink: 0;
+}
+.invites-actions .row-act-btn:hover { background: var(--surface-2); border-color: var(--ink); }
+.invites-actions .row-act-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; padding: 0; flex-shrink: 0;
+  background: transparent; border: 1px solid var(--line-2);
+  border-radius: 7px; color: var(--ink); text-decoration: none;
+  transition: all .12s;
+}
+.invites-actions .row-act-icon:hover { background: var(--surface-2); border-color: var(--ink); }
+.invites-actions .row-act-icon.row-act-danger { color: var(--hot); border-color: color-mix(in srgb, var(--hot) 30%, white); }
+.invites-actions .row-act-icon.row-act-danger:hover { background: color-mix(in srgb, var(--hot) 8%, white); border-color: var(--hot); }
 .invites-self { background: color-mix(in srgb, var(--primary) 4%, white); }
 
 /* Stat block */

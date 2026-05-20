@@ -1,45 +1,78 @@
 services:
+  rabbitmq_sender.rabbitmq_client:
+    class: Drupal\rabbitmq_sender\RabbitMQClient
+
   rabbitmq_sender.session_create_request_sender:
     class: Drupal\rabbitmq_sender\SessionCreateRequestSender
+    arguments:
+      - '@?rabbitmq_sender.rabbitmq_client'
 
   rabbitmq_sender.session_update_request_sender:
     class: Drupal\rabbitmq_sender\SessionUpdateRequestSender
+    arguments:
+      - '@?rabbitmq_sender.rabbitmq_client'
 
   rabbitmq_sender.session_delete_request_sender:
     class: Drupal\rabbitmq_sender\SessionDeleteRequestSender
+    arguments:
+      - '@?rabbitmq_sender.rabbitmq_client'
 
   rabbitmq_sender.session_view_request_sender:
     class: Drupal\rabbitmq_sender\SessionViewRequestSender
+    arguments:
+      - '@?rabbitmq_sender.rabbitmq_client'
 
   rabbitmq_sender.event_ended_sender:
     class: Drupal\rabbitmq_sender\EventEndedSender
+    arguments:
+      - '@?rabbitmq_sender.rabbitmq_client'
 
   rabbitmq_sender.new_registration_sender:
     class: Drupal\rabbitmq_sender\NewRegistrationSender
+    arguments:
+      - '@?rabbitmq_sender.rabbitmq_client'
 
   rabbitmq_sender.calendar_invite_sender:
     class: Drupal\rabbitmq_sender\CalendarInviteSender
+    arguments:
+      - '@?rabbitmq_sender.rabbitmq_client'
 
   rabbitmq_sender.user_created_sender:
     class: Drupal\rabbitmq_sender\UserCreatedSender
+    arguments:
+      - '@?rabbitmq_sender.rabbitmq_client'
 
   rabbitmq_sender.user_updated_sender:
     class: Drupal\rabbitmq_sender\UserUpdatedSender
+    arguments:
+      - '@?rabbitmq_sender.rabbitmq_client'
 
   rabbitmq_sender.user_checkin_sender:
     class: Drupal\rabbitmq_sender\UserCheckinSender
+    arguments:
+      - '@?rabbitmq_sender.rabbitmq_client'
 
   rabbitmq_sender.user_registered_sender:
     class: Drupal\rabbitmq_sender\UserRegisteredSender
+    arguments:
+      - '@?rabbitmq_sender.rabbitmq_client'
 
   rabbitmq_sender.user_unregistered_sender:
     class: Drupal\rabbitmq_sender\UserUnregisteredSender
+    arguments:
+      - '@?rabbitmq_sender.rabbitmq_client'
 
   rabbitmq_sender.company_member_removed_sender:
     class: Drupal\rabbitmq_sender\CompanyMemberRemovedSender
+    arguments:
+      - '@?rabbitmq_sender.rabbitmq_client'
     
   rabbitmq_sender.monitoring_log_sender:
     class: Drupal\rabbitmq_sender\MonitoringLogSender
+    arguments:
+      - '@?rabbitmq_sender.rabbitmq_client'
 
   rabbitmq_sender.user_sessions_request_sender:
     class: Drupal\rabbitmq_sender\UserSessionsRequestSender
+    arguments:
+      - '@?rabbitmq_sender.rabbitmq_client'
