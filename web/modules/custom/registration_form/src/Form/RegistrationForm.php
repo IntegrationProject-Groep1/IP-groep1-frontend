@@ -282,28 +282,28 @@ JS;
             $form_state->setErrorByName('password_confirm', $this->t('Password confirmation does not match.'));
         }
 
-        if ($isCompany && empty(trim((string) $form_state->getValue('company_name')))) {
+        if ($isCompany && empty(trim((string) $form_state->getValue(['company_fields', 'company_name'])))) {
             $form_state->setErrorByName('company_fields][company_name', $this->t('Company name is required for companies.'));
         }
 
-        if ($isCompany && empty(trim((string) $form_state->getValue('vat_number')))) {
+        if ($isCompany && empty(trim((string) $form_state->getValue(['company_fields', 'vat_number'])))) {
             $form_state->setErrorByName('company_fields][vat_number', $this->t('BTW-nummer is verplicht voor bedrijven.'));
         } elseif ($isCompany) {
-            $vatError = $this->validateBelgianVatNumber((string) $form_state->getValue('vat_number'));
+            $vatError = $this->validateBelgianVatNumber((string) $form_state->getValue(['company_fields', 'vat_number']));
             if ($vatError !== null) {
                 $form_state->setErrorByName('company_fields][vat_number', $vatError);
             }
         }
 
-        if ($isCompany && empty(trim((string) $form_state->getValue('street')))) {
+        if ($isCompany && empty(trim((string) $form_state->getValue(['company_fields', 'street'])))) {
             $form_state->setErrorByName('company_fields][street', $this->t('Straat is verplicht voor bedrijven.'));
         }
 
-        if ($isCompany && empty(trim((string) $form_state->getValue('postal_code')))) {
+        if ($isCompany && empty(trim((string) $form_state->getValue(['company_fields', 'postal_code'])))) {
             $form_state->setErrorByName('company_fields][postal_code', $this->t('Postcode is verplicht voor bedrijven.'));
         }
 
-        if ($isCompany && empty(trim((string) $form_state->getValue('municipality')))) {
+        if ($isCompany && empty(trim((string) $form_state->getValue(['company_fields', 'municipality'])))) {
             $form_state->setErrorByName('company_fields][municipality', $this->t('Gemeente is verplicht voor bedrijven.'));
         }
 
@@ -355,11 +355,11 @@ JS;
             'password'      => $form_state->getValue('password'),
             'date_of_birth' => $form_state->getValue('date_of_birth') ?? '',
             'is_company'    => (bool) $form_state->getValue('is_company'),
-            'company_name'  => $form_state->getValue('company_name') ?? '',
-            'vat_number'    => $form_state->getValue('vat_number') ?? '',
-            'street'        => $form_state->getValue('street') ?? '',
-            'postal_code'   => $form_state->getValue('postal_code') ?? '',
-            'municipality'  => $form_state->getValue('municipality') ?? '',
+            'company_name'  => $form_state->getValue(['company_fields', 'company_name']) ?? '',
+            'vat_number'    => $form_state->getValue(['company_fields', 'vat_number']) ?? '',
+            'street'        => $form_state->getValue(['company_fields', 'street']) ?? '',
+            'postal_code'   => $form_state->getValue(['company_fields', 'postal_code']) ?? '',
+            'municipality'  => $form_state->getValue(['company_fields', 'municipality']) ?? '',
         ];
 
         try {
@@ -396,7 +396,7 @@ JS;
             }
 
             $form_state->setRedirectUrl(Url::fromRoute('<front>'));
-        } catch (\InvalidArgumentException $e) {
+        } catch (\Throwable $e) {
             $this->messenger()->addError($this->t('Registration failed: @error', ['@error' => $e->getMessage()]));
         }
     }
