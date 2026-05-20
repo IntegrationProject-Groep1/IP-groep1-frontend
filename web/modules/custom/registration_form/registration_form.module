@@ -21,6 +21,17 @@ function registration_form_theme(): array
                 'session' => '',
             ],
         ],
+        'company_pending' => [
+            'variables' => [
+                'status'       => 'pending',
+                'company_name' => '',
+            ],
+        ],
+        'company_approval_list' => [
+            'variables' => [
+                'companies' => [],
+            ],
+        ],
     ];
 }
 

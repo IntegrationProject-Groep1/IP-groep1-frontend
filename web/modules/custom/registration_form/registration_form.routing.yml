@@ -14,3 +14,37 @@ registration_form.confirmation:
     _title: 'Registration confirmed'
   requirements:
     _access: 'TRUE'
+
+registration_form.company_pending:
+  path: '/company/pending'
+  defaults:
+    _controller: '\Drupal\registration_form\Controller\CompanyPendingController::page'
+    _title: 'Registratie in behandeling'
+  requirements:
+    _user_is_logged_in: 'TRUE'
+
+registration_form.company_approvals:
+  path: '/admin/company-approvals'
+  defaults:
+    _controller: '\Drupal\registration_form\Controller\CompanyApprovalController::listPending'
+    _title: 'Bedrijfsregistraties'
+  requirements:
+    _permission: 'administer users'
+
+registration_form.company_approve:
+  path: '/admin/company-approvals/{uid}/approve'
+  defaults:
+    _controller: '\Drupal\registration_form\Controller\CompanyApprovalController::approve'
+    _title: 'Goedkeuren'
+  requirements:
+    _permission: 'administer users'
+    uid: '\d+'
+
+registration_form.company_reject:
+  path: '/admin/company-approvals/{uid}/reject'
+  defaults:
+    _controller: '\Drupal\registration_form\Controller\CompanyApprovalController::reject'
+    _title: 'Weigeren'
+  requirements:
+    _permission: 'administer users'
+    uid: '\d+'

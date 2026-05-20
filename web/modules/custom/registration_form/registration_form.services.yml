@@ -16,3 +16,11 @@ services:
       - '@rabbitmq_sender.identity_service_client'
       - '@rabbitmq_sender.user_created_sender'
       - '@?rabbitmq_sender.monitoring_log_sender'
+      - '@rabbitmq_sender.company_registration_sender'
+
+  registration_form.company_approval_redirect_subscriber:
+    class: Drupal\registration_form\EventSubscriber\CompanyApprovalRedirectSubscriber
+    arguments:
+      - '@current_user'
+    tags:
+      - { name: event_subscriber }

@@ -1,0 +1,91 @@
+{#
+  company-approval-list.html.twig
+  Shift Festival 2026 — admin: bedrijfsregistraties goedkeuren / weigeren.
+  Variables:
+    - companies: array of company rows (uid, email, company_name, vat_number, created, approve_url, reject_url)
+#}
+
+<div class="admin-sessions">
+
+  {# ── Header ── #}
+  <div class="admin-head">
+    <div>
+      <span class="eyebrow">{{ 'Beheer · Bedrijfsregistraties'|t }}</span>
+      <h1>{{ 'Bedrijfsregistraties'|t }}</h1>
+      <p>{{ 'Keur bedrijfsregistraties goed of weiger ze. Bij goedkeuring worden de CRM-berichten verstuurd.'|t }}</p>
+    </div>
+  </div>
+
+  {% if companies is empty %}
+
+    <div class="empty">
+      <div class="empty-dot"></div>
+      <h3>{{ 'Geen openstaande registraties.'|t }}</h3>
+      <p>{{ 'Er zijn momenteel geen bedrijven die wachten op goedkeuring.'|t }}</p>
+    </div>
+
+  {% else %}
+
+    <div class="card card-pad-none">
+      <div class="admin-table-head">
+        <div class="section-label-row">
+          <span class="section-label">{{ 'In behandeling'|t }}</span>
+          <span class="muted-small">{{ companies|length }} {{ 'registratie(s)'|t }}</span>
+        </div>
+      </div>
+
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>{{ 'Bedrijfsnaam'|t }}</th>
+            <th>{{ 'BTW-nummer'|t }}</th>
+            <th>{{ 'E-mail'|t }}</th>
+            <th>{{ 'Adres'|t }}</th>
+            <th>{{ 'Geregistreerd op'|t }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in companies %}
+            <tr>
+              <td style="font-weight:600;">{{ c.company_name ?: '—' }}</td>
+              <td><code style="font-size:13px;">{{ c.vat_number ?: '—' }}</code></td>
+              <td>{{ c.email }}</td>
+              <td style="font-size:13px;color:var(--muted);">
+                {% if c.street %}
+                  {{ c.street }}, {{ c.postal_code }} {{ c.municipality }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td style="font-size:13px;color:var(--muted);">{{ c.created|date('d/m/Y H:i') }}</td>
+              <td style="text-align:right;white-space:nowrap;">
+                <a href="{{ c.approve_url }}"
+                   class="btn btn-primary"
+                   style="font-size:13px;padding:6px 14px;margin-right:6px;"
+                   onclick="return confirm('{{ 'Bedrijf goedkeuren?'|t }}')">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:4px;">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  {{ 'Goedkeuren'|t }}
+                </a>
+                <a href="{{ c.reject_url }}"
+                   class="btn"
+                   style="font-size:13px;padding:6px 14px;border:1px solid var(--hot);color:var(--hot);"
+                   onclick="return confirm('{{ 'Bedrijf weigeren en verwijderen? Dit kan niet ongedaan worden gemaakt.'|t }}')">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:4px;">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                  {{ 'Weigeren'|t }}
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  {% endif %}
+
+</div>
