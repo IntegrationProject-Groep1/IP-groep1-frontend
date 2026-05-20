@@ -182,26 +182,39 @@ class SessionCreatedReceiver
     }
 
     /**
-     * Upserts a session into planning_sessions (MariaDB).
+     * Inserts a session into planning_sessions only if it does not exist yet.
+     *
+     * Sessions created via the Drupal admin form are already in the DB before
+     * Planning echoes the session_created confirmation back. Writing again would
+     * be redundant because Planning always returns the same data we sent.
+     * This receiver only inserts sessions that Planning created autonomously.
      */
     private function upsertSessionInState(array $session): void
     {
         try {
-            \Drupal\Core\Database\Database::getConnection('default', 'planning')
-                ->merge('planning_sessions')
-                ->key(['session_id' => $session['session_id']])
-                ->fields([
-                    'title'          => $session['title'] ?? '',
-                    'start_datetime' => $session['start_datetime'] ?? '',
-                    'end_datetime'   => $session['end_datetime'] ?? '',
-                    'location'       => $session['location'] ?? '',
-                    'session_type'   => $session['session_type'] ?? 'keynote',
-                    'status'         => $session['status'] ?? 'published',
-                    'max_attendees'  => (int) ($session['max_attendees'] ?? 0),
-                    'price'          => isset($session['price']) && $session['price'] !== '' ? (float) $session['price'] : null,
-                    'is_deleted'     => 0,
-                ])
-                ->execute();
+            $db = \Drupal\Core\Database\Database::getConnection('default', 'planning');
+
+            $exists = (bool) $db->query(
+                "SELECT 1 FROM planning_sessions WHERE session_id = :id",
+                [':id' => $session['session_id']]
+            )->fetchField();
+
+            if ($exists) {
+                return;
+            }
+
+            $db->insert('planning_sessions')->fields([
+                'session_id'     => $session['session_id'],
+                'title'          => $session['title'] ?? '',
+                'start_datetime' => $session['start_datetime'] ?? '',
+                'end_datetime'   => $session['end_datetime'] ?? '',
+                'location'       => $session['location'] ?? '',
+                'session_type'   => $session['session_type'] ?? 'keynote',
+                'status'         => $session['status'] ?? 'published',
+                'max_attendees'  => (int) ($session['max_attendees'] ?? 0),
+                'price'          => isset($session['price']) && $session['price'] !== '' ? (float) $session['price'] : null,
+                'is_deleted'     => 0,
+            ])->execute();
         } catch (\Throwable $e) {
             \Drupal::logger('rabbitmq_receiver')->error('SessionCreatedReceiver: DB write failed: @e', ['@e' => $e->getMessage()]);
         }
