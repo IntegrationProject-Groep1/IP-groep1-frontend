@@ -61,6 +61,11 @@ class CompanyRegistrationSender
             throw new \InvalidArgumentException('vat_number is required for company_registration');
         }
 
+        \Drupal::logger('rabbitmq_sender')->info('Sending company_registration event', [
+            'master_uuid' => $data['master_uuid'],
+            'name'        => $data['name'],
+        ]);
+
         $xml = $this->buildXml($data);
         $this->validateXml($xml, self::XSD_PATH);
 
@@ -124,11 +129,9 @@ class CompanyRegistrationSender
     private function normalizeVatNumber(string $raw): string
     {
         $cleaned = strtoupper(trim($raw));
-        // Strip BE prefix if present.
         if (str_starts_with($cleaned, 'BE')) {
             $cleaned = substr($cleaned, 2);
         }
-        // Strip dots, dashes, spaces.
         $cleaned = preg_replace('/[\.\-\s]/', '', $cleaned);
 
         return 'BE' . $cleaned;
@@ -149,5 +152,14 @@ class CompanyRegistrationSender
         );
 
         return $this->client;
+    }
+
+    private function generateUuidV4(): string
+    {
+        $bytes    = random_bytes(16);
+        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
     }
 }
