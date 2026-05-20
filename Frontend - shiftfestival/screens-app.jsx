@@ -417,6 +417,7 @@ function SessionCard({ session, enrolled, onEnroll, onDrop }) {
   return (
     <article className={`session-card ${enrolled ? "is-enrolled" : ""}`}>
       <div className="session-time-col">
+        <span className="session-day">{session.start.split("·")[0]?.trim()}</span>
         <span className="session-hour">{session.start.split("·")[1]?.trim()}</span>
         <span className="session-dur">{session.duration}</span>
       </div>
