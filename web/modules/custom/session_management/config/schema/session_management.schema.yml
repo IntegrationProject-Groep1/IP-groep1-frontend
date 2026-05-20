@@ -1,0 +1,16 @@
+shift_festival.settings:
+  type: config_object
+  label: 'Festival settings'
+  mapping:
+    festival_start_date:
+      type: string
+      label: 'Festival start date'
+    festival_end_date:
+      type: string
+      label: 'Festival end date'
+    festival_start_time:
+      type: string
+      label: 'Festival start time'
+    festival_end_time:
+      type: string
+      label: 'Festival end time'
