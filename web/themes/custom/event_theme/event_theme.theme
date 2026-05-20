@@ -131,6 +131,8 @@ function event_theme_preprocess_html(array &$variables): void {
  * Passes theme settings to page.html.twig as template variables.
  */
 function event_theme_preprocess_page(array &$variables): void {
+  $variables['show_landing'] = \Drupal::request()->query->get('landing') === '1';
+
   $siteName = theme_get_setting('event_theme_site_name');
   if (empty($siteName)) {
     $siteName = \Drupal::config('system.site')->get('name');
