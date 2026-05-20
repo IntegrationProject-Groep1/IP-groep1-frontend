@@ -36,32 +36,7 @@
       {{ form.form_id }}
 
       <div class="form-grid">
-
-        <div class="field">
-          {{ form.title }}
-        </div>
-
-        <div class="admin-form-row-2">
-          <div class="field">{{ form.session_type }}</div>
-          <div class="field">{{ form.status }}</div>
-        </div>
-
-        <div class="admin-form-row-2">
-          <div class="field">{{ form.start_datetime }}</div>
-          <div class="field">{{ form.end_datetime }}</div>
-        </div>
-
-        <div class="admin-form-row-2">
-          <div class="field">{{ form.location }}</div>
-          <div class="field">{{ form.max_attendees }}</div>
-        </div>
-
-        <div class="field">{{ form.price }}</div>
-
-        <div class="admin-form-actions">
-          {{ form.actions }}
-        </div>
-
+        {{ children }}
       </div>
     </form>
   </div>

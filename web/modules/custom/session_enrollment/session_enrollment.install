@@ -1,0 +1,31 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * @file
+ * Install hooks for session_enrollment module.
+ *
+ * The planning_sessions and planning_registrations tables are owned by
+ * session_management_update_8001(). This file only verifies they exist.
+ */
+
+/**
+ * 10002: Verify planning tables exist in the planning database.
+ */
+function session_enrollment_update_10002(): void
+{
+    $schema = \Drupal\Core\Database\Database::getConnection('default', 'planning')->schema();
+
+    if (!$schema->tableExists('planning_sessions')) {
+        throw new \RuntimeException(
+            'planning_sessions ontbreekt. Voer eerst uit: drush updb (session_management_update_8001)'
+        );
+    }
+
+    if (!$schema->tableExists('planning_registrations')) {
+        throw new \RuntimeException(
+            'planning_registrations ontbreekt. Voer eerst uit: drush updb (session_management_update_8001)'
+        );
+    }
+}

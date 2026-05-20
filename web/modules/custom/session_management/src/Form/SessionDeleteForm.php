@@ -7,24 +7,22 @@ namespace Drupal\session_management\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
-use Drupal\rabbitmq_sender\SessionDeleteRequestSender;
+use Drupal\session_management\Service\SessionService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Confirmation form for deleting a Planning session.
- *
- * Sends a session_delete_request XML message via RabbitMQ.
+ * Confirmation form for deleting a session (writes directly to MariaDB).
  */
 class SessionDeleteForm extends FormBase
 {
     public function __construct(
-        private readonly SessionDeleteRequestSender $deleteSender,
+        private readonly SessionService $sessionService,
     ) {}
 
     public static function create(ContainerInterface $container): static
     {
         return new static(
-            $container->get('rabbitmq_sender.session_delete_request_sender'),
+            $container->get('session_management.session_service'),
         );
     }
 
@@ -90,21 +88,11 @@ class SessionDeleteForm extends FormBase
         }
 
         try {
-            $this->deleteSender->send($data);
+            $this->sessionService->deleteSession($sessionId, $reason);
             $title = $session['title'] ?? $sessionId;
-            $this->messenger()->addStatus($this->t('Session "@title" has been deleted and Planning has been notified.', [
-                '@title' => $title,
-            ]));
-
-            // Remove from local state immediately for instant feedback.
-            $sessions = \Drupal::state()->get('planning.sessions', []);
-            $sessions = array_values(array_filter($sessions, fn($s) => ($s['session_id'] ?? '') !== $sessionId));
-            \Drupal::state()->set('planning.sessions', $sessions);
-        } catch (\InvalidArgumentException $e) {
-            $this->messenger()->addError($e->getMessage());
+            $this->messenger()->addStatus($this->t('Session "@title" has been deleted.', ['@title' => $title]));
         } catch (\Throwable $e) {
-            $this->messenger()->addError($this->t('Failed to send delete request to Planning. Please try again later.'));
-            \Drupal::logger('session_management')->error('session_delete_request failed: @msg', ['@msg' => $e->getMessage()]);
+            $this->messenger()->addError($this->t('Failed to delete session: @error', ['@error' => $e->getMessage()]));
         }
 
         $form_state->setRedirectUrl(Url::fromRoute('session_management.admin'));
@@ -115,12 +103,7 @@ class SessionDeleteForm extends FormBase
         if ($sessionId === '') {
             return null;
         }
-        foreach (\Drupal::state()->get('planning.sessions', []) as $s) {
-            if (($s['session_id'] ?? '') === $sessionId) {
-                return $s;
-            }
-        }
-        return null;
+        return $this->sessionService->loadSession($sessionId);
     }
 
     private function buildSessionSummaryHtml(array $s): string

@@ -8,24 +8,22 @@ use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
-use Drupal\rabbitmq_sender\SessionUpdateRequestSender;
+use Drupal\session_management\Service\SessionService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Form for editing an existing Planning session.
- *
- * Sends a session_update_request XML message via RabbitMQ.
+ * Form for editing an existing session (writes directly to MariaDB).
  */
 class SessionEditForm extends FormBase
 {
     public function __construct(
-        private readonly SessionUpdateRequestSender $updateSender,
+        private readonly SessionService $sessionService,
     ) {}
 
     public static function create(ContainerInterface $container): static
     {
         return new static(
-            $container->get('rabbitmq_sender.session_update_request_sender'),
+            $container->get('session_management.session_service'),
         );
     }
 
@@ -39,6 +37,7 @@ class SessionEditForm extends FormBase
      */
     public function buildForm(array $form, FormStateInterface $form_state, string $session_id = ''): array
     {
+        \Drupal::logger('session_management')->info('buildForm called with session_id=[@id]', ['@id' => $session_id]);
         $session = $this->loadSession($session_id);
 
         if ($session === null) {
@@ -192,16 +191,13 @@ class SessionEditForm extends FormBase
         $data['session_id'] = $sessionId; // must always be present
 
         try {
-            $this->updateSender->send($data);
-            $this->messenger()->addStatus($this->t('Session "@title" has been updated and sent to Planning.', [
+            $this->sessionService->updateSession($sessionId, $data);
+            $this->messenger()->addStatus($this->t('Session "@title" has been updated.', [
                 '@title' => $form_state->getValue('title'),
             ]));
             $form_state->setRedirectUrl(Url::fromRoute('session_management.admin'));
-        } catch (\InvalidArgumentException $e) {
-            $this->messenger()->addError($e->getMessage());
         } catch (\Throwable $e) {
-            $this->messenger()->addError($this->t('Failed to send update to Planning. Please try again later.'));
-            \Drupal::logger('session_management')->error('session_update_request failed: @msg', ['@msg' => $e->getMessage()]);
+            $this->messenger()->addError($this->t('Failed to update session: @error', ['@error' => $e->getMessage()]));
         }
     }
 
@@ -213,13 +209,7 @@ class SessionEditForm extends FormBase
         if ($sessionId === '') {
             return null;
         }
-        $sessions = \Drupal::state()->get('planning.sessions', []);
-        foreach ($sessions as $s) {
-            if (($s['session_id'] ?? '') === $sessionId) {
-                return $s;
-            }
-        }
-        return null;
+        return $this->sessionService->loadSession($sessionId);
     }
 
     /**

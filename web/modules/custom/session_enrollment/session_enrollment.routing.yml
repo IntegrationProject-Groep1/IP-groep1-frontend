@@ -34,8 +34,17 @@ session_enrollment.my_sessions:
 session_enrollment.unenroll:
   path: '/sessions/unenroll/{session_id}'
   defaults:
-    _controller: '\Drupal\session_enrollment\Controller\UnenrollController::unenroll'
-    _title: 'Uitschrijven voor sessie'
+    _controller: '\Drupal\session_enrollment\Controller\MySessionsController::unsubscribe'
+    _title: 'Unenroll'
+  requirements:
+    _role: 'authenticated'
+    session_id: '.+'
+
+session_enrollment.unsubscribe:
+  path: '/sessions/unsubscribe/{session_id}'
+  defaults:
+    _controller: '\Drupal\session_enrollment\Controller\MySessionsController::unsubscribe'
+    _title: 'Unsubscribe'
   requirements:
     _role: 'authenticated'
     session_id: '.+'

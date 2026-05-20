@@ -16,6 +16,20 @@ $databases['default']['default'] = [
   'autoload'  => 'core/modules/mysql/src/Driver/Database/mysql/',
 ];
 
+
+// Separate connection to the planning database (same MariaDB, different DB).
+$databases['planning']['default'] = [
+  'driver'    => 'mysql',
+  'database'  => getenv('PLANNING_DB_NAME') ?: 'planning',
+  'username'  => getenv('DRUPAL_DB_USER') ?: 'drupal_user',
+  'password'  => getenv('DRUPAL_DB_PASSWORD') ?: '',
+  'host'      => getenv('DRUPAL_DB_HOST') ?: 'frontend-db-service',
+  'port'      => getenv('DRUPAL_DB_PORT') ?: '3306',
+  'prefix'    => '',
+  'namespace' => 'Drupal\\mysql\\Driver\\Database\\mysql',
+  'autoload'  => 'core/modules/mysql/src/Driver/Database/mysql/',
+];
+
 $settings['hash_salt'] = 'local-dev-hash-salt-event-platform-2526';
 
 // Configure private file system for sensitive uploads (e.g., CSV files)

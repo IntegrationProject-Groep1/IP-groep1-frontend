@@ -130,13 +130,21 @@ class RegistrationForm extends FormBase
         ];
 
         $form['company_fields']['vat_number'] = [
-            '#type'  => 'textfield',
-            '#title' => $this->t('VAT number'),
+            '#type'        => 'textfield',
+            '#title'       => $this->t('BTW-nummer'),
+            '#placeholder' => $this->t('BE0123.456.789'),
+            '#description' => $this->t('Belgisch ondernemingsnummer, bv. BE0123.456.789'),
+            '#attributes'  => ['id' => 'vat-number-field'],
             '#states' => [
                 'required' => [
                     ':input[name="is_company"]' => ['checked' => true],
                 ],
             ],
+        ];
+
+        $form['company_fields']['vat_feedback'] = [
+            '#type'       => 'markup',
+            '#markup'     => '<div id="vat-feedback" aria-live="polite" style="margin-top:-10px;margin-bottom:8px;font-size:.85em;min-height:1.2em;"></div>',
         ];
 
         $form['company_fields']['street'] = [
@@ -185,7 +193,79 @@ class RegistrationForm extends FormBase
             '#value' => $this->t('Register'),
         ];
 
+        $form['#attached']['html_head'][] = [
+            [
+                '#type'       => 'html_tag',
+                '#tag'        => 'script',
+                '#value'      => $this->buildVatValidationJs(),
+                '#attributes' => ['type' => 'text/javascript'],
+            ],
+            'vat_validation_js',
+        ];
+
         return $form;
+    }
+
+    /**
+     * Returns an inline JS snippet that provides live BTW-number feedback.
+     *
+     * The Belgian enterprise number (KBO) is 10 digits, starts with 0 (or 1 for
+     * newer numbers), and the last 2 digits equal 97 − (first 8 digits mod 97).
+     */
+    private function buildVatValidationJs(): string
+    {
+        return <<<'JS'
+(function () {
+  'use strict';
+
+  function normalizeBtw(raw) {
+    var s = raw.trim().toUpperCase().replace(/\s/g, '');
+    if (s.startsWith('BE')) { s = s.slice(2); }
+    return s.replace(/[.\- ]/g, '');
+  }
+
+  function validateBtw(raw) {
+    var digits = normalizeBtw(raw);
+    if (!/^\d{10}$/.test(digits)) {
+      return { valid: false, msg: 'Moet 10 cijfers bevatten na de "BE"-prefix (bv. BE0123.456.789).' };
+    }
+    if (digits[0] !== '0' && digits[0] !== '1') {
+      return { valid: false, msg: 'Belgisch ondernemingsnummer begint met 0 of 1.' };
+    }
+    var first8 = parseInt(digits.slice(0, 8), 10);
+    var last2  = parseInt(digits.slice(8), 10);
+    var expected = 97 - (first8 % 97);
+    if (expected !== last2) {
+      return { valid: false, msg: 'Controlecijfer klopt niet. Controleer het nummer.' };
+    }
+    return { valid: true, msg: 'Geldig Belgisch ondernemingsnummer.' };
+  }
+
+  function attachVatListener() {
+    var field    = document.getElementById('vat-number-field');
+    var feedback = document.getElementById('vat-feedback');
+    if (!field || !feedback) { return; }
+
+    field.addEventListener('input', function () {
+      var val = field.value.trim();
+      if (val === '') {
+        feedback.textContent = '';
+        feedback.style.color = '';
+        return;
+      }
+      var result = validateBtw(val);
+      feedback.textContent = result.msg;
+      feedback.style.color = result.valid ? '#18a058' : '#d32f2f';
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachVatListener);
+  } else {
+    attachVatListener();
+  }
+})();
+JS;
     }
 
     public function validateForm(array &$form, FormStateInterface $form_state): void
@@ -208,6 +288,11 @@ class RegistrationForm extends FormBase
 
         if ($isCompany && empty(trim((string) $form_state->getValue('vat_number')))) {
             $form_state->setErrorByName('company_fields][vat_number', $this->t('BTW-nummer is verplicht voor bedrijven.'));
+        } elseif ($isCompany) {
+            $vatError = $this->validateBelgianVatNumber((string) $form_state->getValue('vat_number'));
+            if ($vatError !== null) {
+                $form_state->setErrorByName('company_fields][vat_number', $vatError);
+            }
         }
 
         if ($isCompany && empty(trim((string) $form_state->getValue('street')))) {
@@ -227,6 +312,40 @@ class RegistrationForm extends FormBase
         }
     }
 
+    /**
+     * Validates a Belgian BTW/KBO number.
+     *
+     * Accepts formats: BE0123456789, BE0123.456.789, 0123456789, etc.
+     * Returns a translated error string on failure, or null on success.
+     */
+    private function validateBelgianVatNumber(string $raw): ?string
+    {
+        // Normalize: strip prefix, dots, dashes, spaces.
+        $cleaned = strtoupper(trim($raw));
+        if (str_starts_with($cleaned, 'BE')) {
+            $cleaned = substr($cleaned, 2);
+        }
+        $cleaned = preg_replace('/[\.\-\s]/', '', $cleaned);
+
+        if (!preg_match('/^\d{10}$/', $cleaned)) {
+            return $this->t('Belgisch BTW-nummer moet 10 cijfers bevatten na de "BE"-prefix (bv. BE0123.456.789).');
+        }
+
+        if ($cleaned[0] !== '0' && $cleaned[0] !== '1') {
+            return $this->t('Een Belgisch ondernemingsnummer begint altijd met 0 of 1.');
+        }
+
+        $first8   = (int) substr($cleaned, 0, 8);
+        $last2    = (int) substr($cleaned, 8, 2);
+        $expected = 97 - ($first8 % 97);
+
+        if ($expected !== $last2) {
+            return $this->t('Het controlecijfer van het BTW-nummer klopt niet. Controleer het nummer.');
+        }
+
+        return null;
+    }
+
     public function submitForm(array &$form, FormStateInterface $form_state): void
     {
         $data = [
@@ -244,6 +363,20 @@ class RegistrationForm extends FormBase
         ];
 
         try {
+            if ($data['is_company']) {
+                // Company registrations are held for admin review before CRM messages are sent.
+                $uid = $this->registrationService->registerCompanyPending($data);
+
+                // Log in automatically so they land on the "in review" page.
+                $account = \Drupal::entityTypeManager()->getStorage('user')->load($uid);
+                if ($account && $account->isActive()) {
+                    user_login_finalize($account);
+                }
+
+                $form_state->setRedirectUrl(Url::fromRoute('registration_form.company_pending'));
+                return;
+            }
+
             $this->registrationService->register($data);
 
             // Mark the invite token as used so it cannot be replayed.
@@ -254,13 +387,15 @@ class RegistrationForm extends FormBase
                 $inviteService->markTokenUsed($inviteToken);
             }
 
-            $this->tempStoreFactory
-                ->get('registration_form')
-                ->set('confirmation', [
-                    'name' => trim($data['first_name'] . ' ' . $data['last_name']),
-                ]);
+            // Log the user in automatically after registration.
+            $users = \Drupal::entityTypeManager()->getStorage('user')
+                ->loadByProperties(['mail' => $data['email']]);
+            $account = reset($users);
+            if ($account && $account->isActive()) {
+                user_login_finalize($account);
+            }
 
-            $form_state->setRedirectUrl(Url::fromRoute('registration_form.confirmation'));
+            $form_state->setRedirectUrl(Url::fromRoute('<front>'));
         } catch (\InvalidArgumentException $e) {
             $this->messenger()->addError($this->t('Registration failed: @error', ['@error' => $e->getMessage()]));
         }

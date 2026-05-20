@@ -6,6 +6,7 @@ namespace Drupal\registration_form\Service;
 
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\rabbitmq_sender\CompanyRegistrationSender;
 use Drupal\rabbitmq_sender\IdentityServiceClient;
 use Drupal\rabbitmq_sender\NewRegistrationSender;
 use Drupal\rabbitmq_sender\UserCreatedSender;
@@ -29,7 +30,162 @@ class RegistrationService
         private readonly ?IdentityServiceClient $identityClient = null,
         private readonly ?UserCreatedSender $userCreatedSender = null,
         private readonly ?MonitoringLogSender $monitoringLogger = null,
+        private readonly ?CompanyRegistrationSender $companyRegistrationSender = null,
     ) {}
+
+    /**
+     * Creates a Drupal user for a company registration and marks it as pending
+     * admin review. NO CRM messages are sent at this point.
+     *
+     * Returns the new user's UID.
+     *
+     * @throws \InvalidArgumentException When validation fails or the email is in use.
+     */
+    public function registerCompanyPending(array $data): int
+    {
+        $this->validateRegistrationInput($data);
+        $this->assertEmailNotInUse((string) $data['email']);
+
+        $user = $this->createLocalUser($data);
+        $uid  = (int) $user->id();
+
+        // Strip the plaintext password before persisting — it is already hashed on the user entity.
+        $dataToStore = $data;
+        unset($dataToStore['password']);
+
+        // Store the registration data (minus password) so we can send it to CRM on approval.
+        $userData = \Drupal::service('user.data');
+        $userData->set('registration_form', $uid, 'company_approval_status', 'pending');
+        $userData->set('registration_form', $uid, 'company_pending_data', $dataToStore);
+        $userData->set('registration_form', $uid, 'company_name', (string) ($data['company_name'] ?? ''));
+        $userData->set('registration_form', $uid, 'vat_number',   (string) ($data['vat_number']   ?? ''));
+
+        $this->loggerFactory->get('registration_form')->info(
+            'Company registration pending review for @email (uid @uid).',
+            ['@email' => $data['email'], '@uid' => $uid]
+        );
+
+        return $uid;
+    }
+
+    /**
+     * Approves a pending company registration.
+     *
+     * Sets approval status, grants the company_admin role, stores is_company flag,
+     * and sends all CRM messages that were deferred at registration time.
+     *
+     * @throws \InvalidArgumentException When the user does not exist or is not pending.
+     */
+    public function approveCompany(int $uid): void
+    {
+        $logger   = $this->loggerFactory->get('registration_form');
+        $userData = \Drupal::service('user.data');
+
+        /** @var \Drupal\user\Entity\User|null $user */
+        $user = $this->entityTypeManager->getStorage('user')->load($uid);
+        if ($user === null) {
+            throw new \InvalidArgumentException("User $uid not found.");
+        }
+
+        $status = $userData->get('registration_form', $uid, 'company_approval_status');
+        if ($status !== 'pending') {
+            throw new \InvalidArgumentException("User $uid is not pending approval (status: $status).");
+        }
+
+        $data = $userData->get('registration_form', $uid, 'company_pending_data') ?? [];
+
+        // Update approval status first so a crash mid-send doesn't leave it pending.
+        $userData->set('registration_form', $uid, 'company_approval_status', 'approved');
+        $this->storeIsCompanyOnUser($uid, true);
+        $this->grantCompanyInvitePermission($user);
+
+        // Resolve master UUID for the company's email address.
+        $masterUuid = $this->resolveMasterUuid((string) ($data['email'] ?? $user->getEmail()), $logger);
+        if ($masterUuid !== '') {
+            $this->storeMasterUuidOnUser($uid, $masterUuid);
+            $data['master_uuid'] = $masterUuid;
+        }
+
+        // Send user_registered — only when we have a valid master UUID (same guard as register()).
+        if ($masterUuid !== '') {
+            try {
+                $userRegisteredSender = \Drupal::service('rabbitmq_sender.user_registered_sender');
+                $userRegisteredSender->send([
+                    'identity_uuid' => $masterUuid,
+                    'email'         => (string) ($data['email'] ?? $user->getEmail()),
+                    'session_id'    => '',
+                    'first_name'    => (string) ($data['first_name'] ?? ''),
+                    'last_name'     => (string) ($data['last_name']  ?? ''),
+                    'is_company'    => true,
+                    'company_name'  => (string) ($data['company_name'] ?? ''),
+                    'vat_number'    => (string) ($data['vat_number']   ?? ''),
+                ]);
+            } catch (\Throwable $e) {
+                $logger->error('approveCompany: user_registered failed for uid @uid: @msg', ['@uid' => $uid, '@msg' => $e->getMessage()]);
+            }
+        }
+
+        // Send user_created.
+        if ($this->userCreatedSender !== null) {
+            try {
+                $this->userCreatedSender->send([
+                    'identity_uuid' => $masterUuid !== '' ? $masterUuid : (string) $uid,
+                    'user_id'       => (string) $uid,
+                    'email'         => (string) ($data['email'] ?? $user->getEmail()),
+                    'first_name'    => (string) ($data['first_name'] ?? ''),
+                    'last_name'     => (string) ($data['last_name']  ?? ''),
+                    'date_of_birth' => (string) ($data['date_of_birth'] ?? ''),
+                    'is_company'    => true,
+                    'company_name'  => (string) ($data['company_name'] ?? ''),
+                    'vat_number'    => (string) ($data['vat_number']   ?? ''),
+                    'street'        => (string) ($data['street']        ?? ''),
+                    'postal_code'   => (string) ($data['postal_code']   ?? ''),
+                    'municipality'  => (string) ($data['municipality']  ?? ''),
+                ]);
+            } catch (\Throwable $e) {
+                $logger->error('approveCompany: user_created failed for uid @uid: @msg', ['@uid' => $uid, '@msg' => $e->getMessage()]);
+            }
+        }
+
+        // Send company_registration (§5.9) — requires a master UUID from the Identity Service.
+        if ($this->companyRegistrationSender !== null && $masterUuid !== '') {
+            try {
+                $this->companyRegistrationSender->send([
+                    'master_uuid' => $masterUuid,
+                    'name'        => (string) ($data['company_name'] ?? ''),
+                    'email'       => (string) ($data['email'] ?? $user->getEmail()),
+                    'vat_number'  => (string) ($data['vat_number'] ?? ''),
+                ]);
+            } catch (\Throwable $e) {
+                $logger->error('approveCompany: company_registration failed for uid @uid: @msg', ['@uid' => $uid, '@msg' => $e->getMessage()]);
+            }
+        } elseif ($masterUuid === '') {
+            $logger->warning('approveCompany: company_registration skipped for uid @uid — no master UUID from Identity Service.', ['@uid' => $uid]);
+        }
+
+        $logger->info('Company uid @uid approved and CRM messages sent.', ['@uid' => $uid]);
+    }
+
+    /**
+     * Rejects a pending company registration by deleting the Drupal user.
+     * No CRM messages are ever sent.
+     *
+     * @throws \InvalidArgumentException When the user does not exist.
+     */
+    public function rejectCompany(int $uid): void
+    {
+        $user = $this->entityTypeManager->getStorage('user')->load($uid);
+        if ($user === null) {
+            throw new \InvalidArgumentException("User $uid not found.");
+        }
+
+        $this->loggerFactory->get('registration_form')->info(
+            'Company uid @uid rejected — Drupal user deleted, no CRM messages sent.',
+            ['@uid' => $uid]
+        );
+
+        $user->delete();
+    }
 
     /**
      * Registers a user and sends a new_registration event to CRM via RabbitMQ.

@@ -1,0 +1,8 @@
+name: 'Microsoft Auth'
+description: 'Login and registration via Microsoft OAuth2 with automatic Graph API token storage.'
+type: module
+core_version_requirement: ^10
+package: Custom
+dependencies:
+  - drupal:user
+  - registration_form:registration_form

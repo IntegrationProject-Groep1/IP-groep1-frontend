@@ -10,6 +10,7 @@ services:
       MYSQL_PASSWORD: ${DRUPAL_DB_PASS}
     volumes:
       - frontend_db_data:/var/lib/mysql
+      - ./docker/mariadb-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
@@ -45,6 +46,7 @@ services:
     environment:
       DRUPAL_DB_HOST: ${DRUPAL_DB_HOST:-frontend_db}
       DRUPAL_DB_NAME: ${DRUPAL_DB_NAME:-drupal}
+      PLANNING_DB_NAME: ${PLANNING_DB_NAME:-planning}
       DRUPAL_DB_USER: ${DRUPAL_DB_USER:-drupal_user}
       DRUPAL_DB_PASSWORD: ${DRUPAL_DB_PASS}
       RABBITMQ_HOST: ${RABBITMQ_HOST:-}
@@ -54,6 +56,11 @@ services:
       RABBITMQ_VHOST: ${RABBITMQ_VHOST:-/}
       RABBITMQ_PREFIX: ${RABBITMQ_PREFIX:-frontend.}
       REGISTRATION_REQUIRE_RABBITMQ_SYNC: ${REGISTRATION_REQUIRE_RABBITMQ_SYNC:-1}
+      AZURE_CLIENT_ID: ${AZURE_CLIENT_ID}
+      AZURE_CLIENT_SECRET: ${AZURE_CLIENT_SECRET}
+      PLANNING_API_TOKEN_SECRET: ${PLANNING_API_TOKEN_SECRET}
+      PLANNING_SERVICE_URL: ${PLANNING_SERVICE_URL:-http://planning-planning-service-1:30050}
+      AZURE_REDIRECT_URI: ${AZURE_REDIRECT_URI:-http://localhost:30020/auth/microsoft/callback}
     volumes:
       - ./web/modules/custom:/var/www/html/modules/custom
       - ./web/themes/custom:/var/www/html/themes/custom
@@ -79,6 +86,20 @@ services:
       PORT: "8006"
     depends_on:
       - frontend_drupal
+    networks:
+      - shift_net
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: frontend_phpmyadmin
+    environment:
+      PMA_HOST: frontend_db
+      PMA_USER: drupal_user
+      PMA_PASSWORD: ${DRUPAL_DB_PASS}
+    ports:
+      - "30053:80"
+    depends_on:
+      - frontend_db
     networks:
       - shift_net
 
