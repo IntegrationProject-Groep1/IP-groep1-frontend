@@ -4,4 +4,3 @@ services:
     arguments:
       - '@logger.factory'
       - '@uuid'
-      - '@rabbitmq_sender.session_create_request_sender'
