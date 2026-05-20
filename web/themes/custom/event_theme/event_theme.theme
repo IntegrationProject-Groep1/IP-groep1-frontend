@@ -141,6 +141,11 @@ function event_theme_preprocess_page(array &$variables): void {
 
   $account = \Drupal::currentUser();
 
+  // Pages rendered with user-specific data (name, avatar, wallet) must vary
+  // per individual user, not just per role. Without this the Dynamic Page Cache
+  // serves user A's cached sidebar to user B.
+  $variables['#cache']['contexts'][] = 'user';
+
   $variables['site_name']            = $siteName;
   $variables['tagline']              = theme_get_setting('event_theme_tagline') ?? '';
   $variables['nav_show_register']    = (bool) (theme_get_setting('event_theme_nav_show_register') ?? 1);
@@ -316,6 +321,7 @@ function event_theme_preprocess_page__front(array &$variables): void {
 
   $variables['front_sessions']      = $frontSessions;
   $variables['total_sessions_count'] = $totalSessionsCount;
+  $variables['#cache']['contexts'][] = 'user';
 
   $festivalStart = new \DateTime('2026-07-01');
   $now = new \DateTime('today');

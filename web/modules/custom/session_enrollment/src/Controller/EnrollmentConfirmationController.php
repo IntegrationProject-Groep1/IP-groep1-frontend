@@ -34,6 +34,7 @@ class EnrollmentConfirmationController extends ControllerBase
             '#theme'    => 'enrollment_confirmation',
             '#name'     => $name,
             '#sessions' => $sessions,
+            '#cache'    => ['contexts' => ['user'], 'max-age' => 0],
         ];
     }
 }

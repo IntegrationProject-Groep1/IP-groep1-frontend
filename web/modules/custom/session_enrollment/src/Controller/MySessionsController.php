@@ -49,7 +49,7 @@ class MySessionsController extends ControllerBase
             '#grouped_sessions' => $this->groupByDay($sessions),
             '#ics_url'          => $icsUrl,
             '#notice'           => null,
-            '#cache'            => ['max-age' => 0],
+            '#cache'            => ['contexts' => ['user'], 'max-age' => 0],
         ];
     }
 
