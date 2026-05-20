@@ -39,6 +39,7 @@ class SessionEditForm extends FormBase
      */
     public function buildForm(array $form, FormStateInterface $form_state, string $session_id = ''): array
     {
+        \Drupal::logger('session_management')->info('buildForm called with session_id=[@id]', ['@id' => $session_id]);
         $session = $this->loadSession($session_id);
 
         if ($session === null) {

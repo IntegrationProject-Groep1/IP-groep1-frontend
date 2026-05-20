@@ -5,91 +5,80 @@ declare(strict_types=1);
 namespace Drupal\session_enrollment\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\session_enrollment\Service\SessionEnrollmentService;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Database\Database;
+use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
 /**
- * Handles single-session enrollment via a direct GET link (no JS required).
+ * Handles single-session enrollment from the session card "Enroll" button.
  */
 class EnrollSingleController extends ControllerBase
 {
-    public function __construct(
-        private readonly SessionEnrollmentService $enrollmentService,
-    ) {}
-
-    public static function create(ContainerInterface $container): static
-    {
-        return new static(
-            $container->get('session_enrollment.enrollment_service'),
-        );
-    }
-
     public function enroll(string $session_id): RedirectResponse
     {
         $currentUser  = $this->currentUser();
         $uid          = (int) $currentUser->id();
-        $identityUuid = (string) (\Drupal::service('user.data')->get('registration_form', $uid, 'master_uuid') ?? '');
+        $masterUuid   = (string) (\Drupal::service('user.data')->get('registration_form', $uid, 'master_uuid') ?? '');
+        $identityUuid = $masterUuid !== '' ? $masterUuid : (string) $uid;
 
-        if (!preg_match('/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/', $identityUuid)) {
-            $this->messenger()->addError($this->t('Je account is nog niet volledig ingesteld. Voltooi eerst je registratie.'));
-            return new RedirectResponse('/sessions/enroll');
+        $db = Database::getConnection('default', 'planning');
+
+        // Load session data.
+        $session = $db->query(
+            "SELECT * FROM planning_sessions WHERE session_id = :id AND is_deleted = 0",
+            [':id' => $session_id]
+        )->fetchAssoc();
+
+        if (!$session) {
+            $this->messenger()->addError($this->t('Session not found.'));
+            return new RedirectResponse(Url::fromRoute('session_enrollment.enroll')->toString());
         }
 
-        $session = $this->resolveSession($session_id);
+        // Check if already enrolled.
+        $existing = $db->query(
+            "SELECT status FROM planning_registrations WHERE session_id = :sid AND master_uuid = :uuid",
+            [':sid' => $session_id, ':uuid' => $identityUuid]
+        )->fetchAssoc();
 
-        if ($session === null) {
-            $this->messenger()->addError($this->t('Sessie niet gevonden.'));
-            return new RedirectResponse('/sessions/enroll');
+        if ($existing && $existing['status'] === 'confirmed') {
+            $this->messenger()->addWarning($this->t('You are already enrolled in "@title".', ['@title' => $session['title']]));
+            return new RedirectResponse(Url::fromRoute('session_enrollment.my_sessions')->toString());
         }
 
-        $userData = [
-            'email'        => $currentUser->getEmail(),
-            'user_id'      => (string) $uid,
-            'master_uuid'  => $identityUuid,
-            'first_name'   => $this->resolveUserField($uid, 'field_first_name') ?: $currentUser->getAccountName(),
-            'last_name'    => $this->resolveUserField($uid, 'field_last_name'),
-            'is_company'   => (bool) $this->resolveUserField($uid, 'field_is_company'),
-            'company_name' => $this->resolveUserField($uid, 'field_company_name'),
-            'vat_number'   => $this->resolveUserField($uid, 'field_vat_number'),
-        ];
-
+        // Write registration to MariaDB.
         try {
-            $this->enrollmentService->enroll($userData, [$session_id], [$session_id => $session]);
-            $this->messenger()->addStatus($this->t(
-                'Je bent nu ingeschreven voor sessie: @title',
-                ['@title' => $session['title'] ?? $session_id]
-            ));
+            $db->merge('planning_registrations')
+                ->key(['session_id' => $session_id, 'master_uuid' => $identityUuid])
+                ->fields(['status' => 'confirmed', 'registered_at' => date('c')])
+                ->execute();
+
+            $db->update('planning_sessions')
+                ->expression('current_attendees', 'current_attendees + 1')
+                ->condition('session_id', $session_id)
+                ->execute();
         } catch (\Throwable $e) {
-            \Drupal::logger('session_enrollment')->error('Inschrijving mislukt voor @id: @error', [
-                '@id'    => $session_id,
-                '@error' => $e->getMessage(),
-            ]);
-            $this->messenger()->addError($this->t('Inschrijving mislukt: @error', ['@error' => $e->getMessage()]));
+            \Drupal::logger('session_enrollment')->error('EnrollSingle DB failed: @e', ['@e' => $e->getMessage()]);
+            $this->messenger()->addError($this->t('Enrollment failed. Please try again.'));
+            return new RedirectResponse(Url::fromRoute('session_enrollment.enroll')->toString());
         }
 
-        return new RedirectResponse('/sessions/enroll');
-    }
-
-    private function resolveSession(string $sessionId): ?array
-    {
-        $sessions = \Drupal::state()->get('planning.sessions', []);
-        foreach ($sessions as $session) {
-            if (isset($session['session_id']) && $session['session_id'] === $sessionId) {
-                return $session;
-            }
-        }
-        return null;
-    }
-
-    private function resolveUserField(int $uid, string $fieldName): string
-    {
+        // Notify planning for Graph API + ICS (non-blocking).
         try {
-            $user = $this->entityTypeManager()->getStorage('user')->load($uid);
-            if ($user && $user->hasField($fieldName)) {
-                return (string) ($user->get($fieldName)->value ?? '');
-            }
-        } catch (\Throwable) {}
-        return '';
+            $sender = new \Drupal\rabbitmq_sender\CalendarInviteSender();
+            $sender->send([
+                'identity_uuid'  => $identityUuid,
+                'attendee_email' => $currentUser->getEmail(),
+                'session_id'     => $session_id,
+                'title'          => $session['title'],
+                'start_datetime' => $session['start_datetime'],
+                'end_datetime'   => $session['end_datetime'],
+                'location'       => $session['location'] ?? '',
+            ]);
+        } catch (\Throwable $e) {
+            \Drupal::logger('session_enrollment')->warning('EnrollSingle RabbitMQ failed (non-blocking): @e', ['@e' => $e->getMessage()]);
+        }
+
+        $this->messenger()->addStatus($this->t('You are enrolled in "@title".', ['@title' => $session['title']]));
+        return new RedirectResponse(Url::fromRoute('session_enrollment.my_sessions')->toString());
     }
 }
