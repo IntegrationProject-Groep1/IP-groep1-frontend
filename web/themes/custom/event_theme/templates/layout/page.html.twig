@@ -144,9 +144,6 @@ document.addEventListener('keydown', function(e) { if (e.key === 'Escape') sfClo
 
     </aside>
 
-  {# Overlay voor mobile sidebar #}
-  <div class="shell-overlay" id="shell-overlay" onclick="sfCloseNav()" aria-hidden="true"></div>
-
     {# ── Hoofd content ── #}
     <main class="shell-main" role="main">
 
@@ -241,6 +238,9 @@ document.addEventListener('keydown', function(e) { if (e.key === 'Escape') sfClo
 
     </main>
   </div>
+
+  {# Overlay voor mobile sidebar — buiten de shell grid zodat het nooit een grid item wordt #}
+  <div class="shell-overlay" id="shell-overlay" onclick="sfCloseNav()" aria-hidden="true"></div>
 
 
 {% elseif is_auth_page %}

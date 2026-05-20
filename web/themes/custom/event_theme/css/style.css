@@ -1914,14 +1914,14 @@ body.is-auth-page .button--primary:hover {
   color: var(--ink); cursor: pointer; flex-shrink: 0;
 }
 
-/* Overlay achter open sidebar */
+/* Overlay achter open sidebar — position:fixed keeps it out of any grid flow */
 .shell-overlay {
-  display: none;
+  display: none !important;
   position: fixed; inset: 0;
   background: rgba(0,0,0,.45);
   z-index: 99;
 }
-.shell-overlay.is-open { display: block; }
+.shell-overlay.is-open { display: block !important; }
 
 @media (max-width: 768px) {
   /* ── Shell: sidebar als fixed drawer ── */
