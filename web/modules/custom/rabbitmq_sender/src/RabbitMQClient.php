@@ -55,8 +55,8 @@ class RabbitMQClient
                     'AMQPLAIN', // login_method
                     null,    // login_response
                     'en_US', // locale
-                    10.0,    // connection_timeout (seconds)
-                    10.0,    // read_write_timeout (seconds)
+                    3.0,     // connection_timeout (seconds)
+                    3.0,     // read_write_timeout (seconds)
                     null,    // context
                     false,   // keepalive
                     60       // heartbeat
