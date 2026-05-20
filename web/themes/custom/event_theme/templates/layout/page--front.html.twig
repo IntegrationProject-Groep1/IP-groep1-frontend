@@ -31,7 +31,7 @@
 
         <a href="{{ path('<front>') }}" class="shell-nav-item is-active">
           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>
-          <span>{{ 'Home'|t }}</span>
+          <span>{{ 'Frontpage'|t }}</span>
         </a>
 
         {% if qr_url %}
@@ -106,7 +106,7 @@
   {# ── Main ── #}
   <main class="shell-main" role="main">
     <div class="shell-topbar">
-      <div class="shell-crumbs">{{ 'Home'|t }}</div>
+      <div class="shell-crumbs">{{ 'Frontpage'|t }}</div>
       <div class="shell-topbar-actions">
         <div class="event-pill">
           <span class="event-pill-dot"></span>
@@ -294,7 +294,7 @@
       <span class="brand-name">{{ site_name }}</span>
     </div>
     <nav class="landing-nav-links" aria-label="{{ 'Hoofdnavigatie'|t }}">
-      <a href="{{ path('<front>') }}">{{ 'Home'|t }}</a>
+      <a href="{{ path('<front>') }}">{{ 'Frontpage'|t }}</a>
       <a href="#program">{{ 'Programma'|t }}</a>
       <a href="#venue">{{ 'Locatie'|t }}</a>
       <a href="#faq">{{ 'FAQ'|t }}</a>
