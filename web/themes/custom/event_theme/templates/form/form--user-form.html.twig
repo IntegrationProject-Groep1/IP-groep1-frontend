@@ -19,6 +19,19 @@
     {{ form.form_token }}
     {{ form.form_id }}
 
+    {# ── Persoonlijke gegevens (voornaam, achternaam, geboortedatum) ── #}
+    <div class="card card-pad-lg admin-form-card" style="margin-bottom: 20px;">
+      <div class="section-label-row">
+        <span class="section-label">{{ 'Persoonlijke gegevens'|t }}</span>
+      </div>
+      <div class="form-grid">
+        {{ form.field_first_name }}
+        {{ form.field_last_name }}
+        {{ form.field_date_of_birth }}
+      </div>
+    </div>
+
+    {# ── Accountgegevens (e-mail + wachtwoord via Drupal core account container) ── #}
     <div class="card card-pad-lg admin-form-card" style="margin-bottom: 20px;">
       <div class="section-label-row">
         <span class="section-label">{{ 'Accountgegevens'|t }}</span>
@@ -28,14 +41,19 @@
       </div>
     </div>
 
-    {% if form.timezone %}
+    {# ── Adresgegevens: capture first, only show card if non-empty ── #}
+    {% set address_fields %}
+      {{ form.field_street }}
+      {{ form.field_postal_code }}
+      {{ form.field_municipality }}
+    {% endset %}
+    {% if address_fields|trim %}
       <div class="card card-pad-lg admin-form-card" style="margin-bottom: 20px;">
         <div class="section-label-row">
-          <span class="section-label">{{ 'Voorkeuren'|t }}</span>
+          <span class="section-label">{{ 'Adresgegevens'|t }}</span>
         </div>
         <div class="form-grid">
-          {{ form.timezone }}
-          {{ form.language }}
+          {{ address_fields }}
         </div>
       </div>
     {% endif %}
