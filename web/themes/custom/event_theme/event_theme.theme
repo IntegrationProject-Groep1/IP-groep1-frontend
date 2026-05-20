@@ -265,8 +265,20 @@ function event_theme_theme_suggestions_form_alter(array &$suggestions, array $va
 function event_theme_preprocess_form(array &$variables): void {
     $element = $variables['element'] ?? [];
     if (($element['#form_id'] ?? '') === 'session_enrollment_form') {
-        // Prefer data already attached by buildForm; fall back to Drupal state.
-        $variables['sessions_full'] = $element['#sessions_full'] ?? [];
+        $sessions = $element['#sessions_full'] ?? [];
+        $variables['sessions_full'] = $sessions;
+
+        $grouped = [];
+        foreach ($sessions as $session) {
+            $startRaw = $session['start_datetime'] ?? '';
+            try {
+                $dayKey = (new \DateTimeImmutable($startRaw))->format('l, d F Y');
+            } catch (\Throwable) {
+                $dayKey = 'Unscheduled';
+            }
+            $grouped[$dayKey][] = $session;
+        }
+        $variables['sessions_grouped'] = $grouped;
     }
 }
 

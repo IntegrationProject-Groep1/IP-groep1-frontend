@@ -74,9 +74,13 @@
       {% endif %}
 
     {% else %}
-      {# ── Session cards ── #}
-      <div class="session-list" style="margin-bottom:28px;">
-        {% for session in sessions_full %}
+      {# ── Session cards grouped by day ── #}
+      <div class="schedule-stack" style="margin-bottom:28px;">
+        {% for day, day_sessions in sessions_grouped %}
+          <section class="schedule-day">
+            <h2 class="schedule-day-title">{{ day }}</h2>
+            <div class="session-list">
+        {% for session in day_sessions %}
           {% set sid = session.session_id %}
 
           {% set pct = 0 %}
@@ -223,7 +227,10 @@
 
           </article>
         {% endfor %}
-      </div>
+            </div>{# /.session-list #}
+          </section>
+        {% endfor %}
+      </div>{# /.schedule-stack #}
 
     {% endif %}
 
@@ -277,6 +284,12 @@
       var matchFilter = activeFilter === 'all' || type === activeFilter;
       var matchSearch = !q || title.indexOf(q) > -1 || speaker.indexOf(q) > -1 || loc.indexOf(q) > -1;
       card.style.display = (matchFilter && matchSearch) ? '' : 'none';
+    });
+    document.querySelectorAll('.schedule-day').forEach(function(section) {
+      var anyVisible = Array.from(section.querySelectorAll('.session-card')).some(function(c) {
+        return c.style.display !== 'none';
+      });
+      section.style.display = anyVisible ? '' : 'none';
     });
   }
 
