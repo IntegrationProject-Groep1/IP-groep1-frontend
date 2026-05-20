@@ -7,6 +7,7 @@ namespace Drupal\session_management\Controller;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Database\Database;
 use Drupal\Core\Url;
+use Drupal\session_management\Form\FestivalSettingsForm;
 
 /**
  * Admin page: lists all sessions directly from MariaDB.
@@ -23,11 +24,16 @@ class AdminSessionsController extends ControllerBase
             $createUrl = '/session/create';
         }
 
+        $festivalForm = \Drupal::formBuilder()->getForm(FestivalSettingsForm::class);
+        $hasEvent     = !empty(\Drupal::config('shift_festival.settings')->get('festival_start_date'));
+
         return [
-            '#theme'      => 'admin_sessions',
-            '#sessions'   => $sessions,
-            '#create_url' => $createUrl,
-            '#cache'      => ['max-age' => 0],
+            '#theme'         => 'admin_sessions',
+            '#sessions'      => $sessions,
+            '#create_url'    => $createUrl,
+            '#festival_form' => $festivalForm,
+            '#has_event'     => $hasEvent,
+            '#cache'         => ['max-age' => 0],
         ];
     }
 
