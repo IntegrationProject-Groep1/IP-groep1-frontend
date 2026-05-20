@@ -1,0 +1,58 @@
+{#
+  company-pending.html.twig
+  Shift Festival 2026 — bedrijfsregistratie in review.
+  Wordt gerenderd binnen de authenticated shell (page.html.twig).
+#}
+
+<div class="dash" style="max-width:560px;">
+
+  <div style="text-align:center;padding:40px 0 32px;">
+
+    {% if status == 'rejected' %}
+
+      {# ── Afgewezen ── #}
+      <div style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:var(--hot);margin-bottom:20px;">
+        <svg width="28" height="28" fill="none" stroke="white" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </div>
+      <h1 style="font-size:26px;font-weight:700;color:var(--ink);margin:0 0 8px;">{{ 'Registratie afgewezen'|t }}</h1>
+      <p style="color:var(--muted);font-size:15px;margin:0 0 24px;">
+        {{ 'Je bedrijfsregistratie is helaas niet goedgekeurd. Neem contact op met de organisatie voor meer informatie.'|t }}
+      </p>
+
+    {% else %}
+
+      {# ── In review ── #}
+      <div style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:var(--accent);margin-bottom:20px;">
+        <svg width="28" height="28" fill="none" stroke="white" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </div>
+      <h1 style="font-size:26px;font-weight:700;color:var(--ink);margin:0 0 8px;">{{ 'Registratie in behandeling'|t }}</h1>
+      {% if company_name %}
+        <p style="color:var(--muted);font-size:15px;margin:0 0 8px;">
+          {{ '<strong>@company</strong> wordt beoordeeld door een beheerder.'|t({'@company': company_name})|raw }}
+        </p>
+      {% endif %}
+      <p style="color:var(--muted);font-size:15px;margin:0 0 24px;">
+        {{ 'Je ontvangt een melding zodra je account is goedgekeurd. Dit duurt normaal 1–2 werkdagen.'|t }}
+      </p>
+
+    {% endif %}
+
+    {# ── Logout ── #}
+    <a href="/user/logout"
+       style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:14px;text-decoration:none;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+      {{ 'Uitloggen'|t }}
+    </a>
+
+  </div>
+</div>
