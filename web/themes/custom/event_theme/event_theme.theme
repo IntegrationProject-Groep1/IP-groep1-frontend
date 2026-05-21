@@ -336,7 +336,7 @@ function event_theme_preprocess_page__front(array &$variables): void {
 
       $frontSessions = $db->query(
         "SELECT s.session_id, s.title, s.start_datetime, s.end_datetime,
-                s.location, s.session_type, s.status, s.max_attendees,
+                s.speaker_name, s.location, s.session_type, s.status, s.max_attendees,
                 s.current_attendees, s.price
          FROM planning_sessions s
          INNER JOIN planning_registrations r ON r.session_id = s.session_id
@@ -350,7 +350,7 @@ function event_theme_preprocess_page__front(array &$variables): void {
       // Landing page: show first few published sessions as a preview.
       $frontSessions = $db->query(
         "SELECT session_id, title, start_datetime, end_datetime,
-                location, session_type, status, max_attendees, price
+                speaker_name, location, session_type, status, max_attendees, price
          FROM planning_sessions
          WHERE is_deleted = 0
            AND status = 'published'

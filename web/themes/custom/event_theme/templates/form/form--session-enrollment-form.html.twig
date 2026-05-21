@@ -104,7 +104,10 @@
           {% set is_enrolled = session.status == 'enrolled' or session.status == 'confirmed' %}
 
           {# Build session detail JSON for the popup modal #}
-          {% set speaker_name = session.speaker ? [session.speaker.first_name, session.speaker.last_name]|join(' ')|trim : '' %}
+          {% set speaker_name = session.speaker_name ?? '' %}
+          {% if not speaker_name and session.speaker is defined and session.speaker %}
+            {% set speaker_name = [session.speaker.first_name, session.speaker.last_name]|join(' ')|trim %}
+          {% endif %}
           {% set speaker_org  = session.speaker.organisation ?? '' %}
           {% set speaker_email = session.speaker.email ?? '' %}
           {% set start_parts2 = session.start_datetime ? session.start_datetime|split('T') : [] %}
@@ -132,7 +135,7 @@
           <article class="session-card{% if is_full %} session-card-full{% endif %}"
                    data-type="{{ session.session_type|lower }}"
                    data-title="{{ session.title|lower }}"
-                   data-speaker="{% if session.speaker %}{{ [session.speaker.first_name, session.speaker.last_name]|join(' ')|lower }}{% endif %}"
+                   data-speaker="{{ speaker_name|lower }}"
                    data-location="{{ session.location|lower }}"
                    data-session="{{ session_json|e('html_attr') }}"
                    style="cursor:pointer;"
@@ -175,13 +178,12 @@
               {% endif %}
 
               <div class="session-foot">
-                {% if session.speaker %}
+                {% if speaker_name %}
                   <span>
                     <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                     </svg>
-                    {{ [session.speaker.first_name, session.speaker.last_name]|join(' ')|trim }}
-                    {% if session.speaker.organisation %}· {{ session.speaker.organisation }}{% endif %}
+                    {{ speaker_name }}
                   </span>
                 {% endif %}
                 {% if session.location %}
@@ -193,6 +195,13 @@
                     {{ session.location }}
                   </span>
                 {% endif %}
+                <span>
+                  {% if session.price is defined and session.price is not null and session.price != '' and session.price > 0 %}
+                    € {{ session.price }}
+                  {% else %}
+                    {{ 'Free'|t }}
+                  {% endif %}
+                </span>
               </div>
             </div>
 
@@ -379,9 +388,9 @@
 
     /* Footer: price + enroll action */
     var footEl = document.getElementById('sdmodal-footer');
-    var priceHtml = (data.price && data.price !== '0' && data.price !== '')
+    var priceHtml = (data.price && parseFloat(data.price) > 0)
       ? '<div class="sdmodal-price">€ ' + esc(String(data.price)) + '</div>'
-      : '';
+      : '<div class="sdmodal-price">{{ "Free"|t }}</div>';
     var enrollHtml = '';
     if (data.full) {
       enrollHtml = '<span class="btn btn-primary btn-sm" style="cursor:not-allowed;opacity:.55;text-decoration:none;">{{ "Vol"|t }}</span>';
