@@ -229,12 +229,12 @@
                 </span>
               {% elseif is_enrolled %}
                 <span class="tag tag-ok" style="justify-content:center;">{{ 'Ingeschreven'|t }}</span>
-                <form method="post" action="/sessions/unenroll/{{ sid }}?destination=/sessions/enroll" style="margin:0;">
-                  <button type="submit" class="btn btn-ghost btn-sm btn-full"
-                          onclick="return confirm('{{ 'Weet je zeker dat je deze sessie wil laten vallen?'|t|e('js') }}')">
-                    {{ 'Uitschrijven'|t }}
-                  </button>
-                </form>
+                <a href="/sessions/unenroll/{{ sid }}?destination=/sessions/enroll"
+                   class="btn btn-ghost btn-sm btn-full"
+                   style="text-align:center;display:block;text-decoration:none;"
+                   onclick="return confirm('{{ 'Weet je zeker dat je deze sessie wil laten vallen?'|t|e('js') }}')">
+                  {{ 'Uitschrijven'|t }}
+                </a>
               {% else %}
                 <a href="/sessions/enroll-single/{{ sid }}"
                    class="btn btn-primary btn-sm btn-full"
@@ -407,9 +407,10 @@
       enrollHtml = '<span class="btn btn-primary btn-sm" style="cursor:not-allowed;opacity:.55;text-decoration:none;">{{ "Vol"|t }}</span>';
     } else if (data.enrolled) {
       enrollHtml = '<span class="tag tag-ok" style="padding:8px 16px;font-size:14px;">{{ "Ingeschreven"|t }}</span>'
-        + '<form method="post" action="/sessions/unenroll/' + esc(String(data.session_id)) + '?destination=/sessions/enroll" style="margin:8px 0 0;">'
-        + '<button type="submit" class="btn btn-ghost btn-sm" onclick="return confirm(\'{{ confirm_drop_js }}\')">{{ "Uitschrijven"|t }}</button>'
-        + '</form>';
+        + '<a href="/sessions/unenroll/' + esc(String(data.session_id)) + '?destination=/sessions/enroll"'
+        + ' class="btn btn-ghost btn-sm" style="margin-top:8px;display:inline-block;text-decoration:none;"'
+        + ' onclick="return confirm(\'{{ confirm_drop_js }}\')">'
+        + '{{ "Uitschrijven"|t }}</a>';
     } else if (data.session_id) {
       enrollHtml = '<a href="/sessions/enroll-single/' + esc(String(data.session_id)) + '" class="btn btn-primary btn-sm" style="text-decoration:none;">{{ "Inschrijven"|t }}</a>';
     }

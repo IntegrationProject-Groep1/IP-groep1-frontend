@@ -2069,3 +2069,7 @@ body.is-auth-page .button--primary:hover {
   /* Footer */
   .landing-foot { padding: 20px 16px 24px; }
 }
+
+/* ── Drop button in session-side: ghost variant must not inherit dark btn styles ── */
+.session-side .btn-ghost { background: transparent; color: var(--ink); border-color: var(--line-2); }
+.session-side .btn-ghost:hover:not(:disabled) { background: var(--surface); color: var(--ink); border-color: var(--ink); }
