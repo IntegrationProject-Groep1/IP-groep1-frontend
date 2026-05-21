@@ -150,3 +150,21 @@ function session_management_update_8002(): void
         ]);
     }
 }
+
+/**
+ * 8003: Add speaker_name column to planning_sessions.
+ */
+function session_management_update_8003(): void
+{
+    $db     = \Drupal\Core\Database\Database::getConnection();
+    $schema = $db->schema();
+
+    if ($schema->tableExists('planning_sessions') && !$schema->fieldExists('planning_sessions', 'speaker_name')) {
+        $schema->addField('planning_sessions', 'speaker_name', [
+            'type'     => 'varchar',
+            'length'   => 255,
+            'not null' => false,
+            'default'  => '',
+        ]);
+    }
+}

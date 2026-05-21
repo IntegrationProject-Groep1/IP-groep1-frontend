@@ -136,7 +136,7 @@ class SessionEnrollForm extends FormBase
 
             $sessions = $db->query(
                 "SELECT session_id, title, start_datetime, end_datetime,
-                        location, session_type, status, max_attendees,
+                        speaker_name, location, session_type, status, max_attendees,
                         current_attendees, price
                  FROM planning_sessions
                  WHERE is_deleted = 0
@@ -169,10 +169,19 @@ class SessionEnrollForm extends FormBase
                 continue;
             }
             $label = $session['title'];
+            if (!empty($session['speaker_name'])) {
+                $label .= ' · ' . $session['speaker_name'];
+            }
             if (!empty($session['start_datetime'])) {
                 try {
                     $label .= ' — ' . (new \DateTimeImmutable($session['start_datetime']))->format('H:i, D d M');
                 } catch (\Throwable) {}
+            }
+            $price = $session['price'] ?? null;
+            if ($price !== null && $price !== '' && (float) $price > 0) {
+                $label .= ' · €' . number_format((float) $price, 2, '.', '');
+            } else {
+                $label .= ' · ' . 'Free';
             }
             $options[(string) $session['session_id']] = $label;
         }

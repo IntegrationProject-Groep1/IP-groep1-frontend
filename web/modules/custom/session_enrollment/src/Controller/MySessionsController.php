@@ -120,7 +120,7 @@ class MySessionsController extends ControllerBase
             $db   = Database::getConnection();
             $rows = $db->query(
                 "SELECT s.session_id, s.title, s.start_datetime, s.end_datetime,
-                        s.location, s.session_type, s.status,
+                        s.speaker_name, s.location, s.session_type, s.status,
                         s.max_attendees, s.current_attendees, s.price
                  FROM planning_sessions s
                  INNER JOIN planning_registrations r ON r.session_id = s.session_id

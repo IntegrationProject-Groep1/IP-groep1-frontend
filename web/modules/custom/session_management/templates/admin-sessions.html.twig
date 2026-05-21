@@ -108,8 +108,8 @@
                     <div class="admin-title">{{ s.title }}</div>
                     <div class="admin-sub">
                       {{ sid }}
-                      {% if s.speaker %}
-                        · {{ [s.speaker.first_name, s.speaker.last_name]|join(' ')|trim }}
+                      {% if s.speaker_name %}
+                        · {{ s.speaker_name }}
                       {% endif %}
                     </div>
                   </div>
@@ -153,6 +153,13 @@
                 {% if s.status and s.status != 'published' %}
                   <span class="tag" style="margin-left:4px;">{{ s.status }}</span>
                 {% endif %}
+                <div class="admin-sub" style="margin-top:4px;">
+                  {% if s.price is defined and s.price is not null and s.price != '' and s.price > 0 %}
+                    € {{ s.price }}
+                  {% else %}
+                    {{ 'Free'|t }}
+                  {% endif %}
+                </div>
               </td>
 
               <td class="admin-row-actions">
