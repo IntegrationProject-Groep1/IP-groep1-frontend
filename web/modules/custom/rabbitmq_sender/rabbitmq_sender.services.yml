@@ -35,6 +35,9 @@ services:
   rabbitmq_sender.user_unregistered_sender:
     class: Drupal\rabbitmq_sender\UserUnregisteredSender
 
+  rabbitmq_sender.cancel_registration_sender:
+    class: Drupal\rabbitmq_sender\CancelRegistrationSender
+
   rabbitmq_sender.company_member_removed_sender:
     class: Drupal\rabbitmq_sender\CompanyMemberRemovedSender
 
@@ -46,3 +49,15 @@ services:
 
   rabbitmq_sender.user_sessions_request_sender:
     class: Drupal\rabbitmq_sender\UserSessionsRequestSender
+
+  rabbitmq_sender.user_deleted_sender:
+    class: Drupal\rabbitmq_sender\UserDeletedSender
+
+  rabbitmq_sender.company_update_sender:
+    class: Drupal\rabbitmq_sender\CompanyUpdateSender
+
+  rabbitmq_sender.company_delete_sender:
+    class: Drupal\rabbitmq_sender\CompanyDeleteSender
+
+  rabbitmq_sender.wallet_topup_request_sender:
+    class: Drupal\rabbitmq_sender\WalletTopupRequestSender

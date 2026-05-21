@@ -75,10 +75,7 @@ class WalletBalanceReceiver
             throw new \InvalidArgumentException('No user found for identity_uuid: ' . $identityUuid);
         }
 
-        \Drupal::service('user.data')->set('registration_form', $uid, 'wallet_balance', [
-            'amount'   => $balance,
-            'currency' => $currency,
-        ]);
+        \Drupal::service('user.data')->set('registration_form', $uid, 'wallet_balance', $balance);
 
         \Drupal::logger('rabbitmq_receiver')->info(
             'wallet_balance_update: stored balance @balance @currency for uid @uid (identity_uuid @uuid).',
