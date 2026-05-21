@@ -4,19 +4,10 @@ declare(strict_types=1);
 namespace Drupal\rabbitmq_sender;
 
 /**
- * Sends session_view_request messages to Planning to retrieve available sessions.
- *
- * Frontend publishes on:
- *   Exchange:    planning.exchange      (topic, durable)
- *   Routing key: frontend.to.planning.session.view
- *
- * Planning responds via:
- *   Exchange:    planning.exchange
- *   Routing key: planning.to.frontend.session.view.response
- *   Queue:       frontend.planning.session.view.response  (handled by SessionViewResponseReceiver)
- *
- * The optional session_id body field scopes the request to a single session.
- * Omit it to request all available sessions.
+ * @deprecated contract v2.3 §19.2 — Planning is als service weggevallen.
+ * Deze RPC bestaat niet meer. Sessiedata komt nu via push-berichten
+ * session_created / session_updated / session_deleted.
+ * Deze class mag niet meer worden aangeroepen.
  */
 class SessionViewRequestSender
 {

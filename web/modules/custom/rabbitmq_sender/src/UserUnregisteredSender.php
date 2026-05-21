@@ -6,7 +6,8 @@ namespace Drupal\rabbitmq_sender;
 use PhpAmqpLib\Message\AMQPMessage;
 
 /**
- * Publishes user_unregistered events to RabbitMQ (v2.0 contract, section 5.5b).
+ * Publishes user_unregistered events to RabbitMQ (v2.3 contract §5.5b).
+ * Dual-publish: crm.incoming (CRM) + kassa.exchange (Kassa).
  */
 class UserUnregisteredSender
 {
@@ -15,11 +16,14 @@ class UserUnregisteredSender
 
     private ?RabbitMQClient $client;
 
-    private const QUEUE_NAME = 'crm.incoming';
-    private const SOURCE     = 'frontend';
-    private const TYPE       = 'user_unregistered';
-    private const VERSION    = '2.0';
-    private const XSD_PATH   = __DIR__ . '/../../../../../xsd/user_unregistered.xsd';
+    private const QUEUE_CRM         = 'crm.incoming';
+    private const EXCHANGE_KASSA    = 'kassa.exchange';
+    private const ROUTING_KEY_KASSA = 'kassa.incoming.user_unregistered';
+    private const EXCHANGE_TYPE     = 'topic';
+    private const SOURCE            = 'frontend';
+    private const TYPE              = 'user_unregistered';
+    private const VERSION           = '2.0';
+    private const XSD_PATH          = __DIR__ . '/../../../../../xsd/user_unregistered.xsd';
 
     public function __construct(?RabbitMQClient $client = null)
     {
@@ -45,13 +49,21 @@ class UserUnregisteredSender
         $this->validateXml($xml, self::XSD_PATH);
 
         $this->sendWithRetry(function () use ($xml): void {
-            $this->resolveClient()->declareQueue(self::QUEUE_NAME);
+            $channel = $this->resolveClient()->getChannel();
             $msg = new AMQPMessage($xml, [
                 'delivery_mode' => 2,
                 'content_type'  => 'application/xml',
             ]);
-            $this->resolveClient()->getChannel()->basic_publish($msg, '', self::QUEUE_NAME);
-            $this->logOutboundSuccess(self::TYPE, self::QUEUE_NAME, $xml);
+
+            // Publish to CRM
+            $this->resolveClient()->declareQueue(self::QUEUE_CRM);
+            $channel->basic_publish($msg, '', self::QUEUE_CRM);
+            $this->logOutboundSuccess(self::TYPE, self::QUEUE_CRM, $xml);
+
+            // Dual-publish to Kassa (contract §5.5b v2.3)
+            $channel->exchange_declare(self::EXCHANGE_KASSA, self::EXCHANGE_TYPE, false, true, false);
+            $channel->basic_publish($msg, self::EXCHANGE_KASSA, self::ROUTING_KEY_KASSA);
+            $this->logOutboundSuccess(self::TYPE, self::ROUTING_KEY_KASSA, $xml);
         });
     }
 

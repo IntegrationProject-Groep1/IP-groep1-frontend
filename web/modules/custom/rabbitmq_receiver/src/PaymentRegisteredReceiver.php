@@ -25,8 +25,6 @@ class PaymentRegisteredReceiver
     public function __construct(private readonly RabbitMQClient $client) {}
 
     /**
-     * Parse and validate an incoming payment_registered XML message.
-     *
      * @return true
      * @throws \InvalidArgumentException
      */
@@ -57,6 +55,7 @@ class PaymentRegisteredReceiver
         $invoice = $body->invoice;
         $invoiceId  = trim((string) $invoice->id);
         $amountPaid = trim((string) $invoice->amount_paid);
+        $currency   = trim((string) ($invoice->amount_paid->attributes()['currency'] ?? 'eur'));
         $status     = trim((string) $invoice->status);
         if ($status === '') {
             throw new \InvalidArgumentException('status is required');
@@ -68,13 +67,14 @@ class PaymentRegisteredReceiver
         $paymentMethod     = isset($body->transaction) ? trim((string) $body->transaction->payment_method) : '';
 
         \Drupal::logger('rabbitmq_receiver')->info(
-            'payment_registered: identity_uuid=@uuid, invoice=@inv, amount=@amount, context=@ctx, method=@method.',
+            'payment_registered: identity_uuid=@uuid, invoice=@inv, amount=@amount @currency, context=@ctx, method=@method.',
             [
-                '@uuid'   => $identityUuid,
-                '@inv'    => $invoiceId,
-                '@amount' => $amountPaid,
-                '@ctx'    => $paymentContext,
-                '@method' => $paymentMethod ?: 'n/a',
+                '@uuid'     => $identityUuid,
+                '@inv'      => $invoiceId,
+                '@amount'   => $amountPaid,
+                '@currency' => strtoupper($currency),
+                '@ctx'      => $paymentContext,
+                '@method'   => $paymentMethod ?: 'n/a',
             ]
         );
 
@@ -84,6 +84,7 @@ class PaymentRegisteredReceiver
             $userData->set('registration_form', $uid, 'last_payment', [
                 'invoice_id'      => $invoiceId,
                 'amount_paid'     => $amountPaid,
+                'currency'        => $currency,
                 'status'          => $status,
                 'payment_context' => $paymentContext,
                 'transaction_id'  => $transactionId,
@@ -114,9 +115,6 @@ class PaymentRegisteredReceiver
         return null;
     }
 
-    /**
-     * Subscribe to the payment_registered queue with DLQ support.
-     */
     public function listen(): void
     {
         $channel = $this->client->getChannel();

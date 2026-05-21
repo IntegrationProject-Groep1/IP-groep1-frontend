@@ -10,9 +10,10 @@ use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
 
 /**
- * Receives session_view_response messages from the Planning system.
- *
- * On success, stores the session list in Drupal state at key 'planning.sessions'.
+ * @deprecated contract v2.3 §19.2 — Planning is als service weggevallen.
+ * Deze RPC bestaat niet meer. Sessiedata komt nu via push-berichten
+ * session_created / session_updated / session_deleted.
+ * Deze receiver mag niet meer worden gebruikt.
  */
 class SessionViewResponseReceiver
 {
@@ -30,11 +31,6 @@ class SessionViewResponseReceiver
     public function __construct(private readonly RabbitMQClient $client) {}
 
     /**
-     * Parse an incoming session_view_response XML message.
-     *
-     * Returns an array of session arrays, or an empty array when status is 'not_found'.
-     * Sessions without a session_id are silently skipped.
-     *
      * @return list<array<string, mixed>>
      * @throws \InvalidArgumentException
      */
@@ -112,11 +108,6 @@ class SessionViewResponseReceiver
         return $sessions;
     }
 
-    /**
-     * Subscribe to the session_view_response queue with DLQ support.
-     *
-     * Stores parsed sessions in Drupal state under 'planning.sessions'.
-     */
     public function listen(): void
     {
         $channel = $this->client->getChannel();
@@ -154,12 +145,6 @@ class SessionViewResponseReceiver
         }
     }
 
-    /**
-     * Poll the session_view_response queue once (non-blocking) and process any waiting message.
-     *
-     * Stores the parsed session list in Drupal state at key 'planning.sessions'.
-     * Returns true when a message was processed, false when the queue was empty.
-     */
     public function pollOnce(): bool
     {
         $channel = $this->client->getChannel();
@@ -191,11 +176,6 @@ class SessionViewResponseReceiver
         return true;
     }
 
-    /**
-     * Parse an XML string, stripping the default namespace for uniform access.
-     *
-     * @throws \InvalidArgumentException on invalid XML
-     */
     private function parseXml(string $xmlString): \SimpleXMLElement
     {
         libxml_use_internal_errors(true);
