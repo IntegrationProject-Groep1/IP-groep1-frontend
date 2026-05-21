@@ -216,7 +216,10 @@ document.addEventListener('keydown', function(e) { if (e.key === 'Escape') sfClo
           {# Schedule #}
           <div class="card card-pad-lg">
             <div class="section-label-row">
-              <span class="section-label">{{ 'Jouw sessies'|t }}</span>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="section-label">{{ 'Jouw sessies'|t }}</span>
+                <span class="nav-count">{{ front_sessions|length }}</span>
+              </div>
               {% if my_sessions_url %}
                 <a href="{{ my_sessions_url }}" class="muted-link" style="font-size:13px;">{{ 'Alles zien'|t }} →</a>
               {% endif %}
@@ -275,32 +278,6 @@ document.addEventListener('keydown', function(e) { if (e.key === 'Escape') sfClo
                 <span class="wallet-mini-amount">{{ wallet_balance is not null ? wallet_balance|number_format(2, '.', '') : '0.00' }}</span>
               </div>
               <p>{{ 'Betaal voor eten, drinken en merch door je badge te scannen bij een kiosk.'|t }}</p>
-            </div>
-          </div>
-
-          {# Stats #}
-          <div class="card dash-stat-row">
-            <div class="stat">
-              <div class="stat-label">{{ 'Sessies'|t }}</div>
-              <div class="stat-value">{{ front_sessions|length }}</div>
-              <div class="stat-sub">{{ 'van @count beschikbaar'|t({'@count': total_sessions_count}) }}</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">{{ 'Wallet'|t }}</div>
-              <div class="stat-value">€{{ wallet_balance is not null ? wallet_balance|round : '0' }}</div>
-              <div class="stat-sub">{{ 'saldo'|t }}</div>
-            </div>
-            {% if is_company_user %}
-              <div class="stat">
-                <div class="stat-label">{{ 'Team'|t }}</div>
-                <div class="stat-value">—</div>
-                <div class="stat-sub">{{ 'uitgenodigde collega\'s'|t }}</div>
-              </div>
-            {% endif %}
-            <div class="stat">
-              <div class="stat-label">{{ 'Aftellen'|t }}</div>
-              <div class="stat-value">{{ days_until_festival }}</div>
-              <div class="stat-sub">{{ 'dagen tot event'|t }}</div>
             </div>
           </div>
 
