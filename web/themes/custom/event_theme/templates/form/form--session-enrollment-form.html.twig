@@ -223,11 +223,7 @@
                 </div>
               {% endif %}
 
-              {% if is_full %}
-                <span class="btn btn-primary btn-sm btn-full" style="text-align:center;cursor:not-allowed;opacity:.55;">
-                  {{ 'Vol'|t }}
-                </span>
-              {% elseif is_enrolled %}
+              {% if is_enrolled %}
                 <span class="tag tag-ok" style="justify-content:center;">{{ 'Ingeschreven'|t }}</span>
                 <a href="/sessions/unenroll/{{ sid }}?destination=/sessions/enroll"
                    class="btn btn-ghost btn-sm btn-full"
@@ -235,6 +231,10 @@
                    onclick="return confirm('{{ 'Weet je zeker dat je deze sessie wil laten vallen?'|t|e('js') }}')">
                   {{ 'Uitschrijven'|t }}
                 </a>
+              {% elseif is_full %}
+                <span class="btn btn-primary btn-sm btn-full" style="text-align:center;cursor:not-allowed;opacity:.55;">
+                  {{ 'Vol'|t }}
+                </span>
               {% else %}
                 <a href="/sessions/enroll-single/{{ sid }}"
                    class="btn btn-primary btn-sm btn-full"
@@ -403,14 +403,14 @@
       : '<div class="sdmodal-price">{{ "Free"|t }}</div>';
     var enrollHtml = '';
     {% set confirm_drop_js = 'Weet je zeker dat je deze sessie wil laten vallen?'|t|e('js') %}
-    if (data.full) {
-      enrollHtml = '<span class="btn btn-primary btn-sm" style="cursor:not-allowed;opacity:.55;text-decoration:none;">{{ "Vol"|t }}</span>';
-    } else if (data.enrolled) {
+    if (data.enrolled) {
       enrollHtml = '<span class="tag tag-ok" style="padding:8px 16px;font-size:14px;">{{ "Ingeschreven"|t }}</span>'
         + '<a href="/sessions/unenroll/' + esc(String(data.session_id)) + '?destination=/sessions/enroll"'
         + ' class="btn btn-ghost btn-sm" style="margin-top:8px;display:inline-block;text-decoration:none;"'
         + ' onclick="return confirm(\'{{ confirm_drop_js }}\')">'
         + '{{ "Uitschrijven"|t }}</a>';
+    } else if (data.full) {
+      enrollHtml = '<span class="btn btn-primary btn-sm" style="cursor:not-allowed;opacity:.55;text-decoration:none;">{{ "Vol"|t }}</span>';
     } else if (data.session_id) {
       enrollHtml = '<a href="/sessions/enroll-single/' + esc(String(data.session_id)) + '" class="btn btn-primary btn-sm" style="text-decoration:none;">{{ "Inschrijven"|t }}</a>';
     }
