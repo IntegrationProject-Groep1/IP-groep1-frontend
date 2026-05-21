@@ -62,6 +62,22 @@ class EnrollSingleController extends ControllerBase
             return new RedirectResponse(Url::fromRoute('session_enrollment.enroll')->toString());
         }
 
+        // Notify CRM + Kassa of the session registration (contract §5.5, dual-publish).
+        try {
+            $userRegisteredSender = \Drupal::service('rabbitmq_sender.user_registered_sender');
+            $userRegisteredSender->send([
+                'identity_uuid' => $identityUuid,
+                'email'         => $currentUser->getEmail(),
+                'session_id'    => $session_id,
+                'session_title' => $session['title'] ?? '',
+                'first_name'    => '',
+                'last_name'     => '',
+                'price'         => $session['price'] ?? null,
+            ]);
+        } catch (\Throwable $e) {
+            \Drupal::logger('session_enrollment')->warning('EnrollSingle user_registered RabbitMQ failed (non-blocking): @e', ['@e' => $e->getMessage()]);
+        }
+
         // Notify planning for Graph API + ICS (non-blocking).
         try {
             $sender = new \Drupal\rabbitmq_sender\CalendarInviteSender();
