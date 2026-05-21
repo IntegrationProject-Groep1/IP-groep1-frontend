@@ -216,9 +216,9 @@ document.addEventListener('keydown', function(e) { if (e.key === 'Escape') sfClo
           {# Schedule #}
           <div class="card card-pad-lg">
             <div class="section-label-row">
-              <div style="display:flex;align-items:flex-start;gap:8px;">
+              <div style="display:flex;align-items:baseline;gap:8px;">
                 <span class="section-label">{{ 'Jouw sessies'|t }}</span>
-                <span class="nav-count" style="background:var(--muted);">{{ front_sessions|length }}</span>
+                <span class="nav-count" style="background:var(--muted);margin-left:0;">{{ front_sessions|length }}</span>
               </div>
               {% if my_sessions_url %}
                 <a href="{{ my_sessions_url }}" class="muted-link" style="font-size:13px;">{{ 'Alles zien'|t }} →</a>
