@@ -327,7 +327,7 @@ function event_theme_preprocess_page__front(array &$variables): void {
   $totalSessionsCount = 0;
 
   try {
-    $db = \Drupal\Core\Database\Database::getConnection('default', 'planning');
+    $db = \Drupal\Core\Database\Database::getConnection();
 
     if ($account->isAuthenticated()) {
       $uid        = (int) $account->id();
