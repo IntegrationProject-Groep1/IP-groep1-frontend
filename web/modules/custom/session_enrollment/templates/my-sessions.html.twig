@@ -60,7 +60,7 @@
               {% endif %}
 
               {% set has_capacity = s.max_attendees is defined and s.max_attendees > 0 %}
-              {% set has_price    = s.price is defined and s.price is not null and s.price != '' %}
+              {% set has_price    = true %}
               {% set has_email    = s.speaker is defined and s.speaker and s.speaker.email is defined and s.speaker.email %}
               {% set has_details  = has_capacity or has_price or has_email %}
               {% set speaker_display = s.speaker_name ?? '' %}
@@ -139,12 +139,14 @@
                         <dd>{{ s.current_attendees }}&thinsp;/&thinsp;{{ s.max_attendees }} ({{ pct }}%)</dd>
                       </div>
                     {% endif %}
-                    {% if has_price %}
-                      <div class="schedule-detail-field">
-                        <dt>{{ 'Price'|t }}</dt>
+                    <div class="schedule-detail-field">
+                      <dt>{{ 'Price'|t }}</dt>
+                      {% if s.price is defined and s.price is not null and s.price != '' and s.price > 0 %}
                         <dd>€ {{ s.price }}</dd>
-                      </div>
-                    {% endif %}
+                      {% else %}
+                        <dd>{{ 'Free'|t }}</dd>
+                      {% endif %}
+                    </div>
                     {% if has_email %}
                       <div class="schedule-detail-field">
                         <dt>{{ 'Speaker contact'|t }}</dt>

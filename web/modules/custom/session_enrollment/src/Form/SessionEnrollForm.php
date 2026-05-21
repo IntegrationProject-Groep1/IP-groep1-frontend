@@ -177,6 +177,12 @@ class SessionEnrollForm extends FormBase
                     $label .= ' — ' . (new \DateTimeImmutable($session['start_datetime']))->format('H:i, D d M');
                 } catch (\Throwable) {}
             }
+            $price = $session['price'] ?? null;
+            if ($price !== null && $price !== '' && (float) $price > 0) {
+                $label .= ' · €' . number_format((float) $price, 2, '.', '');
+            } else {
+                $label .= ' · ' . 'Free';
+            }
             $options[(string) $session['session_id']] = $label;
         }
         return $options;
