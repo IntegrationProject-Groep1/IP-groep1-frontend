@@ -4,22 +4,10 @@ declare(strict_types=1);
 namespace Drupal\rabbitmq_sender;
 
 /**
- * Sends user_sessions_request messages to Planning to fetch a user's enrolled sessions.
- *
- * Frontend publishes on:
- *   Exchange:    planning.exchange      (topic, durable)
- *   Routing key: frontend.to.planning.user_sessions_request
- *
- * Planning responds via:
- *   Exchange:    planning.exchange
- *   Routing key: planning.to.frontend.user_sessions_response
- *   Queue:       frontend.planning.user_sessions_response  (handled by UserSessionsResponseReceiver)
- *
- * Required body field: identity_uuid — the master_uuid of the visitor.
- * The correlation_id in the header is returned in the response header so the
- * caller can match the response to this specific request.
- *
- * @return string $correlationId so the caller can match the async response.
+ * @deprecated contract v2.3 §19.7 — Breaking change: de flow is omgedraaid.
+ * Kassa initieert nu de user_sessions_request naar Frontend (niet meer Frontend naar Planning).
+ * Frontend ontvangt het verzoek en stuurt user_sessions_response terug via de reply_to queue.
+ * Deze sender mag niet meer worden aangeroepen.
  */
 class UserSessionsRequestSender
 {
@@ -41,13 +29,6 @@ class UserSessionsRequestSender
         $this->client = $client;
     }
 
-    /**
-     * Sends a user_sessions_request for the given identity UUID.
-     *
-     * @param string $identityUuid The master_uuid of the user.
-     *
-     * @return string The correlation_id used in this request, for matching the response.
-     */
     public function send(string $identityUuid): string
     {
         $correlationId = $this->generateUuidV4();

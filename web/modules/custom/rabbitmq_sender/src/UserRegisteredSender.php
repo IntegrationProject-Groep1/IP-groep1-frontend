@@ -3,10 +3,9 @@ declare(strict_types=1);
 
 namespace Drupal\rabbitmq_sender;
 
-use PhpAmqpLib\Message\AMQPMessage;
-
 /**
- * Publishes user_registered events to RabbitMQ (v2.0 contract).
+ * Publishes user_registered events to RabbitMQ (v2.3 contract §5.5).
+ * Dual-publish: crm.incoming (CRM) + kassa.exchange (Kassa).
  */
 class UserRegisteredSender
 {
@@ -15,11 +14,14 @@ class UserRegisteredSender
 
     private ?RabbitMQClient $client;
 
-    private const QUEUE_NAME = 'crm.incoming';
-    private const SOURCE     = 'frontend';
-    private const TYPE       = 'user_registered';
-    private const VERSION    = '2.0';
-    private const XSD_PATH   = __DIR__ . '/../../../../../xsd/user_registered.xsd';
+    private const QUEUE_CRM          = 'crm.incoming';
+    private const EXCHANGE_KASSA     = 'kassa.exchange';
+    private const ROUTING_KEY_KASSA  = 'kassa.incoming.user_registered';
+    private const EXCHANGE_TYPE      = 'topic';
+    private const SOURCE             = 'frontend';
+    private const TYPE               = 'user_registered';
+    private const VERSION            = '2.0';
+    private const XSD_PATH           = __DIR__ . '/../../../../../xsd/user_registered.xsd';
 
     public function __construct(?RabbitMQClient $client = null)
     {
@@ -32,9 +34,6 @@ class UserRegisteredSender
             throw new \InvalidArgumentException('identity_uuid is required');
         }
         $this->assertValidUuid((string) $data['identity_uuid'], 'identity_uuid');
-        if (empty($data['email'])) {
-            throw new \InvalidArgumentException('email is required');
-        }
         if (empty($data['session_id'])) {
             throw new \InvalidArgumentException('session_id is required');
         }
@@ -49,13 +48,15 @@ class UserRegisteredSender
         $this->validateXml($xml, self::XSD_PATH);
 
         $this->sendWithRetry(function () use ($xml): void {
-            $this->resolveClient()->declareQueue(self::QUEUE_NAME);
-            $msg = new AMQPMessage($xml, [
-                'delivery_mode' => 2,
-                'content_type'  => 'application/xml',
-            ]);
-            $this->resolveClient()->getChannel()->basic_publish($msg, '', self::QUEUE_NAME);
-            $this->logOutboundSuccess(self::TYPE, self::QUEUE_NAME, $xml);
+            // Publish to CRM
+            $this->resolveClient()->declareQueue(self::QUEUE_CRM);
+            $this->resolveClient()->publishToQueue(self::QUEUE_CRM, $xml);
+            $this->logOutboundSuccess(self::TYPE, self::QUEUE_CRM, $xml);
+
+            // Dual-publish to Kassa (contract §5.5 v2.3)
+            $this->resolveClient()->declareExchange(self::EXCHANGE_KASSA, self::EXCHANGE_TYPE);
+            $this->resolveClient()->publishToExchange(self::EXCHANGE_KASSA, self::ROUTING_KEY_KASSA, $xml);
+            $this->logOutboundSuccess(self::TYPE, self::ROUTING_KEY_KASSA, $xml);
         });
     }
 
@@ -86,7 +87,9 @@ class UserRegisteredSender
         // identity_uuid: master UUID from Identity Service (falls back to user_id)
         $identityUuid = (string) ($data['identity_uuid'] ?? '');
         $customer->appendChild($dom->createElement('identity_uuid', htmlspecialchars($identityUuid, ENT_XML1, 'UTF-8')));
-        $customer->appendChild($dom->createElement('email', htmlspecialchars((string) $data['email'], ENT_XML1, 'UTF-8')));
+        if (!empty($data['email'])) {
+            $customer->appendChild($dom->createElement('email', htmlspecialchars((string) $data['email'], ENT_XML1, 'UTF-8')));
+        }
 
         $contact = $dom->createElement('contact');
         $contact->appendChild($dom->createElement('first_name', htmlspecialchars($data['first_name'] ?? '', ENT_XML1, 'UTF-8')));
@@ -117,6 +120,12 @@ class UserRegisteredSender
             $body->appendChild($dom->createElement('session_title', htmlspecialchars((string) $data['session_title'], ENT_XML1, 'UTF-8')));
         } elseif (!empty($data['session_name'])) {
             $body->appendChild($dom->createElement('session_title', htmlspecialchars((string) $data['session_name'], ENT_XML1, 'UTF-8')));
+        }
+
+        if (isset($data['price'])) {
+            $priceEl = $dom->createElement('price', htmlspecialchars((string) $data['price'], ENT_XML1, 'UTF-8'));
+            $priceEl->setAttribute('currency', 'eur');
+            $body->appendChild($priceEl);
         }
 
         $body->appendChild($dom->createElement('payment_status', 'pending'));

@@ -4,27 +4,22 @@ declare(strict_types=1);
 namespace Drupal\rabbitmq_sender;
 
 /**
- * Sends cancel_registration messages to Planning so it can:
- *  - Mark the session_registration as cancelled in the DB
- *  - Delete the user's Outlook calendar event via Graph API
- *  - Decrement the session attendee count
+ * Sends cancel_registration messages to CRM (contract §5.6).
+ * CRM routes the message onward to Kassa and Planning (§10.3).
  *
  * Frontend publishes on:
- *   Exchange:    planning.exchange      (topic, durable)
- *   Routing key: frontend.to.planning.cancel_registration
+ *   Queue: crm.incoming  (direct, durable)
  */
 class CancelRegistrationSender
 {
     use RetryTrait;
     use XmlValidationTrait;
 
-    private const EXCHANGE      = 'planning.exchange';
-    private const ROUTING_KEY   = 'frontend.to.planning.cancel_registration';
-    private const EXCHANGE_TYPE = 'topic';
-    private const SOURCE        = 'frontend';
-    private const TYPE          = 'cancel_registration';
-    private const VERSION       = '2.0';
-    private const XSD_PATH      = __DIR__ . '/../../../../../xsd/cancel_registration.xsd';
+    private const QUEUE_NAME = 'crm.incoming';
+    private const SOURCE     = 'frontend';
+    private const TYPE       = 'cancel_registration';
+    private const VERSION    = '2.0';
+    private const XSD_PATH   = __DIR__ . '/../../../../../xsd/cancel_registration.xsd';
 
     private ?RabbitMQClient $client;
 
@@ -35,17 +30,16 @@ class CancelRegistrationSender
 
     public function send(string $sessionId, string $identityUuid): void
     {
+        $this->assertValidUuid($identityUuid, 'identity_uuid');
+
         $correlationId = $this->generateUuidV4();
         $xml = $this->buildXml($sessionId, $identityUuid, $correlationId);
         $this->validateXml($xml, self::XSD_PATH);
 
         $this->sendWithRetry(function () use ($xml): void {
-            $this->resolveClient()->declareExchange(self::EXCHANGE, self::EXCHANGE_TYPE);
-            $this->resolveClient()->publishToExchange(self::EXCHANGE, self::ROUTING_KEY, $xml);
-            \Drupal::logger('rabbitmq_sender')->info(
-                'Sent @type to @key',
-                ['@type' => self::TYPE, '@key' => self::ROUTING_KEY]
-            );
+            $this->resolveClient()->declareQueue(self::QUEUE_NAME);
+            $this->resolveClient()->publishToQueue(self::QUEUE_NAME, $xml);
+            $this->logOutboundSuccess(self::TYPE, self::QUEUE_NAME, $xml);
         });
     }
 

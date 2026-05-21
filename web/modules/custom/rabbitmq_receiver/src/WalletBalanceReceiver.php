@@ -30,8 +30,6 @@ class WalletBalanceReceiver
     }
 
     /**
-     * Parse and validate an incoming wallet_balance_update XML message, then store the balance.
-     *
      * @return true
      * @throws \InvalidArgumentException
      */
@@ -54,6 +52,7 @@ class WalletBalanceReceiver
 
         $identityUuid = trim((string) $xml->body->identity_uuid);
         $balance      = trim((string) $xml->body->wallet_balance);
+        $currency     = trim((string) ($xml->body->wallet_balance->attributes()['currency'] ?? 'eur'));
 
         if (empty($identityUuid)) {
             throw new \InvalidArgumentException('identity_uuid is required');
@@ -79,18 +78,13 @@ class WalletBalanceReceiver
         \Drupal::service('user.data')->set('registration_form', $uid, 'wallet_balance', $balance);
 
         \Drupal::logger('rabbitmq_receiver')->info(
-            'wallet_balance_update: stored balance €@balance for uid @uid (identity_uuid @uuid).',
-            ['@balance' => $balance, '@uid' => $uid, '@uuid' => $identityUuid]
+            'wallet_balance_update: stored balance @balance @currency for uid @uid (identity_uuid @uuid).',
+            ['@balance' => $balance, '@currency' => strtoupper($currency), '@uid' => $uid, '@uuid' => $identityUuid]
         );
 
         return true;
     }
 
-    /**
-     * Poll the wallet_balance_update queue once (non-blocking).
-     *
-     * Returns true when a message was processed, false when the queue was empty.
-     */
     public function pollOnce(): bool
     {
         $channel = $this->resolveClient()->getChannel();
@@ -111,9 +105,6 @@ class WalletBalanceReceiver
         return true;
     }
 
-    /**
-     * Subscribe to the wallet_balance_update queue with DLQ support (blocking loop for worker scripts).
-     */
     public function listen(): void
     {
         $channel = $this->resolveClient()->getChannel();
