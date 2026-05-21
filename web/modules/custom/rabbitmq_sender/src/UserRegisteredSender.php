@@ -3,8 +3,6 @@ declare(strict_types=1);
 
 namespace Drupal\rabbitmq_sender;
 
-use PhpAmqpLib\Message\AMQPMessage;
-
 /**
  * Publishes user_registered events to RabbitMQ (v2.3 contract §5.5).
  * Dual-publish: crm.incoming (CRM) + kassa.exchange (Kassa).
@@ -36,9 +34,6 @@ class UserRegisteredSender
             throw new \InvalidArgumentException('identity_uuid is required');
         }
         $this->assertValidUuid((string) $data['identity_uuid'], 'identity_uuid');
-        if (empty($data['email'])) {
-            throw new \InvalidArgumentException('email is required');
-        }
         if (empty($data['session_id'])) {
             throw new \InvalidArgumentException('session_id is required');
         }
@@ -53,20 +48,14 @@ class UserRegisteredSender
         $this->validateXml($xml, self::XSD_PATH);
 
         $this->sendWithRetry(function () use ($xml): void {
-            $channel = $this->resolveClient()->getChannel();
-            $msg = new AMQPMessage($xml, [
-                'delivery_mode' => 2,
-                'content_type'  => 'application/xml',
-            ]);
-
             // Publish to CRM
             $this->resolveClient()->declareQueue(self::QUEUE_CRM);
-            $channel->basic_publish($msg, '', self::QUEUE_CRM);
+            $this->resolveClient()->publishToQueue(self::QUEUE_CRM, $xml);
             $this->logOutboundSuccess(self::TYPE, self::QUEUE_CRM, $xml);
 
             // Dual-publish to Kassa (contract §5.5 v2.3)
-            $channel->exchange_declare(self::EXCHANGE_KASSA, self::EXCHANGE_TYPE, false, true, false);
-            $channel->basic_publish($msg, self::EXCHANGE_KASSA, self::ROUTING_KEY_KASSA);
+            $this->resolveClient()->declareExchange(self::EXCHANGE_KASSA, self::EXCHANGE_TYPE);
+            $this->resolveClient()->publishToExchange(self::EXCHANGE_KASSA, self::ROUTING_KEY_KASSA, $xml);
             $this->logOutboundSuccess(self::TYPE, self::ROUTING_KEY_KASSA, $xml);
         });
     }
@@ -98,7 +87,9 @@ class UserRegisteredSender
         // identity_uuid: master UUID from Identity Service (falls back to user_id)
         $identityUuid = (string) ($data['identity_uuid'] ?? '');
         $customer->appendChild($dom->createElement('identity_uuid', htmlspecialchars($identityUuid, ENT_XML1, 'UTF-8')));
-        $customer->appendChild($dom->createElement('email', htmlspecialchars((string) $data['email'], ENT_XML1, 'UTF-8')));
+        if (!empty($data['email'])) {
+            $customer->appendChild($dom->createElement('email', htmlspecialchars((string) $data['email'], ENT_XML1, 'UTF-8')));
+        }
 
         $contact = $dom->createElement('contact');
         $contact->appendChild($dom->createElement('first_name', htmlspecialchars($data['first_name'] ?? '', ENT_XML1, 'UTF-8')));

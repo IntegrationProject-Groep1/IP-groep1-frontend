@@ -3,8 +3,6 @@ declare(strict_types=1);
 
 namespace Drupal\rabbitmq_sender;
 
-use PhpAmqpLib\Message\AMQPMessage;
-
 /**
  * Publishes company_update events to CRM (contract §5.10).
  * Used when company details change or members are added/removed.
@@ -53,11 +51,7 @@ class CompanyUpdateSender
 
         $this->sendWithRetry(function () use ($xml): void {
             $this->resolveClient()->declareQueue(self::QUEUE_NAME);
-            $msg = new AMQPMessage($xml, [
-                'delivery_mode' => 2,
-                'content_type'  => 'application/xml',
-            ]);
-            $this->resolveClient()->getChannel()->basic_publish($msg, '', self::QUEUE_NAME);
+            $this->resolveClient()->publishToQueue(self::QUEUE_NAME, $xml);
             $this->logOutboundSuccess(self::TYPE, self::QUEUE_NAME, $xml);
         });
     }
@@ -91,7 +85,10 @@ class CompanyUpdateSender
 
         if (!empty($data['members'])) {
             $membersEl = $dom->createElement('members');
-            foreach ($data['members'] as $member) {
+            foreach ($data['members'] as $i => $member) {
+                if (empty($member['master_uuid']) || empty($member['action'])) {
+                    throw new \InvalidArgumentException("members[$i] must have master_uuid and action");
+                }
                 $memberEl = $dom->createElement('member');
                 $memberEl->appendChild($dom->createElement('master_uuid', htmlspecialchars((string) $member['master_uuid'], ENT_XML1, 'UTF-8')));
                 $memberEl->appendChild($dom->createElement('action',      htmlspecialchars((string) $member['action'],      ENT_XML1, 'UTF-8')));

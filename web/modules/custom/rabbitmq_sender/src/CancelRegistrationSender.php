@@ -30,21 +30,16 @@ class CancelRegistrationSender
 
     public function send(string $sessionId, string $identityUuid): void
     {
+        $this->assertValidUuid($identityUuid, 'identity_uuid');
+
         $correlationId = $this->generateUuidV4();
         $xml = $this->buildXml($sessionId, $identityUuid, $correlationId);
         $this->validateXml($xml, self::XSD_PATH);
 
         $this->sendWithRetry(function () use ($xml): void {
             $this->resolveClient()->declareQueue(self::QUEUE_NAME);
-            $msg = new \PhpAmqpLib\Message\AMQPMessage($xml, [
-                'delivery_mode' => 2,
-                'content_type'  => 'application/xml',
-            ]);
-            $this->resolveClient()->getChannel()->basic_publish($msg, '', self::QUEUE_NAME);
-            \Drupal::logger('rabbitmq_sender')->info(
-                'Sent @type to @queue',
-                ['@type' => self::TYPE, '@queue' => self::QUEUE_NAME]
-            );
+            $this->resolveClient()->publishToQueue(self::QUEUE_NAME, $xml);
+            $this->logOutboundSuccess(self::TYPE, self::QUEUE_NAME, $xml);
         });
     }
 
