@@ -108,8 +108,8 @@
                     <div class="admin-title">{{ s.title }}</div>
                     <div class="admin-sub">
                       {{ sid }}
-                      {% if s.speaker %}
-                        · {{ [s.speaker.first_name, s.speaker.last_name]|join(' ')|trim }}
+                      {% if s.speaker_name %}
+                        · {{ s.speaker_name }}
                       {% endif %}
                     </div>
                   </div>

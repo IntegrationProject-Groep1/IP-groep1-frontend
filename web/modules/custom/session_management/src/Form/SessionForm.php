@@ -65,6 +65,14 @@ class SessionForm extends FormBase
             '#required' => true,
         ];
 
+        $form['speaker_name'] = [
+            '#type'        => 'textfield',
+            '#title'       => $this->t('Speaker name'),
+            '#required'    => false,
+            '#description' => $this->t('Optional. Enter the name of the speaker for this session.'),
+            '#maxlength'   => 255,
+        ];
+
         $form['location'] = [
             '#type'        => 'textfield',
             '#title'       => $this->t('Location'),
@@ -202,6 +210,7 @@ class SessionForm extends FormBase
             'session_type'   => $form_state->getValue('session_type'),
             'start_datetime' => $startFormatted,
             'end_datetime'   => $endFormatted,
+            'speaker_name'   => $form_state->getValue('speaker_name') ?: '',
             'location'       => $form_state->getValue('location') ?: '',
             'max_attendees'  => $form_state->getValue('max_attendees'),
         ];

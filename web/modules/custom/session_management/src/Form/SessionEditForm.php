@@ -100,6 +100,15 @@ class SessionEditForm extends FormBase
             '#default_value' => $this->parseDatetime($session['end_datetime'] ?? ''),
         ];
 
+        $form['speaker_name'] = [
+            '#type'          => 'textfield',
+            '#title'         => $this->t('Speaker name'),
+            '#required'      => false,
+            '#description'   => $this->t('Optional. Enter the name of the speaker for this session.'),
+            '#maxlength'     => 255,
+            '#default_value' => $session['speaker_name'] ?? '',
+        ];
+
         $form['location'] = [
             '#type'          => 'textfield',
             '#title'         => $this->t('Location'),
@@ -258,6 +267,8 @@ class SessionEditForm extends FormBase
         $priceRaw = $form_state->getValue('price');
         $price    = ($priceRaw !== null && $priceRaw !== '') ? (float) $priceRaw : null;
 
+        $speakerName = (string) ($form_state->getValue('speaker_name') ?? '');
+
         $data = [
             'session_id'     => $sessionId,
             'title'          => $form_state->getValue('title'),
@@ -272,7 +283,8 @@ class SessionEditForm extends FormBase
 
         // Strip null optional fields.
         $data = array_filter($data, fn($v) => $v !== null && $v !== '');
-        $data['session_id'] = $sessionId; // must always be present
+        $data['session_id']   = $sessionId;   // must always be present
+        $data['speaker_name'] = $speakerName; // always update, even to empty
 
         try {
             $this->sessionService->updateSession($sessionId, $data);
