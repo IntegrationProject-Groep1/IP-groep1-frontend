@@ -55,19 +55,23 @@ class SessionEnrollForm extends FormBase
         $availableSessions = array_values(array_filter($sessions, fn($s) => !($s['is_enrolled'] ?? false)));
         $options = $this->buildOptions($availableSessions);
 
-        if (!empty($options)) {
-            $form['session_ids'] = [
-                '#type'     => 'checkboxes',
-                '#title'    => $this->t('Available sessions'),
-                '#options'  => $options,
-                '#required' => true,
-            ];
+        $hasAvailable = !empty($options);
 
-            $form['submit'] = [
-                '#type'  => 'submit',
-                '#value' => $this->t('Enroll'),
-            ];
-        }
+        $form['session_ids'] = [
+            '#type'    => 'checkboxes',
+            '#title'   => $this->t('Available sessions'),
+            '#options' => $options,
+            '#required' => $hasAvailable,
+            '#access'  => $hasAvailable,
+        ];
+
+        // Always define submit so the template can render {{ form.submit }}
+        // safely; hide it via #access when there is nothing to enrol in.
+        $form['submit'] = [
+            '#type'   => 'submit',
+            '#value'  => $this->t('Enroll'),
+            '#access' => $hasAvailable,
+        ];
 
         // All sessions (including enrolled) are passed to the template.
         $form['#sessions_full'] = $sessions;
@@ -155,10 +159,11 @@ class SessionEnrollForm extends FormBase
             )->fetchAll(\PDO::FETCH_ASSOC);
 
             // Mark each session with enrollment status; do not filter them out.
-            return array_values(array_map(
-                fn($s) => array_merge($s, ['is_enrolled' => in_array($s['session_id'], $enrolled, true)]),
+            $enrolledMap = array_flip($enrolled);
+            return array_map(
+                fn($s) => array_merge($s, ['is_enrolled' => isset($enrolledMap[$s['session_id']])]),
                 $sessions
-            ));
+            );
         } catch (\Throwable $e) {
             \Drupal::logger('session_enrollment')->error('Failed to load sessions from DB: @e', ['@e' => $e->getMessage()]);
             return [];
