@@ -101,7 +101,7 @@
 
           {% set is_full = session.max_attendees > 0 and session.current_attendees >= session.max_attendees %}
 
-          {% set is_enrolled = session.status == 'enrolled' or session.status == 'confirmed' %}
+          {% set is_enrolled = session.is_enrolled ?? false %}
 
           {# Build session detail JSON for the popup modal #}
           {% set speaker_name = session.speaker_name ?? '' %}
@@ -132,7 +132,7 @@
             'price':       session.price ?? ''
           }|json_encode %}
 
-          <article class="session-card{% if is_full %} session-card-full{% endif %}"
+          <article class="session-card{% if is_full %} session-card-full{% endif %}{% if is_enrolled %} is-enrolled{% endif %}"
                    data-type="{{ session.session_type|lower }}"
                    data-title="{{ session.title|lower }}"
                    data-speaker="{{ speaker_name|lower }}"
@@ -149,13 +149,16 @@
                 {% set start_parts = session.start_datetime|split('T') %}
                 {% set date_str = start_parts[0] ?? '' %}
                 {% set time_str = (start_parts[1] ?? '')|split(':')|slice(0,2)|join(':') %}
-                {# Format date as "TUE 12 MAY" #}
                 <span class="session-day">{{ date_str }}</span>
                 <span class="session-hour">{{ time_str }}</span>
-              {% endif %}
-              {% if session.duration_minutes is defined and session.duration_minutes %}
-                {% set dur = session.duration_minutes %}
-                <span class="session-dur">{{ dur >= 60 ? (dur // 60) ~ ' hr' : dur ~ ' min' }}</span>
+                {% if session.end_datetime %}
+                  {% set end_parts = session.end_datetime|split('T') %}
+                  {% set end_time_str = (end_parts[1] ?? '')|split(':')|slice(0,2)|join(':') %}
+                  <span class="session-dur">— {{ end_time_str }}</span>
+                {% elseif session.duration_minutes is defined and session.duration_minutes %}
+                  {% set dur = session.duration_minutes %}
+                  <span class="session-dur">{{ dur >= 60 ? (dur // 60) ~ ' hr' : dur ~ ' min' }}</span>
+                {% endif %}
               {% endif %}
             </div>
 

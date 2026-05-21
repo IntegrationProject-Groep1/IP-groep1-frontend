@@ -43,27 +43,37 @@ class SessionEnrollForm extends FormBase
         $identityUuid = $masterUuid !== '' ? $masterUuid : (string) $uid;
 
         $sessions = $this->loadSessionsFromDb($identityUuid);
-        $options  = $this->buildOptions($sessions);
 
-        if (empty($options)) {
+        if (empty($sessions)) {
             $form['notice'] = [
                 '#markup' => '<p>' . $this->t('No sessions available at the moment.') . '</p>',
             ];
             return $form;
         }
 
+        // Only non-enrolled sessions appear in the fallback checkboxes.
+        $availableSessions = array_values(array_filter($sessions, fn($s) => !($s['is_enrolled'] ?? false)));
+        $options = $this->buildOptions($availableSessions);
+
+        $hasAvailable = !empty($options);
+
         $form['session_ids'] = [
-            '#type'     => 'checkboxes',
-            '#title'    => $this->t('Available sessions'),
-            '#options'  => $options,
-            '#required' => true,
+            '#type'    => 'checkboxes',
+            '#title'   => $this->t('Available sessions'),
+            '#options' => $options,
+            '#required' => $hasAvailable,
+            '#access'  => $hasAvailable,
         ];
 
+        // Always define submit so the template can render {{ form.submit }}
+        // safely; hide it via #access when there is nothing to enrol in.
         $form['submit'] = [
-            '#type'  => 'submit',
-            '#value' => $this->t('Enroll'),
+            '#type'   => 'submit',
+            '#value'  => $this->t('Enroll'),
+            '#access' => $hasAvailable,
         ];
 
+        // All sessions (including enrolled) are passed to the template.
         $form['#sessions_full'] = $sessions;
 
         return $form;
@@ -71,6 +81,10 @@ class SessionEnrollForm extends FormBase
 
     public function validateForm(array &$form, FormStateInterface $form_state): void
     {
+        // session_ids is absent when all sessions are already enrolled.
+        if (!isset($form['session_ids'])) {
+            return;
+        }
         $selected = array_filter((array) ($form_state->getValue('session_ids') ?? []));
         if (empty($selected)) {
             $form_state->setErrorByName('session_ids', $this->t('Please select at least one session.'));
@@ -114,7 +128,7 @@ class SessionEnrollForm extends FormBase
     }
 
     /**
-     * Load available sessions the user is NOT yet enrolled in.
+     * Load all published sessions and flag which ones the user is enrolled in.
      *
      * @return list<array<string,mixed>>
      */
@@ -144,11 +158,12 @@ class SessionEnrollForm extends FormBase
                  ORDER BY start_datetime"
             )->fetchAll(\PDO::FETCH_ASSOC);
 
-            // Filter out already-enrolled sessions.
-            return array_values(array_filter(
-                $sessions,
-                fn($s) => !in_array($s['session_id'], $enrolled, true)
-            ));
+            // Mark each session with enrollment status; do not filter them out.
+            $enrolledMap = array_flip($enrolled);
+            return array_map(
+                fn($s) => array_merge($s, ['is_enrolled' => isset($enrolledMap[$s['session_id']])]),
+                $sessions
+            );
         } catch (\Throwable $e) {
             \Drupal::logger('session_enrollment')->error('Failed to load sessions from DB: @e', ['@e' => $e->getMessage()]);
             return [];
