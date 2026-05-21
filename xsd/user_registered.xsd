@@ -25,32 +25,36 @@
         <xs:complexType><xs:sequence>
           <xs:element name="customer">
             <xs:complexType><xs:sequence>
-              <!-- identity_uuid: de master_uuid van de Identity Service -->
               <xs:element name="identity_uuid" type="UUIDType"/>
-              <xs:element name="email"         type="xs:string"/>
-              <xs:element name="contact">
+              <xs:element name="email"         type="xs:string" minOccurs="0"/>
+              <xs:element name="contact" minOccurs="0">
                 <xs:complexType><xs:sequence>
                   <xs:element name="first_name" type="xs:string"/>
                   <xs:element name="last_name"  type="xs:string"/>
                 </xs:sequence></xs:complexType>
               </xs:element>
-              <xs:element name="type">
+              <xs:element name="type" minOccurs="0">
                 <xs:simpleType><xs:restriction base="xs:string">
                   <xs:enumeration value="private"/>
                   <xs:enumeration value="company"/>
                 </xs:restriction></xs:simpleType>
               </xs:element>
-              <!-- Verplicht wanneer type=company -->
               <xs:element name="company_name" type="xs:string" minOccurs="0"/>
               <xs:element name="vat_number"   type="xs:string" minOccurs="0"/>
-              <xs:element name="session_id"    type="xs:string"/>
+              <xs:element name="session_id"   type="xs:string"/>
             </xs:sequence></xs:complexType>
           </xs:element>
-          <xs:element name="session_title"   type="xs:string" minOccurs="0"/>
-          <xs:element name="payment_status">
+          <xs:element name="session_title" type="xs:string" minOccurs="0"/>
+          <xs:element name="price" minOccurs="0">
+            <xs:complexType><xs:simpleContent><xs:extension base="xs:decimal">
+              <xs:attribute name="currency" type="xs:string" fixed="eur" use="required"/>
+            </xs:extension></xs:simpleContent></xs:complexType>
+          </xs:element>
+          <xs:element name="payment_status" minOccurs="0">
             <xs:simpleType><xs:restriction base="xs:string">
               <xs:enumeration value="pending"/>
               <xs:enumeration value="paid"/>
+              <xs:enumeration value="unpaid"/>
             </xs:restriction></xs:simpleType>
           </xs:element>
         </xs:sequence></xs:complexType>

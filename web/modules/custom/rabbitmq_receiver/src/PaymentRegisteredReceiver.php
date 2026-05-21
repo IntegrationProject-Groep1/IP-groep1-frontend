@@ -17,8 +17,8 @@ class PaymentRegisteredReceiver
     use XmlValidationTrait;
     use ReceiverLogTrait;
 
-    private const QUEUE = 'frontend.crm.payment.registered';
-    private const DLQ   = 'frontend.crm.payment.registered.dlq';
+    private const QUEUE = 'frontend.incoming';
+    private const DLQ   = 'frontend.incoming.dlq';
     private const DLX   = 'frontend.crm.dlx';
     private const XSD_PATH = __DIR__ . '/../../../../../xsd/payment_registered_receiver.xsd';
 
@@ -63,8 +63,8 @@ class PaymentRegisteredReceiver
 
         $paymentContext = trim((string) $body->payment_context);
 
-        $transactionId     = isset($body->transaction) ? trim((string) $body->transaction->id) : '';
-        $paymentMethod     = isset($body->transaction) ? trim((string) $body->transaction->payment_method) : '';
+        $transactionId = isset($body->transaction) ? trim((string) $body->transaction->id) : '';
+        $paymentMethod = isset($body->transaction) ? trim((string) $body->transaction->payment_method) : '';
 
         \Drupal::logger('rabbitmq_receiver')->info(
             'payment_registered: identity_uuid=@uuid, invoice=@inv, amount=@amount @currency, context=@ctx, method=@method.',
