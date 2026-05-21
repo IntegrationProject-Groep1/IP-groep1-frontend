@@ -154,7 +154,8 @@
                 {% if session.end_datetime %}
                   {% set end_parts = session.end_datetime|split('T') %}
                   {% set end_time_str = (end_parts[1] ?? '')|split(':')|slice(0,2)|join(':') %}
-                  <span class="session-dur">— {{ end_time_str }}</span>
+                  <span class="session-dur">—</span>
+                  <span class="session-hour">{{ end_time_str }}</span>
                 {% elseif session.duration_minutes is defined and session.duration_minutes %}
                   {% set dur = session.duration_minutes %}
                   <span class="session-dur">{{ dur >= 60 ? (dur // 60) ~ ' hr' : dur ~ ' min' }}</span>
@@ -228,6 +229,12 @@
                 </span>
               {% elseif is_enrolled %}
                 <span class="tag tag-ok" style="justify-content:center;">{{ 'Ingeschreven'|t }}</span>
+                <form method="post" action="/sessions/unenroll/{{ sid }}?destination=/sessions/enroll" style="margin:0;">
+                  <button type="submit" class="btn btn-ghost btn-sm btn-full"
+                          onclick="return confirm('{{ 'Weet je zeker dat je deze sessie wil laten vallen?'|t|e('js') }}')">
+                    {{ 'Uitschrijven'|t }}
+                  </button>
+                </form>
               {% else %}
                 <a href="/sessions/enroll-single/{{ sid }}"
                    class="btn btn-primary btn-sm btn-full"
@@ -395,10 +402,14 @@
       ? '<div class="sdmodal-price">€ ' + esc(String(data.price)) + '</div>'
       : '<div class="sdmodal-price">{{ "Free"|t }}</div>';
     var enrollHtml = '';
+    {% set confirm_drop_js = 'Weet je zeker dat je deze sessie wil laten vallen?'|t|e('js') %}
     if (data.full) {
       enrollHtml = '<span class="btn btn-primary btn-sm" style="cursor:not-allowed;opacity:.55;text-decoration:none;">{{ "Vol"|t }}</span>';
     } else if (data.enrolled) {
-      enrollHtml = '<span class="tag tag-ok" style="padding:8px 16px;font-size:14px;">{{ "Ingeschreven"|t }}</span>';
+      enrollHtml = '<span class="tag tag-ok" style="padding:8px 16px;font-size:14px;">{{ "Ingeschreven"|t }}</span>'
+        + '<form method="post" action="/sessions/unenroll/' + esc(String(data.session_id)) + '?destination=/sessions/enroll" style="margin:8px 0 0;">'
+        + '<button type="submit" class="btn btn-ghost btn-sm" onclick="return confirm(\'{{ confirm_drop_js }}\')">{{ "Uitschrijven"|t }}</button>'
+        + '</form>';
     } else if (data.session_id) {
       enrollHtml = '<a href="/sessions/enroll-single/' + esc(String(data.session_id)) + '" class="btn btn-primary btn-sm" style="text-decoration:none;">{{ "Inschrijven"|t }}</a>';
     }
