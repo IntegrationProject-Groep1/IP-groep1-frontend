@@ -126,6 +126,41 @@ async def _fetch_all_pages(path: str, params: dict, max_pages: int = 10) -> list
 
 
 # ─────────────────────────────────────────────
+#  HEALTH / CONNECTIVITY
+# ─────────────────────────────────────────────
+
+@mcp.tool()
+async def check_drupal_status() -> dict[str, Any]:
+    """
+    Check whether the Drupal JSON:API is reachable and responding.
+    Call this first when any other frontend tool is returning errors,
+    or when an admin asks if the frontend service is online.
+    Returns: reachable (bool), base_url, jsonapi_version, status_code.
+    """
+    try:
+        resp = await _http.get(f"{_BASE_URL}/jsonapi", timeout=8.0)
+        body = {}
+        try:
+            body = resp.json()
+        except Exception:
+            pass
+        return {
+            "reachable":      resp.status_code < 400,
+            "status_code":    resp.status_code,
+            "base_url":       _BASE_URL,
+            "jsonapi_version": body.get("jsonapi", {}).get("version"),
+            "message":        "Drupal JSON:API is reachable." if resp.status_code < 400 else f"Drupal returned HTTP {resp.status_code}.",
+        }
+    except Exception as exc:
+        return {
+            "reachable":   False,
+            "base_url":    _BASE_URL,
+            "status_code": None,
+            "message":     f"Cannot reach Drupal at {_BASE_URL}: {exc}",
+        }
+
+
+# ─────────────────────────────────────────────
 #  SESSION TOOLS
 # ─────────────────────────────────────────────
 
@@ -140,10 +175,20 @@ async def list_sessions(
     Returns: session_id (UUID for other tools), title, start_datetime, location, status, capacity.
     """
     params: dict[str, Any] = {"page[limit]": min(limit, 200)}
-    if status:
-        params["filter[field_status]"] = status
     try:
-        nodes = await _fetch_all_pages("node/session", params)
+        if status:
+            # Try field_status filter first; fall back to client-side filtering
+            # if Drupal's JSON:API doesn't expose this field as filterable (404/422).
+            try:
+                filter_params = {**params, "filter[field_status]": status}
+                nodes = await _fetch_all_pages("node/session", filter_params)
+            except Exception:
+                # Drupal doesn't support this filter — fetch all and filter locally
+                nodes = await _fetch_all_pages("node/session", params)
+                nodes = [n for n in nodes if (n.get("attributes", {}).get("field_status") or "") == status
+                         or (n.get("attributes", {}).get("status") and status in ("published", "active"))]
+        else:
+            nodes = await _fetch_all_pages("node/session", params)
         sessions = [_session_from_node(n) for n in nodes]
         return {"sessions": sessions, "count": len(sessions)}
     except Exception as exc:
@@ -189,12 +234,14 @@ async def get_sessions_by_status(
     status: Annotated[str, Field(description="Session status to filter by: 'active', 'published', 'cancelled', 'draft', 'full'.")],
 ) -> dict[str, Any]:
     """Get all sessions with a specific publication/lifecycle status. Valid statuses: 'active', 'published', 'cancelled', 'draft', 'full'. Use to audit which sessions are still open for enrollment or which have been cancelled."""
-    params = {
-        "filter[field_status]": status,
-        "page[limit]": "200",
-    }
     try:
-        nodes = await _fetch_all_pages("node/session", params)
+        try:
+            nodes = await _fetch_all_pages("node/session", {"filter[field_status]": status, "page[limit]": "200"})
+        except Exception:
+            # field_status not filterable in this Drupal — fetch all and filter locally
+            nodes = await _fetch_all_pages("node/session", {"page[limit]": "200"})
+            nodes = [n for n in nodes if (n.get("attributes", {}).get("field_status") or "") == status
+                     or (n.get("attributes", {}).get("status") and status in ("published", "active"))]
         sessions = [_session_from_node(n) for n in nodes]
         return {"sessions": sessions, "count": len(sessions)}
     except Exception as exc:
