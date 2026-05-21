@@ -19,13 +19,13 @@ class WalletTopupRequestSender
 
     private ?RabbitMQClient $client;
 
-    private const EXCHANGE      = 'frontend.exchange';
-    private const ROUTING_KEY   = 'frontend.to.crm.wallet_topup_request';
+    private const EXCHANGE     = 'frontend.exchange';
+    private const ROUTING_KEY  = 'frontend.to.crm.wallet_topup_request';
     private const EXCHANGE_TYPE = 'topic';
-    private const SOURCE        = 'frontend';
-    private const TYPE          = 'wallet_topup_request';
-    private const VERSION       = '2.0';
-    private const XSD_PATH      = __DIR__ . '/../../../../../xsd/wallet_topup_request.xsd';
+    private const SOURCE       = 'frontend';
+    private const TYPE         = 'wallet_topup_request';
+    private const VERSION      = '2.0';
+    private const XSD_PATH     = __DIR__ . '/../../../../../xsd/wallet_topup_request.xsd';
 
     public function __construct(?RabbitMQClient $client = null)
     {

@@ -63,8 +63,8 @@ class PaymentRegisteredReceiver
 
         $paymentContext = trim((string) $body->payment_context);
 
-        $transactionId = isset($body->transaction) ? trim((string) $body->transaction->id) : '';
-        $paymentMethod = isset($body->transaction) ? trim((string) $body->transaction->payment_method) : '';
+        $transactionId     = isset($body->transaction) ? trim((string) $body->transaction->id) : '';
+        $paymentMethod     = isset($body->transaction) ? trim((string) $body->transaction->payment_method) : '';
 
         \Drupal::logger('rabbitmq_receiver')->info(
             'payment_registered: identity_uuid=@uuid, invoice=@inv, amount=@amount @currency, context=@ctx, method=@method.',
