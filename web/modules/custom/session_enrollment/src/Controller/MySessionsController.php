@@ -84,7 +84,11 @@ class MySessionsController extends ControllerBase
             $this->messenger()->addWarning($this->t('Unsubscribed, but calendar removal may be delayed.'));
         }
 
-        return new RedirectResponse(Url::fromRoute('session_enrollment.my_sessions')->toString());
+        $destination = \Drupal::request()->query->get('destination', '');
+        $redirectUrl = ($destination !== '' && str_starts_with((string) $destination, '/'))
+            ? (string) $destination
+            : Url::fromRoute('session_enrollment.my_sessions')->toString();
+        return new RedirectResponse($redirectUrl);
     }
 
     /**

@@ -419,7 +419,14 @@ function SessionCard({ session, enrolled, onEnroll, onDrop }) {
       <div className="session-time-col">
         <span className="session-day">{session.start.split("·")[0]?.trim()}</span>
         <span className="session-hour">{session.start.split("·")[1]?.trim()}</span>
-        <span className="session-dur">{session.end ? "— " + session.end : session.duration}</span>
+        {session.end ? (
+          <>
+            <span className="session-dur">—</span>
+            <span className="session-hour">{session.end}</span>
+          </>
+        ) : (
+          <span className="session-dur">{session.duration}</span>
+        )}
       </div>
 
       <div className="session-main">
